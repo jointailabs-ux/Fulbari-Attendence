@@ -8,7 +8,7 @@ export async function GET() {
     const [staffList, slots, availableSlots] = await Promise.all([
       prisma.staffProfile.findMany({
         include: {
-          slot: true,
+          slot: { include: { outlet: true } },
         },
         orderBy: { createdAt: 'desc' }
       }),

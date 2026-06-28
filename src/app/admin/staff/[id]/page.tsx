@@ -57,8 +57,7 @@ export default function EmployeeProfile({ params }: { params: Promise<{ id: stri
             <span style={{ padding: '0.3rem 0.8rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)' }}>
               {staff.slot?.name || "UNASSIGNED"}
             </span>
-            <span style={{ width: '6px', height: '6px', background: 'var(--glass-border)', borderRadius: '50%' }}></span>
-            <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '500' }}>{staff.location}</span>
+            <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '500' }}>{staff.slot?.outlet?.name || "Unknown"}</span>
           </div>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>

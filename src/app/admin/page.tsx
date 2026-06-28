@@ -32,7 +32,7 @@ export default async function AdminDashboard() {
     ] = await Promise.all([
       prisma.staffProfile.findMany({
         where: { isActive: true },
-        include: { slot: true }
+        include: { slot: { include: { outlet: true } } }
       }),
       prisma.attendanceRecord.findMany({
         where: { shiftDate: { gte: today } },
@@ -129,7 +129,7 @@ export default async function AdminDashboard() {
         id: staff.id,
         name: staff.name,
         slotName: staff.slot?.name || 'Standard Slot',
-        location: staff.location,
+        location: staff.slot?.outlet?.name || 'Unknown',
         state: (record?.state || 'NOT_STARTED') as any,
         startTime: record?.startTime ? new Date(record.startTime).toISOString() : null,
         endTime: record?.endTime ? new Date(record.endTime).toISOString() : null,

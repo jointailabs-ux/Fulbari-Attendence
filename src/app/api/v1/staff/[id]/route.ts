@@ -18,7 +18,7 @@ export async function GET(
     const staff = await prisma.staffProfile.findUnique({
       where: { id },
       include: {
-        slot: true,
+        slot: { include: { outlet: true } },
         fingerprints: {
           orderBy: { enrolledAt: 'desc' }
         },
@@ -98,13 +98,12 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await req.json();
-    const { name, phone, pin, monthlySalary, slotId, location, isActive } = body;
+    const { name, phone, pin, monthlySalary, slotId, isActive } = body;
 
     const updateData: any = {
       name,
       phone,
       monthlySalary: monthlySalary ? Number(monthlySalary) : undefined,
-      location,
       isActive
     };
 

@@ -16,8 +16,7 @@ export default function StaffManagement() {
     phone: "",
     pin: "",
     monthlySalary: "",
-    slotId: "",
-    location: "Restaurant"
+    slotId: ""
   });
 
   const fetchData = async () => {
@@ -65,7 +64,7 @@ export default function StaffManagement() {
         body: JSON.stringify(formData)
       });
       setIsAddModalOpen(false);
-      setFormData({ name: "", phone: "", pin: "", monthlySalary: "", slotId: "", location: "Restaurant" });
+      setFormData({ name: "", phone: "", pin: "", monthlySalary: "", slotId: "" });
       fetchData();
     } catch (e) {
       console.error(e);
@@ -138,7 +137,7 @@ export default function StaffManagement() {
                     </div>
                   </td>
                   <td>
-                    <span style={{ fontSize: '0.85rem' }}>{staff.location || "Default"}</span>
+                    <span style={{ fontSize: '0.85rem' }}>{staff.slot?.outlet?.name || "Unassigned"}</span>
                   </td>
                   <td>
                     <span style={{ padding: '0.2rem 0.6rem', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '500' }}>
@@ -190,21 +189,13 @@ export default function StaffManagement() {
             </div>
             
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>Work Location</label>
-                  <select name="location" required className="input-modern" value={formData.location} onChange={handleInputChange}>
-                    <option value="Restaurant">Restaurant</option>
-                    <option value="Cafe Hub">Cafe Hub</option>
-                    <option value="Chai Hub">Chai Hub</option>
-                  </select>
-                </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>Slot Assignment</label>
                   <select name="slotId" required className="input-modern" value={formData.slotId} onChange={handleInputChange}>
                     <option value="">Choose Slot</option>
                     {availableSlots.map((slot: any) => (
-                      <option key={slot.id} value={slot.id}>{slot.name}</option>
+                      <option key={slot.id} value={slot.id}>{slot.name} ({slot.outlet?.name})</option>
                     ))}
                   </select>
                 </div>
@@ -283,22 +274,14 @@ export default function StaffManagement() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>Location</label>
-                  <select name="location" required className="input-modern" value={editingStaff.location} onChange={handleEditInputChange}>
-                    <option value="Restaurant">Restaurant</option>
-                    <option value="Cafe Hub">Cafe Hub</option>
-                    <option value="Chai Hub">Chai Hub</option>
-                  </select>
-                </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>Slot Assignment</label>
                   <select name="slotId" required className="input-modern" value={editingStaff.slotId} onChange={handleEditInputChange} disabled={!editingStaff.isActive}>
                     {slots.map((slot: any) => {
                       const isOtherAssigned = staffList.some(s => s.slotId === slot.id && s.id !== editingStaff.id && s.isActive);
                       if (isOtherAssigned) return null;
-                      return <option key={slot.id} value={slot.id}>{slot.name}</option>;
+                      return <option key={slot.id} value={slot.id}>{slot.name} ({slot.outlet?.name})</option>;
                     })}
                   </select>
                 </div>

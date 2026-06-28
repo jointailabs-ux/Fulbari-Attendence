@@ -7,7 +7,7 @@ export async function GET() {
   try {
     const staff = await prisma.staffProfile.findMany({
       include: {
-        slot: true,
+        slot: { include: { outlet: true } },
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -21,7 +21,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, phone, pin, monthlySalary, slotId, location } = body;
+    const { name, phone, pin, monthlySalary, slotId } = body;
 
     // VERY BASIC HASHING for MVP: In production, use bcrypt or similar
     const hashedPin = Buffer.from(pin).toString('base64'); // Mock hash
@@ -33,7 +33,6 @@ export async function POST(req: Request) {
         hashedPin,
         monthlySalary: Number(monthlySalary) || 0,
         joiningDate: new Date(),
-        location: location || "Restaurant",
         slot: {
           connect: { id: slotId }
         }

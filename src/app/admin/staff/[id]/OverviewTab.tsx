@@ -10,7 +10,6 @@ interface FormData {
   emergencyContact: string;
   address: string;
   slotId: string;
-  location: string;
   isActive: boolean;
   pin: string; // blank by default, overwrites when provided
 }
@@ -25,7 +24,6 @@ export default function OverviewTab({ staff, refresh }: { staff: any; refresh: (
     emergencyContact: staff.emergencyContact || '',
     address: staff.address || '',
     slotId: staff.slotId || '',
-    location: staff.location || 'Restaurant',
     isActive: staff.isActive !== undefined ? staff.isActive : true,
     pin: ''
   });
@@ -54,7 +52,6 @@ export default function OverviewTab({ staff, refresh }: { staff: any; refresh: (
         emergencyContact: formData.emergencyContact,
         address: formData.address,
         slotId: formData.slotId,
-        location: formData.location,
         isActive: formData.isActive
       };
 
@@ -169,19 +166,6 @@ export default function OverviewTab({ staff, refresh }: { staff: any; refresh: (
               </select>
             </div>
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)' }}>Primary Assignment Location</label>
-              <select 
-                className="input-modern"
-                value={formData.location}
-                onChange={(e) => setFormData({...formData, location: e.target.value})}
-                required
-              >
-                <option value="Restaurant">Restaurant</option>
-                <option value="Cafe Hub">Cafe Hub</option>
-                <option value="Chai Hub">Chai Hub</option>
-              </select>
-            </div>
-            <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)' }}>Employment Status</label>
               <select 
                 className="input-modern"
@@ -231,7 +215,7 @@ export default function OverviewTab({ staff, refresh }: { staff: any; refresh: (
             <DetailItem label="Official Name" value={staff.name} />
             <DetailItem label="Verified Phone" value={staff.phone} />
             <DetailItem label="Active Slot" value={staff.slot?.name || "UNASSIGNED"} />
-            <DetailItem label="Primary Location" value={staff.location} />
+            <DetailItem label="Primary Location" value={staff.slot?.outlet?.name || "Unknown"} />
             <DetailItem label="Monthly Salary" value={`₹${staff.monthlySalary}`} />
             <DetailItem label="Activation Date" value={new Date(staff.joiningDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })} />
             <DetailItem label="Emergency Dispatch" value={staff.emergencyContact || "No data provided"} />
