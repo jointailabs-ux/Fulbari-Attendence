@@ -1,0 +1,148 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Outlet {
+  id                  String   @id @default(uuid())
+  name                String
+  shiftStartTime      String   // e.g., "12:00"
+  shiftEndTime        String   // e.g., "00:00" (midnight)
+  expectedWorkHours   Float    // e.g., 12.0
+  timezone            String   @default("Asia/Kolkata")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  slots               StaffSlot[]
+}
+
+model StaffSlot {
+  id                  String   @id @default(uuid())
+  outletId            String
+  name                String   // e.g., "Head Cook 1", "Waiter 2", "Cashier 1"
+  createdAt           DateTime @default(now())
+
+  outlet              Outlet   @relation(fields: [outletId], references: [id])
+  profiles            StaffProfile[]
+}
+
+model StaffProfile {
+  id                  String   @id @default(uuid())
+  slotId              String
+  name                String
+  phone               String
+  address             String?
+  emergencyContact    String?
+  hashedPin           String
+  monthlySalary       Float
+  joiningDate         DateTime
+  leavingDate         DateTime?
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+
+  slot                StaffSlot @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  attendances         AttendanceRecord[]
+  advances            Advance[]
+  payrolls            PayrollRecord[]
+  documents           EmployeeDocument[]
+  leaves              LeaveRecord[]
+  fingerprints        FingerprintTemplate[]
+}
+
+model FingerprintTemplate {
+  id              String   @id @default(uuid())
+  staffId         String
+  templateData    String   // Base64 encoded fingerprint capture data from MFS110
+  fingerIndex     String   @default("RIGHT_INDEX") // Which finger: RIGHT_INDEX, LEFT_INDEX, RIGHT_THUMB, etc.
+  deviceInfo      String?  // Scanner device info for reference
+  enrolledAt      DateTime @default(now())
+
+  staff           StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+}
+
+model EmployeeDocument {
+  id                  String   @id @default(uuid())
+  staffId             String
+  documentType        String   // PAN, AADHAAR, VOTER_ID
+  fileUrl             String
+  uploadedAt          DateTime @default(now())
+
+  staff               StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+}
+
+model LeaveRecord {
+  id                  String   @id @default(uuid())
+  staffId             String
+  date                DateTime
+  type                String   // FULL, HALF
+  markedBy            String?
+
+  staff               StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+}
+
+model AttendanceRecord {
+  id                  String   @id @default(uuid())
+  staffId             String
+  shiftDate           DateTime // date representation without time
+  state               String   @default("NOT_STARTED") // NOT_STARTED, SHIFT_STARTED, ON_BREAK, SHIFT_ENDED
+  startTime           DateTime?
+  endTime             DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  staff               StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  breaks              BreakLog[]
+}
+
+model BreakLog {
+  id                  String   @id @default(uuid())
+  attendanceId        String
+  startTime           DateTime @default(now())
+  endTime             DateTime?
+
+  attendance          AttendanceRecord @relation(fields: [attendanceId], references: [id])
+}
+
+model Advance {
+  id                  String   @id @default(uuid())
+  staffId             String
+  amount              Float
+  date                DateTime @default(now())
+  status              String   @default("PENDING") // PENDING, DEDUCTED
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+
+  staff               StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+}
+
+model PayrollRecord {
+  id                  String   @id @default(uuid())
+  staffId             String
+  monthYear           String   // e.g., "2026-04"
+  strictSalary        Float
+  simpleSalary        Float
+  selectedMode        String?  // STRICT or SIMPLE
+  finalPayable        Float
+  advancesDeducted    Float
+  createdAt           DateTime @default(now())
+
+  staff               StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id                  String   @id @default(uuid())
+  action              String   // e.g., "STAFF_CREATED", "PAYROLL_FINALIZED", "BIOMETRIC_ENROLLED"
+  entityType          String
+  entityId            String
+  oldValue            String?  // JSON string
+  newValue            String?  // JSON string
+  performedBy         String?
+  createdAt           DateTime @default(now())
+}

@@ -1,0 +1,926 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>MorFin Auth Web Test</title>
+    <style type="text/css">
+        body {
+            font-family: 'Segoe UI';
+            background-color: #f8f8ff;
+            margin: 0px 5px 5px 5px;
+            padding: 0px 5px 5px 5px;
+            color: #555;
+            font-size: 12px;
+        }
+
+        .panel {
+            background-color: #f8f8ff;
+            -moz-user-select: none;
+            background-image: none;
+            border: 2px solid #428bca;
+            /*border-top: 0px solid transparent;*/
+            border-radius: 4px;
+            /*margin: 12px 12px;*/
+            padding: 6px 12px;
+            margin-top: 8px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 6px 12px;
+            margin-bottom: 0px;
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1.42857;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            cursor: pointer;
+            -moz-user-select: none;
+            background-image: none;
+            border: 1px solid transparent;
+            border-radius: 4px;
+        }
+
+        .btn-50 {
+            width: 50px;
+        }
+
+        .btn-100 {
+            width: 100px;
+        }
+
+        .btn-150 {
+            width: 150px;
+        }
+
+        .btn-200 {
+            width: 205px;
+        }
+
+        .btn-primary {
+            color: #FFF;
+            background-color: #428BCA;
+            border-color: #357EBD;
+        }
+
+            .btn-primary:hover {
+                color: #FFF;
+                background-color: #357EBD;
+                border-color: #428BCA;
+            }
+
+        .form-control {
+            display: block;
+            width: 100%;
+            height: 24px;
+            padding: 3px 6px;
+            font-size: 12px;
+            /*line-height: 1.42857;*/
+            color: #555;
+            background-color: #FFF;
+            background-image: none;
+            border: 1px solid #bdbdbd;
+            border-radius: 4px;
+            box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.075) inset;
+            transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s;
+        }
+
+        textarea.form-control {
+            height: auto;
+        }
+
+        .text-bold {
+            font-weight: bold;
+        }
+
+        .img {
+            min-width: 125px;
+            min-height: 155px;
+            width: 125px;
+            height: 158px;
+            border: 1px solid #428bca;
+            border-radius: 4px;
+            box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.075) inset;
+            background-color: #FFFFFF;
+        }
+
+        .b1 {
+            margin-left: -53%;
+        }
+
+        .b2 {
+            width: 57%;
+            margin-right: 71%;
+            margin-top: 1%;
+        }
+
+        .b3 {
+            margin-left: -33%;
+            margin-top: 0px;
+            width: 60%;
+        }
+
+        .b3o {
+            margin-left: -70%;
+            margin-top: 0px;
+            width: 60%;
+        }
+
+        .b4 {
+            margin-top: 29%;
+            margin-left: -32%;
+        }
+
+        .b4o {
+            margin-top: 29%;
+            margin-left: -70%;
+        }
+
+        .b5 {
+            margin-left: -22%;
+        }
+
+        .b6 {
+            margin-left: -40%;
+        }
+
+        .b7 {
+            width: 296%;
+        }
+
+        .b8 {
+            width: 125%;
+        }
+
+        .b9 {
+            width: 132%;
+            margin-left: 33%;
+        }
+
+        .select-dropdown {
+            position: relative;
+            background-color: #e6e6e6;
+            width: auto;
+            float: left;
+            max-width: 100%;
+            border-radius: 2px;
+            margin-left: -33%;
+            margin-top: 9%;
+        }
+
+            .select-dropdown select {
+                font-family: "helvetica neue", helvetica;
+                font-size: 12px;
+                font-weight: 200;
+                max-width: 100%;
+                padding: 8px 24px 8px 10px;
+                border: none;
+                background-color: transparent;
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                appearance: none;
+                background-color: #FFF;
+                background-image: none;
+                border: 1px solid #bdbdbd;
+                border-radius: 4px;
+                box-shadow: 0px 1px 1px rgb(0 0 0 / 8%) inset;
+                transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s;
+            }
+
+                .select-dropdown select:active, .select-dropdown select:focus {
+                    outline: none;
+                    box-shadow: none;
+                }
+
+            .select-dropdown:after {
+                content: " ";
+                position: absolute;
+                top: 50%;
+                margin-top: -2px;
+                right: 8px;
+                width: 0;
+                height: 0;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 5px solid #aaa;
+            }
+
+
+        .td1 {
+            width: 100px;
+            color: #0c0c0c;
+            font-weight: bold;
+        }
+
+        .td2 {
+            width: 150px;
+            font-weight: 500;
+            color: #0364b7;
+        }
+    </style>
+    <script src="jquery-1.8.2.js"></script>
+    <script src="morfinauth.js"></script>
+    <script language="javascript" type="text/javascript">
+
+        UninitDevice();
+
+        var nooffinger = '1';
+        function GetInfo() {
+            document.getElementById('tdSerial').innerHTML = "";
+            document.getElementById('tdMake').innerHTML = "";
+            document.getElementById('tdModel').innerHTML = "";
+            document.getElementById('tdWidth').innerHTML = "";
+            document.getElementById('tdHeight').innerHTML = "";
+            document.getElementById('imgFinger').src = "";
+
+            document.getElementById('txtStatus').value = "";
+            document.getElementById('txtImageInfo').value = "";
+            document.getElementById('txtIsoTemplate').value = "";
+            document.getElementById('txtIsoImage').value = "";
+            document.getElementById('txtProbTemplate').value = "";
+            var connectedDvcIndex = $("#cmbConnectedDvc").val();
+            var connectedDvc = $("#cmbConnectedDvc option:selected").text();
+            if (connectedDvcIndex == "-1" || connectedDvcIndex == null) {
+                alert("Please Select Connected Device");
+                return true;
+            }
+
+            DisabledButton(true);
+            var res = GetMorFinAuthInfo(connectedDvc, $("#txtClientKey").val());
+
+            if (res.httpStaus) {
+
+                document.getElementById('txtStatus').value = "ErrorCode: " + res.data.ErrorCode + " ErrorDescription: " + res.data.ErrorDescription;
+
+                if (res.data.ErrorCode == "0") {
+                    isInit = 1;
+                    document.getElementById('tdSerial').innerHTML = res.data.DeviceInfo.SerialNo;
+                    document.getElementById('tdMake').innerHTML = res.data.DeviceInfo.Make;
+                    document.getElementById('tdModel').innerHTML = res.data.DeviceInfo.Model;
+                    document.getElementById('tdWidth').innerHTML = res.data.DeviceInfo.Width;
+                    document.getElementById('tdHeight').innerHTML = res.data.DeviceInfo.Height;
+                }
+            }
+            else {
+                alert(res.err);
+            }
+
+            DisabledButton(false);
+            return false;
+        }
+
+        function CheckDevice() {
+            document.getElementById('txtStatus').value = "";
+            document.getElementById('txtImageInfo').value = "";
+            document.getElementById('txtIsoTemplate').value = "";
+            document.getElementById('txtProbTemplate').value = "";
+
+            var connectedDvcIndex = $("#cmbConnectedDvc").val();
+            var connectedDvc = $("#cmbConnectedDvc option:selected").text();
+            if (connectedDvcIndex == null) {
+                alert("Please Select Connected Device");
+                return true;
+            }
+
+            DisabledButton(true);
+            var res = IsDeviceConnected(connectedDvc);
+            if (res.httpStaus) {
+                document.getElementById('txtStatus').value = "ErrorCode: " + res.data.ErrorCode + " ErrorDescription: " + res.data.ErrorDescription;
+            }
+            else {
+                alert(res.err);
+            }
+
+            DisabledButton(false);
+            return false;
+        }
+
+        function Init() {
+
+            var clientKey = $("#txtClientKey").val();
+            var connectedDvcIndex = $("#cmbConnectedDvc").val();
+            var connectedDvc = $("#cmbConnectedDvc option:selected").text();
+            if (connectedDvcIndex == "-1" || connectedDvcIndex == null) {
+                alert("Please Select Connected Device");
+                return true;
+            }
+
+            var res = InitDevice(connectedDvc, clientKey);
+
+            if (res.httpStaus) {
+                isInit = 1;
+                document.getElementById('txtStatus').value = "ErrorCode: " + res.data.ErrorCode + " ErrorDescription: " + res.data.ErrorDescription;
+            }
+            else {
+                alert(res.err);
+            }
+            return false;
+        }
+        var isInit = 0;
+
+        function Uninit() {
+            DisabledButton(true);
+            var res = UninitDevice();
+            if (res.httpStaus) {
+                isInit = 0;
+                document.getElementById('txtStatus').value = "ErrorCode: " + res.data.ErrorCode + " ErrorDescription: " + res.data.ErrorDescription;
+                document.getElementById('tdSerial').innerHTML = "";
+                document.getElementById('tdMake').innerHTML = "";
+                document.getElementById('tdModel').innerHTML = "";
+                document.getElementById('tdWidth').innerHTML = "";
+                document.getElementById('tdHeight').innerHTML = "";
+                document.getElementById('imgFinger').src = "";
+
+                document.getElementById('txtClientKey').value = "";
+                document.getElementById('txtImageInfo').value = "";
+                document.getElementById('txtIsoTemplate').value = "";
+                document.getElementById('txtProbTemplate').value = "";
+                document.getElementById('txtIsoImage').value = "";
+                document.getElementById('ddlTemplateFormat').value = "0";
+                document.getElementById('ddlImageFormat').value = "0";
+            }
+            else {
+                alert(res.err);
+            }
+            DisabledButton(false);
+            return false;
+        }
+
+        function StopCapture() {
+            var res;
+            res = StopCaptured();
+
+            if (res.httpStaus) {
+                document.getElementById('txtStatus').value = "ErrorCode: " + res.data.ErrorCode + " ErrorDescription: " + res.data.ErrorDescription;
+            }
+            else {
+                alert(res.err);
+            }
+            return false;
+        }
+
+        function GetSupportedDevice() {
+            DisabledButton(true);
+            var res = GetSupportedDeviceList();
+
+            if (res.httpStaus) {
+                document.getElementById('txtStatus').value = "ErrorCode: " + res.data.ErrorCode + " ErrorDescription: " + res.data.ErrorDescription;
+            }
+            else {
+                alert(res.err);
+            }
+            DisabledButton(false);
+            return false;
+        }
+
+        function GetConnectedDevice() {
+            $('#cmbConnectedDvc').empty();
+            DisabledButton(true);
+            var res = GetConnectedDeviceList();
+            if (res.httpStaus) {
+                document.getElementById('txtStatus').value = "ErrorCode: " + res.data.ErrorCode + " ErrorDescription: " + res.data.ErrorDescription;
+                if (res.data != null && res.data.ErrorCode == 0) {
+                    var connectedDevices = res.data.ErrorDescription;
+                    if (connectedDevices != null && connectedDevices != "") {
+
+                        connectedDevices = connectedDevices.split(":");
+                        if (connectedDevices != null && connectedDevices.length > 1) {
+                            connectedDevices = connectedDevices[1].split(",");
+                            if (connectedDevices != null && connectedDevices.length > 0) {
+                                for (var i = 0; i < connectedDevices.length; i++) {
+                                    $('#cmbConnectedDvc').append("<option value=" + i + ">" + connectedDevices[i].trim() + "</option>");
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        alert("Connected device not found");
+                        clearDeviceInfo();
+                    }
+                }
+            }
+            else {
+                alert(res.err);
+            }
+            DisabledButton(false);
+            return false;
+        }
+
+        var delayInMilliseconds = 100; //0.1 second
+        function Capture() {
+            try {
+                DisabledButton(true);
+                document.getElementById('imgFinger').src = "";
+                document.getElementById('txtImageInfo').value = "";
+                document.getElementById('txtIsoTemplate').value = "";
+                document.getElementById('txtProbTemplate').value = "";
+                document.getElementById('txtIsoImage').value = "";
+                if (!validate()) {
+                }
+                else {
+                    if (isInit == 1) {
+                        document.getElementById('txtStatus').value = "Capture is in progress......";
+                    }
+                    setTimeout(function () {
+                        quality = $("#txtQuality").val();
+                        timeout = $("#txtTimeout").val();
+
+                        if (timeout == "") {
+                            alert("Timeout must not be null");
+                            DisabledButton(false);
+                            return false;
+                        }
+                        if (timeout >= 0 && timeout % 1 == 0) {
+
+                        }
+                        else {
+                            alert("Invalid timeout or timeout should be greater or equal to 10");
+                            DisabledButton(false);
+                            return false;
+                        }
+
+                        var res = CaptureFinger(quality, timeout);
+
+                        if (res.httpStaus) {
+                            if (res.data.ErrorCode == "0") {
+                                document.getElementById('imgFinger').src = "data:image/bmp;base64," + res.data.BitmapData;
+                                var imageinfo = "Quality: " + res.data.Quality + " Nfiq: " + res.data.Nfiq;
+                                document.getElementById('txtImageInfo').value = imageinfo;
+                                document.getElementById('txtStatus').value = "ErrorCode: " + res.data.ErrorCode + " ErrorDescription: " + "Capture Success";
+                            }
+                            else {
+                                document.getElementById('txtStatus').value = "ErrorCode: " + res.data.ErrorCode + " ErrorDescription: " + res.data.ErrorDescription;
+                                alert(res.data.ErrorDescription);
+                            }
+                        }
+                        else {
+                            document.getElementById('txtStatus').value = "ErrorCode: " + res.data.ErrorCode + " ErrorDescription: " + res.data.ErrorDescription;
+                            alert(res.err);
+                        }
+                    }, delayInMilliseconds);
+                }
+            }
+            catch (e) {
+                document.getElementById('txtStatus').value = "ErrorCode: " + res.data.ErrorCode + " ErrorDescription: " + "";
+                alert(e);
+            }
+            DisabledButton(false);
+            return false;
+        }
+
+        function Verify() {
+            try {
+                var isotemplate1 = document.getElementById('txtProbTemplate').value;
+                var isotemplate2 = document.getElementById('txtIsoTemplate').value;
+                var tmpFormat = $("#ddlTemplateFormat").val();
+                if (tmpFormat == "0") {
+                    alert("Please Select Template Type");
+                    return true;
+                }
+                var len = isotemplate2.trim().length;
+                len = len + len;
+                if (isotemplate1.trim() == "" || isotemplate2.trim() == "") {
+                    if (isotemplate1.trim() == "") {
+                        alert("Please Enter Template for matching");
+                        return true;
+                    }
+                    if (isotemplate2.trim() == "") {
+                        alert("Please Enter Gallery Template");
+                        return true;
+                    }
+                }
+                else if (isotemplate1.trim().length >= len) {
+                    alert("Please Enter Valid Template for matching");
+                    return false;
+                }
+                else {
+                    tmpFormat = tmpFormat - 1;
+
+                    var res = VerifyFinger(isotemplate1, isotemplate2, tmpFormat);
+                    if (res.httpStaus) {
+                        if (res.data.Status) {
+                            document.getElementById('txtStatus').value = "ErrorCode: " + res.data.ErrorCode + " ErrorDescription: " + res.data.ErrorDescription;
+                            alert("Finger matched");
+                        }
+                        else {
+                            if (res.data.ErrorCode != "0") {
+                                document.getElementById('txtStatus').value = "ErrorCode: " + res.data.ErrorCode + " ErrorDescription: " + res.data.ErrorDescription;
+                                alert(res.data.ErrorDescription);
+                            }
+                            else {
+                                document.getElementById('txtStatus').value = "ErrorCode: " + res.data.ErrorCode + " ErrorDescription: " + res.data.ErrorDescription;
+                                alert("Finger not matched");
+                            }
+                        }
+                    }
+                    else {
+                        alert(res.err);
+                    }
+                }
+            }
+            catch (e) {
+                alert(e);
+            }
+            return false;
+        }
+
+        function Match() {
+            try {
+                document.getElementById('txtImageInfo').value = "";
+                var isotemplate = document.getElementById('txtIsoTemplate').value.trim();
+                var tmpFormat = $("#ddlTemplateFormat").val();
+                if (tmpFormat == "0") {
+                    alert("Please Select Template Type");
+                    return true;
+                }
+                if (isotemplate == "" || isotemplate == null) {
+                    alert("Gallery Template Is Not Available");
+                    return true;
+                }
+                else {
+                    tmpFormat = tmpFormat - 1;
+                    document.getElementById('imgFinger').src = "";
+                    if (isInit == 1) {
+                        document.getElementById('txtStatus').value = "Capture is in progress......";
+                    }
+                    setTimeout(function () {
+
+                        var res = MatchFinger(quality, timeout, isotemplate, tmpFormat);
+
+                        if (res.httpStaus) {
+                            if (res.data.Status) {
+                                document.getElementById('imgFinger').src = "data:image/bmp;base64," + res.data.BitmapData;
+                                document.getElementById('txtStatus').value = "ErrorCode: " + res.data.ErrorCode + " ErrorDescription: " + res.data.ErrorDescription;
+                                var imageinfo = "Quality: " + res.data.Quality + " Nfiq: " + res.data.Nfiq;
+                                document.getElementById('txtImageInfo').value = imageinfo;
+                                setTimeout(function () {
+                                    alert("Finger matched");
+                                }, delayInMilliseconds);
+                            }
+                            else {
+                                if (res.data.ErrorCode != "0") {
+                                    document.getElementById('txtStatus').value = "ErrorCode: " + res.data.ErrorCode + " ErrorDescription: " + res.data.ErrorDescription;
+                                    setTimeout(function () {
+                                        alert(res.data.ErrorDescription);
+                                    }, delayInMilliseconds);
+                                }
+                                else {
+                                    document.getElementById('imgFinger').src = "data:image/bmp;base64," + res.data.BitmapData;
+                                    document.getElementById('txtStatus').value = "ErrorCode: " + res.data.ErrorCode + " ErrorDescription: " + res.data.ErrorDescription;
+                                    var imageinfo = "Quality: " + res.data.Quality + " Nfiq: " + res.data.Nfiq;
+                                    document.getElementById('txtImageInfo').value = imageinfo;
+                                    setTimeout(function () {
+                                        alert("Finger not matched");
+                                    }, delayInMilliseconds);
+                                }
+                            }
+                        }
+                        else {
+                            document.getElementById('txtStatus').value = "ErrorCode: " + res.data.ErrorCode + " ErrorDescription: " + "";
+                            setTimeout(function () {
+                                alert(res.err);
+                            }, delayInMilliseconds);
+                        }
+                    }, delayInMilliseconds);
+                }
+            }
+            catch (e) {
+                alert(e);
+            }
+            return false;
+        }
+
+        function GetImageByFormat() {
+            try {
+                var imgFormat = $("#ddlImageFormat").val();
+                if (imgFormat == "0") {
+                    alert("Please Select Image Type");
+                    return true;
+                }
+                else {
+                    imgFormat = imgFormat - 1;
+                    DisabledButton(true);
+                    var res = GetImage(imgFormat);
+                    if (res.httpStaus) {
+                        document.getElementById('txtStatus').value = "ErrorCode: " + res.data.ErrorCode + " ErrorDescription: " + res.data.ErrorDescription;
+
+                        if (res.data.ErrorCode == "0") {
+                            if (res.data != null) {
+                                document.getElementById('txtIsoImage').value = res.data.ImgData;
+                            }
+                        }
+                    }
+                    else {
+                        alert(res.err);
+                    }
+                }
+            }
+            catch (e) {
+                alert(e);
+            }
+            DisabledButton(false);
+            return false;
+        }
+
+        function GetTemplateByFormat() {
+            try {
+                var tmpFormat = $("#ddlTemplateFormat").val();
+                if (tmpFormat == "0") {
+                    alert("Please Select Template Type");
+                    return true;
+                }
+                else {
+                    tmpFormat = tmpFormat - 1;
+                    DisabledButton(true);
+                    var res = GetTemplate(tmpFormat);
+                    if (res.httpStaus) {
+                        document.getElementById('txtStatus').value = "ErrorCode: " + res.data.ErrorCode + " ErrorDescription: " + res.data.ErrorDescription;
+
+                        if (res.data.ErrorCode == "0") {
+                            if (res.data != null) {
+                                document.getElementById('txtIsoTemplate').value = res.data.ImgData;
+                            }
+                        }
+                    }
+                    else {
+                        alert(res.err);
+                    }
+                }
+            }
+            catch (e) {
+                alert(e);
+            }
+            DisabledButton(false);
+            return false;
+        }
+
+        var check = true;
+        function validate() {
+            var quality = document.getElementById('txtQuality').value.trim();
+            var timeout = document.getElementById('txtTimeout').value.trim();
+
+            if (quality == "") {
+                alert("Quality must not be null");
+                return false;
+            }
+            if (timeout == "") {
+                alert("Timeout must not be null");
+                return false;
+            }
+
+            if (quality > 0 && quality % 1 == 0) {
+            }
+            else {
+                alert("Invalid quality");
+                return false;
+            }
+            if (quality <= 100)
+            { }
+            else
+            {
+                alert("Quality should be between 1 to 100");
+                return false;
+            }
+            if (timeout > 9 && timeout % 1 == 0) {
+
+            }
+            else {
+                alert("Invalid timeout or timeout should be greater or equal to 10");
+                return false;
+            }
+            return true;
+        }
+
+        function clearDeviceInfo() {
+            document.getElementById('tdSerial').innerHTML = "";
+            document.getElementById('tdMake').innerHTML = "";
+            document.getElementById('tdModel').innerHTML = "";
+            document.getElementById('tdWidth').innerHTML = "";
+            document.getElementById('tdHeight').innerHTML = "";
+        }
+
+        function DisabledButton(isDisabled) {
+            if (isDisabled == false) {
+                setTimeout(function () {
+                    $('#btnInfo').prop('disabled', isDisabled);
+                    $('#btnCapture').prop('disabled', isDisabled);
+                    $('#btnGetImage').prop('disabled', isDisabled);
+                    $('#btnCheckDevice').prop('disabled', isDisabled);
+                    $('#btnGetSupportedDevice').prop('disabled', isDisabled);
+                    $('#btnGetConnctedDevice').prop('disabled', isDisabled);
+                    $('#btnUnInit').prop('disabled', isDisabled);
+                }, delayInMilliseconds);
+            }
+            else {
+                $('#btnInfo').prop('disabled', isDisabled);
+                $('#btnCapture').prop('disabled', isDisabled);
+                $('#btnGetImage').prop('disabled', isDisabled);
+                $('#btnCheckDevice').prop('disabled', isDisabled);
+                $('#btnGetSupportedDevice').prop('disabled', isDisabled);
+                $('#btnGetConnctedDevice').prop('disabled', isDisabled);
+                $('#btnUnInit').prop('disabled', isDisabled);
+            }
+        }
+
+    </script>
+</head>
+<body>
+    <div class="panel">
+        <table width="100%" style="padding-top: 0px;">
+            <tr>
+                <td colspan="3" align="center" style="color: #428BCA; font-size: 20px; font-weight: bold; background-color: #428bca2e;">
+                    MANTRA-MorFinAuth-TEST
+                </td>
+            </tr>
+        </table>
+        <table width="40%" style="padding-top: 0px; ">
+            <tr>
+                <td style="padding-left: 100px; padding-top: 10px;">
+                    <b class="b4">Quality(1-100)</b>
+                    <input type="text" id="txtQuality" value="60" maxlength="3" class="form-control b3" />
+                </td>
+                <td style="padding-top :10px;">
+                    <b class="b4o">Timeout(In Second)</b>
+                    <input type="text" id="txtTimeout" value="10" maxlength="5" class="form-control b3o" />
+                </td>
+            </tr>
+            <tr>
+                <td style="padding-left: 100px; padding-top: 10px;">
+                    <b class="b5" style="margin-left: -145px; ">Select Image Type</b>
+                    <div class="select-dropdown" style="width: 147px">
+                        <select id="ddlImageFormat">
+                            <option value="0">Select</option>
+                            <option value="1">BMP</option>
+                            <option value="2">JPEG2000</option>
+                            <option value="3">Wsq</option>
+                            <option value="4">RAW</option>
+                            <option value="5">FIR_V2005</option>
+                            <option value="6">FIR_V2011</option>
+                            <option value="7">FIR_WSQ_V2005</option>
+                            <option value="8">FIR_WSQ_V2011</option>
+                            <option value="9">FIR_JPEG2000_V2005</option>
+                            <option value="10">FIR_JPEG2000_V2011</option>
+                        </select>
+                    </div>
+                </td>
+                <td style="padding-top: 10px;">
+                    <b class="b4o" style="margin-left: -133px;">Select Template Type</b>
+                    <div class="select-dropdown" style="margin-left: -133px; width: 128px; margin-top: 17px;">
+                        <select id="ddlTemplateFormat" style="width: 128px;">
+                            <option value="0">Select</option>
+                            <option value="1">FMR_V2005</option>
+                            <option value="2">FMR_V2011</option>
+                            <option value="3">ANSI_V378</option>
+                        </select>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding-left: 100px;padding-top: 10px; ">
+                    <b class="b4o" style="margin-left: -138px;">Select Connected Device</b>
+                    <div class="select-dropdown" style="margin-top: 18px">
+                        <select name="cmbConnectedDvc" id="cmbConnectedDvc" style="width:141px;"></select>
+                    </div>
+                </td>
+
+                <td style="padding-left: 5px; padding-top: 8px;">
+                    <b class="b4o" style="">
+                        Enter Client Key :
+                    </b>
+                    <div style="padding-top: 4px;">
+                        <textarea id="txtClientKey" class="form-control b7" style="height: 20px; width: 180%; margin-left: -137px; resize: none"></textarea>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding-left: 100px; padding-top: 10px;">
+                    <b class=" b4">
+                        Enter Template For Matching
+                    </b>
+                    <div>
+                        <textarea id="txtProbTemplate" class="form-control b7" style="height: 55px; width: 290%; margin-left: -70px; resize: none"></textarea>
+                    </div>
+                </td>
+            </tr>
+
+            <tr></tr>
+        </table>
+        <table width="100%" style="padding-top: 0px;">
+            <tr>
+                <td width="300px;">
+                    <table align="left" border="0" width="50%" style="margin-top: 3px;">
+                        <tr>
+                            <td>
+                                <input type="submit" id="btnGetConnectedDevice" value="Get Connected Device" style="margin-top: 10px; margin-right: 10px; margin-left: 30px;" class="btn btn-primary btn-200" onclick="return GetConnectedDevice()" />
+                            </td>
+                            <td>
+                                <input type="submit" id="btnCheckDevice" value="Check Device" style="margin-top: 10px;" class="btn btn-primary btn-200" onclick="return CheckDevice()" />
+                            </td>
+                            <td>
+                                <input type="submit" id="btnGetSupportedDevice" value="Get Supported Device" style="margin-top: 10px; margin-right: 10px; margin-left: -14%;" class="btn btn-primary btn-200" onclick="return GetSupportedDevice()" />
+                            </td>
+
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <input type="submit" id="btnInfo" value="Get Info" style="margin-top: 10px; margin-left: 30px; " class="btn btn-primary btn-200" onclick="return GetInfo()" />
+                            </td>
+                            <td>
+                                <input type="submit" id="btnCapture" value="Capture" style="margin-top: 10px; margin-right: 20px; margin-right: 40px; " class="btn btn-primary btn-200" onclick="return Capture()" />
+                            </td>
+                            <td>
+                                <input type="submit" id="btnGet" value="Get Image" style="margin-top: 10px; margin-left: -14%; " class="btn btn-primary btn-200" onclick="return GetImageByFormat()" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <input type="submit" id="btnGetTemplate" value="Get Template" style="margin-top: 10px; margin-left: 30px; " class="btn btn-primary btn-200" onclick="return GetTemplateByFormat()" />
+                            </td>
+                            <td>
+                                <input type="submit" id="btnMatch" value="Match" style="margin-top: 10px; margin-right: 20px;" class="btn btn-primary btn-200" onclick="return Verify()" />
+                            </td>
+                            <td>
+                                <input type="submit" id="btnCaptureAndMatch" value="Capture and Match" style="margin-top: 10px; margin-left: -14%; " class="btn btn-primary btn-200" onclick="return Match()" />
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <input type="submit" id="btnUninit" value="Uninit" style="margin-top: 10px; margin-left: 30px; " class="btn btn-primary btn-200" onclick="return Uninit()" />
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+                <td>
+                    <table align="left" border="0" style="width: 100%; padding-right: 20px; margin-top: -373px; margin-left: -97%">
+                        <tr>
+                            <td width="145px" height="190px" align="center" class="img">
+                                <img id="imgFinger" width="145px" height="166px" alt="Finger Image" />
+                            </td>
+                        </tr>
+                        <tr></tr>
+                    </table>
+                </td>
+                <td>
+                    <table align="left" border="0" style="width: 116%; padding-right: 48px; line-height: 27px; margin-top: -87%; margin-left: -30%; border-radius: 13px; ">
+                        <tr>
+                            <td align="left" class="td1">Serial No:</td>
+                            <td align="left" class="td2" id="tdSerial"></td>
+                            <td align="left" class="td1">Make:</td>
+                            <td align="left" class="td2" id="tdMake"></td>
+                        </tr>
+                        <tr>
+                            <td align="left" class="td1">Model:</td>
+                            <td align="left" class="td2" id="tdModel"></td>
+                            <td align="left" class="td1">Width:</td>
+                            <td align="left" class="td2" id="tdWidth"></td>
+                        </tr>
+                        <tr>
+                            <td align="left" class="td1">Height:</td>
+                            <td align="left" class="td2" id="tdHeight"></td>
+                        </tr>
+                        <tr></tr>
+                        <tr></tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        <table width="100%" style="margin-top: 0px;">
+            <tr>
+            <tr>
+            <tr>
+                <td width="220px" style="padding-left: 21px;">
+                    Status:
+                </td>
+                <td style="padding-right:10px;">
+                    <input type="text" value="" id="txtStatus" class="form-control" disabled="disabled" />
+                </td>
+            </tr>
+            <tr>
+                <td width="220px" style="padding-left: 21px;">
+                    Quality:
+                </td>
+                <td style="padding-right:10px;">
+                    <input type="text" value="" id="txtImageInfo" class="form-control" style="width: 100%;" disabled="disabled" />
+                </td>
+            </tr>
+            <tr id="tr1">
+                <td style="padding-left: 21px;">
+                    Base64Encoded Template Data
+                </td>
+                <td>
+                    <textarea id="txtIsoTemplate" style="width: 99%; height: 50px; resize: none" class="form-control" disabled="disabled"></textarea>
+                </td>
+            </tr>
+            <tr id="tr1">
+                <td style="padding-left: 21px;">
+                    Base64Encoded Image Data
+                </td>
+                <td>
+                    <textarea id="txtIsoImage" style="width: 99%; height: 50px; resize: none" class="form-control" disabled="disabled"></textarea>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>
