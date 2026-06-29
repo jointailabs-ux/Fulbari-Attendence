@@ -8,6 +8,7 @@ import {
   getDeviceStatus,
   checkServiceRunning,
   uninitDevice,
+  verifyFingerprint,
   type MantraServiceStatus,
 } from "../../lib/mantra";
 
@@ -179,11 +180,49 @@ export default function KioskPage() {
         throw new Error(capture.error ?? "Fingerprint capture failed.");
       }
 
-      // 2. Server-side 1:N identification (uses raw TCP — correct MorFin protocol)
+      // 2. Fetch all enrolled templates from server
+      const templatesRes = await fetch("/api/v1/fingerprint/templates");
+      if (!templatesRes.ok) {
+        throw new Error("Failed to fetch registered fingerprints from server.");
+      }
+      const allTemplates = await templatesRes.json();
+      
+      if (!allTemplates || allTemplates.length === 0) {
+        throw new Error("No fingerprints enrolled in the system. Please ask admin to enrol your fingerprint first.");
+      }
+
+      // 3. Local 1:N Identification
+      let matchedStaffId: string | null = null;
+      let serviceErrorCount = 0;
+
+      for (const t of allTemplates) {
+        const verifyRes = await verifyFingerprint(capture.template, t.templateData);
+        if (verifyRes.error) {
+           serviceErrorCount++;
+           continue;
+        }
+        if (verifyRes.match) {
+           matchedStaffId = t.staffId;
+           break;
+        }
+      }
+
+      if (!matchedStaffId && serviceErrorCount === allTemplates.length) {
+        throw new Error("Fingerprint scanner service is unavailable. Please ensure the MorFin service is running and the device is connected.");
+      }
+
+      if (!matchedStaffId) {
+        setStep("NO_MATCH");
+        setError("Fingerprint not recognised.");
+        setTimeout(() => { if (mountedRef.current) resetKiosk(); }, 4000);
+        return;
+      }
+
+      // 4. Fetch the staff attendance status
       const identifyRes = await fetch("/api/v1/fingerprint/identify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ templateData: capture.template }),
+        body: JSON.stringify({ matchedStaffId }),
       });
 
       const identifyData = await identifyRes.json();
@@ -195,9 +234,6 @@ export default function KioskPage() {
           setError(identifyData.error ?? "Fingerprint not recognised.");
           setTimeout(() => { if (mountedRef.current) resetKiosk(); }, 4000);
           return;
-        }
-        if (identifyRes.status === 503) {
-          throw new Error(identifyData.error ?? "Scanner service unavailable.");
         }
         throw new Error(identifyData.error ?? "Identification failed.");
       }
@@ -244,21 +280,51 @@ export default function KioskPage() {
         throw new Error(capture.error ?? "Capture failed.");
       }
 
-      // 1:1 verify via server (uses raw TCP correctly)
+      // 1:1 verify locally
+      const templatesRes = await fetch("/api/v1/fingerprint/templates");
+      if (!templatesRes.ok) {
+        throw new Error("Failed to fetch registered fingerprints from server.");
+      }
+      const allTemplates = await templatesRes.json();
+      const staffTemplates = allTemplates.filter((t: any) => t.staffId === selectedStaff.id);
+
+      if (staffTemplates.length === 0) {
+        throw new Error("No fingerprints enrolled for this employee. Please enrol at least one fingerprint.");
+      }
+
+      let matched = false;
+      let lastError = null;
+
+      for (const t of staffTemplates) {
+        const verifyRes = await verifyFingerprint(capture.template, t.templateData);
+        if (verifyRes.error) {
+           lastError = verifyRes.error;
+           continue;
+        }
+        if (verifyRes.match) {
+           matched = true;
+           break;
+        }
+      }
+
+      if (!matched) {
+        if (lastError) {
+          throw new Error(`Scanner error: ${lastError}`);
+        }
+        throw new Error("Fingerprint does not match this employee's records.");
+      }
+
       const identifyRes = await fetch("/api/v1/fingerprint/identify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          templateData: capture.template,
-          staffId: selectedStaff.id,
-        }),
+        body: JSON.stringify({ matchedStaffId: selectedStaff.id }),
       });
 
       const identifyData = await identifyRes.json();
 
       if (!identifyRes.ok || !identifyData.success) {
         throw new Error(
-          identifyData.error ?? "Fingerprint does not match this employee's records."
+          identifyData.error ?? "Failed to fetch attendance status."
         );
       }
 
