@@ -302,7 +302,7 @@ export default function KioskPage() {
         cachedTemplatesRef.current = allTemplates; // Save for next time
       }
       
-      const staffTemplates = allTemplates.filter((t: any) => t.staffId === selectedStaff.id);
+      const staffTemplates = (allTemplates || []).filter((t: any) => t.staffId === selectedStaff.id);
 
       if (staffTemplates.length === 0) {
         throw new Error("No fingerprints enrolled for this employee. Please enrol at least one fingerprint.");
