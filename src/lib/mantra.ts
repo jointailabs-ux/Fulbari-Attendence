@@ -1,9 +1,9 @@
 // src/lib/mantra.ts
-// Client-side MorFin communication — all calls go through the Next.js proxy
-// at /api/v1/proxy/morfin which uses raw TCP to talk to the MorFin service.
-//
+// Client-side MorFin communication
+// 
 // Architecture:
-//   Browser → POST /api/v1/proxy/morfin → raw TCP → MorFinAuthClientService → MFS500
+//   Browser → POST to local MorFinAuthClientService (https://127.0.0.1:8031 or http://127.0.0.1:8030) → MFS500
+//   (We must try HTTPS first to avoid Mixed Content restrictions when hosted on Vercel)
 
 const PROXY_URL = "/api/v1/proxy/morfin";
 const PROXY_TIMEOUT_MS = 30_000; // 30s — above scanner's 15s + server's 25s overhead
@@ -38,94 +38,51 @@ async function morfinPost(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), PROXY_TIMEOUT_MS);
 
-  // Try direct connection to local MorFin service on 127.0.0.1 first
-  try {
-    const directUrl = `http://127.0.0.1:8030/morfinauth/${endpoint}`;
-    const directRes = await fetch(directUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
-    if (directRes.ok) {
-      const data = await directRes.json();
-      clearTimeout(timeoutId);
-      return { ok: true, data };
+  // The local Mantra MorFin service uses 8030 for HTTP and 8031 for HTTPS.
+  // For Vercel (HTTPS), we must try HTTPS first to avoid Mixed Content blocks.
+  const urlsToTry = [
+    `https://127.0.0.1:8031/morfinauth/${endpoint}`,
+    `https://localhost:8031/morfinauth/${endpoint}`,
+    `http://127.0.0.1:8030/morfinauth/${endpoint}`,
+    `http://localhost:8030/morfinauth/${endpoint}`,
+  ];
+
+  let lastErrorMsg = "";
+
+  for (const url of urlsToTry) {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        clearTimeout(timeoutId);
+        return { ok: true, data };
+      }
+    } catch (err: any) {
+      if (err.name === "AbortError") {
+        clearTimeout(timeoutId);
+        return {
+          ok: false,
+          data: null,
+          error: "Request timed out — scanner may be busy. Please try again.",
+        };
+      }
+      lastErrorMsg = err.message;
+      console.warn(`Connection to ${url} failed: ${err.message}. Trying next...`);
     }
-  } catch (err: any) {
-    if (err.name === "AbortError") {
-      clearTimeout(timeoutId);
-      return {
-        ok: false,
-        data: null,
-        error: "Request timed out — scanner may be busy. Please try again.",
-      };
-    }
-    console.warn(`Direct connection to 127.0.0.1:8030 failed: ${err.message}. Trying localhost...`);
   }
 
-  // Try direct connection to local MorFin service on localhost
-  try {
-    const directUrl = `http://localhost:8030/morfinauth/${endpoint}`;
-    const directRes = await fetch(directUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
-    if (directRes.ok) {
-      const data = await directRes.json();
-      clearTimeout(timeoutId);
-      return { ok: true, data };
-    }
-  } catch (err: any) {
-    if (err.name === "AbortError") {
-      clearTimeout(timeoutId);
-      return {
-        ok: false,
-        data: null,
-        error: "Request timed out — scanner may be busy. Please try again.",
-      };
-    }
-    console.warn(`Direct connection to localhost:8030 failed: ${err.message}. Falling back to proxy...`);
-  }
-
-  // Fallback to proxy (works locally but will fail in production/Vercel)
-  try {
-    const res = await fetch(PROXY_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ endpoint, payload }),
-      signal: controller.signal,
-    });
-
-    const data = await res.json();
-    clearTimeout(timeoutId);
-
-    if (!res.ok) {
-      return {
-        ok: false,
-        data,
-        error: data?.ErrorDescription ?? `Proxy HTTP ${res.status}`,
-      };
-    }
-
-    return { ok: true, data };
-  } catch (err: any) {
-    clearTimeout(timeoutId);
-    if (err.name === "AbortError") {
-      return {
-        ok: false,
-        data: null,
-        error: "Request timed out — scanner may be busy. Please try again.",
-      };
-    }
-    return {
-      ok: false,
-      data: null,
-      error: "Network error communicating with scanner service: " + err.message,
-    };
-  }
+  clearTimeout(timeoutId);
+  return {
+    ok: false,
+    data: null,
+    error: `Could not connect to local MorFin service. Please ensure the MorFinAuthClientSvc is running. (Last error: ${lastErrorMsg})`,
+  };
 }
 
 /** Check whether MorFin returned a successful ErrorCode (0 or "0") */
