@@ -11,13 +11,37 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const [isLightTheme, setIsLightTheme] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [pinEntry, setPinEntry] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
+    // Check local preferences
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme === "light") {
       setIsLightTheme(true);
     }
+    
+    // Check authentication state
+    const auth = sessionStorage.getItem("admin_auth");
+    if (auth === "true") {
+      setIsAuthenticated(true);
+    }
   }, []);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Default PIN is 1234 if not set in Vercel Env Vars
+    const ADMIN_PIN = process.env.NEXT_PUBLIC_ADMIN_PIN || "1234";
+    if (pinEntry === ADMIN_PIN) {
+      setIsAuthenticated(true);
+      sessionStorage.setItem("admin_auth", "true");
+      setError("");
+    } else {
+      setError("Invalid Admin PIN");
+      setPinEntry("");
+    }
+  };
 
   const toggleTheme = () => {
     const newTheme = !isLightTheme;
@@ -41,6 +65,44 @@ export default function AdminLayout({
     { name: "Staff", href: "/admin/staff", icon: "👥" },
     { name: "Kiosk", href: "/kiosk?from=admin", icon: "🧬" },
   ];
+
+  if (!isAuthenticated) {
+    return (
+      <div className={`admin-shell ${isLightTheme ? "light-theme" : ""}`} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <div className="bg-mesh" />
+        <div className="glass animate-slide-up" style={{ padding: '3rem', borderRadius: '24px', textAlign: 'center', maxWidth: '400px', width: '90%', zIndex: 10 }}>
+          <div style={{ marginBottom: '2rem' }}>
+            <span style={{ fontSize: '3rem' }}>🔒</span>
+          </div>
+          <h2 style={{ marginBottom: '0.5rem', fontWeight: '800' }} className="text-gradient">Admin Access</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '2rem' }}>Please enter the admin PIN to continue</p>
+          
+          {error && <div style={{ color: '#f43f5e', marginBottom: '1rem', fontSize: '0.9rem', fontWeight: '600', padding: '0.5rem', background: 'rgba(244, 63, 94, 0.1)', borderRadius: '8px' }}>{error}</div>}
+          
+          <form onSubmit={handleLogin}>
+            <input 
+              type="password" 
+              placeholder="••••" 
+              value={pinEntry}
+              onChange={(e) => setPinEntry(e.target.value)}
+              className="input-modern"
+              style={{ width: '100%', marginBottom: '1.5rem', textAlign: 'center', letterSpacing: '1rem', fontSize: '1.5rem', padding: '1rem' }}
+              autoFocus
+            />
+            <button type="submit" className="btn-modern btn-primary" style={{ width: '100%', padding: '1rem' }}>
+              Unlock Dashboard
+            </button>
+          </form>
+          
+          <div style={{ marginTop: '2.5rem' }}>
+            <Link href="/" style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textDecoration: 'none', fontWeight: '600' }} className="glass-hover">
+              ← Back to Homepage
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`admin-shell animate-slide-up ${isLightTheme ? "light-theme" : ""}`}>
