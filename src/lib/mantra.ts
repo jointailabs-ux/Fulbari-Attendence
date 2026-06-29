@@ -35,26 +35,73 @@ async function morfinPost(
   endpoint: string,
   payload: any = {}
 ): Promise<{ ok: boolean; data: any; error?: string }> {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), PROXY_TIMEOUT_MS);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), PROXY_TIMEOUT_MS);
 
-    let res: Response;
-    try {
-      res = await fetch(PROXY_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ endpoint, payload }),
-        signal: controller.signal,
-      });
-    } finally {
+  // Try direct connection to local MorFin service on 127.0.0.1 first
+  try {
+    const directUrl = `http://127.0.0.1:8030/morfinauth/${endpoint}`;
+    const directRes = await fetch(directUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    if (directRes.ok) {
+      const data = await directRes.json();
       clearTimeout(timeoutId);
+      return { ok: true, data };
     }
+  } catch (err: any) {
+    if (err.name === "AbortError") {
+      clearTimeout(timeoutId);
+      return {
+        ok: false,
+        data: null,
+        error: "Request timed out — scanner may be busy. Please try again.",
+      };
+    }
+    console.warn(`Direct connection to 127.0.0.1:8030 failed: ${err.message}. Trying localhost...`);
+  }
+
+  // Try direct connection to local MorFin service on localhost
+  try {
+    const directUrl = `http://localhost:8030/morfinauth/${endpoint}`;
+    const directRes = await fetch(directUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    if (directRes.ok) {
+      const data = await directRes.json();
+      clearTimeout(timeoutId);
+      return { ok: true, data };
+    }
+  } catch (err: any) {
+    if (err.name === "AbortError") {
+      clearTimeout(timeoutId);
+      return {
+        ok: false,
+        data: null,
+        error: "Request timed out — scanner may be busy. Please try again.",
+      };
+    }
+    console.warn(`Direct connection to localhost:8030 failed: ${err.message}. Falling back to proxy...`);
+  }
+
+  // Fallback to proxy (works locally but will fail in production/Vercel)
+  try {
+    const res = await fetch(PROXY_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ endpoint, payload }),
+      signal: controller.signal,
+    });
 
     const data = await res.json();
+    clearTimeout(timeoutId);
 
-    // The proxy always returns 200 with MorFin-shaped body.
-    // Check ErrorCode in the payload for actual MorFin errors.
     if (!res.ok) {
       return {
         ok: false,
@@ -65,6 +112,7 @@ async function morfinPost(
 
     return { ok: true, data };
   } catch (err: any) {
+    clearTimeout(timeoutId);
     if (err.name === "AbortError") {
       return {
         ok: false,
