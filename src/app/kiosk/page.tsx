@@ -44,6 +44,7 @@ export default function KioskPage() {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const wasConnectedRef = useRef(false);
   const isInitializingRef = useRef(false);
+  const cachedTemplatesRef = useRef<any[] | null>(null); // Cache templates for instant biometric matching
   const mountedRef = useRef(true);
   const lastScanTimeRef = useRef(0);
   const DEBOUNCE_MS = 2000;
@@ -143,6 +144,16 @@ export default function KioskPage() {
       if (Array.isArray(data)) {
         setStaffList(data.filter((s: any) => s.isActive));
       }
+      
+      // Pre-fetch templates to eliminate network delay during actual scanning
+      try {
+        const tRes = await fetch("/api/v1/fingerprint/templates");
+        if (tRes.ok) {
+          cachedTemplatesRef.current = await tRes.json();
+        }
+      } catch (e) {
+        console.warn("Failed to pre-fetch templates:", e);
+      }
     } catch (e: any) {
       console.error("Failed to load staff list:", e.message);
     }
@@ -177,12 +188,16 @@ export default function KioskPage() {
         throw new Error(capture.error ?? "Fingerprint capture failed.");
       }
 
-      // 2. Fetch all enrolled templates from server
-      const templatesRes = await fetch("/api/v1/fingerprint/templates");
-      if (!templatesRes.ok) {
-        throw new Error("Failed to fetch registered fingerprints from server.");
+      // 2. Fetch all enrolled templates from server (use cached if available)
+      let allTemplates = cachedTemplatesRef.current;
+      if (!allTemplates) {
+        const templatesRes = await fetch("/api/v1/fingerprint/templates");
+        if (!templatesRes.ok) {
+          throw new Error("Failed to fetch registered fingerprints from server.");
+        }
+        allTemplates = await templatesRes.json();
+        cachedTemplatesRef.current = allTemplates; // Save for next time
       }
-      const allTemplates = await templatesRes.json();
       
       if (!allTemplates || allTemplates.length === 0) {
         throw new Error("No fingerprints enrolled in the system. Please ask admin to enrol your fingerprint first.");
@@ -276,12 +291,17 @@ export default function KioskPage() {
         throw new Error(capture.error ?? "Capture failed.");
       }
 
-      // 1:1 verify locally
-      const templatesRes = await fetch("/api/v1/fingerprint/templates");
-      if (!templatesRes.ok) {
-        throw new Error("Failed to fetch registered fingerprints from server.");
+      // 1:1 verify locally (use cached templates if available)
+      let allTemplates = cachedTemplatesRef.current;
+      if (!allTemplates) {
+        const templatesRes = await fetch("/api/v1/fingerprint/templates");
+        if (!templatesRes.ok) {
+          throw new Error("Failed to fetch registered fingerprints from server.");
+        }
+        allTemplates = await templatesRes.json();
+        cachedTemplatesRef.current = allTemplates; // Save for next time
       }
-      const allTemplates = await templatesRes.json();
+      
       const staffTemplates = allTemplates.filter((t: any) => t.staffId === selectedStaff.id);
 
       if (staffTemplates.length === 0) {

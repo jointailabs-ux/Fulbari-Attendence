@@ -31,6 +31,8 @@ export interface VerifyResult {
 
 // ─── Internal Helpers ─────────────────────────────────────────────────────────
 
+let cachedWorkingPrefix: string | null = null;
+
 async function morfinPost(
   endpoint: string,
   payload: any = {}
@@ -39,17 +41,22 @@ async function morfinPost(
   const timeoutId = setTimeout(() => controller.abort(), PROXY_TIMEOUT_MS);
 
   // The local Mantra MorFin service uses 8030 for HTTP and 8031 for HTTPS.
-  // For Vercel (HTTPS), we must try HTTPS first to avoid Mixed Content blocks.
-  const urlsToTry = [
-    `http://127.0.0.1:8030/morfinauth/${endpoint}`,
-    `http://localhost:8030/morfinauth/${endpoint}`,
-    `https://127.0.0.1:8031/morfinauth/${endpoint}`,
-    `https://localhost:8031/morfinauth/${endpoint}`,
+  const allPrefixes = [
+    `http://127.0.0.1:8030`,
+    `http://localhost:8030`,
+    `https://127.0.0.1:8031`,
+    `https://localhost:8031`,
   ];
+
+  // Try the cached working prefix first, otherwise try all of them
+  const prefixesToTry = cachedWorkingPrefix
+    ? [cachedWorkingPrefix, ...allPrefixes.filter(p => p !== cachedWorkingPrefix)]
+    : allPrefixes;
 
   let lastErrorMsg = "";
 
-  for (const url of urlsToTry) {
+  for (const prefix of prefixesToTry) {
+    const url = `${prefix}/morfinauth/${endpoint}`;
     try {
       const res = await fetch(url, {
         method: "POST",
@@ -61,6 +68,7 @@ async function morfinPost(
       if (res.ok) {
         const data = await res.json();
         clearTimeout(timeoutId);
+        cachedWorkingPrefix = prefix; // Remember this working URL to drastically speed up future calls!
         return { ok: true, data };
       }
     } catch (err: any) {
