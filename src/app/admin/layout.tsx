@@ -64,15 +64,25 @@ export default function AdminLayout({
     }
   };
 
-  const verifyPin = (pin: string) => {
-    // Default PIN is 999999 if not set in Vercel Env Vars
-    const ADMIN_PIN = process.env.NEXT_PUBLIC_ADMIN_PIN || "999999";
-    if (pin === ADMIN_PIN) {
-      setIsAuthenticated(true);
-      sessionStorage.setItem("admin_auth", "true");
-      setError("");
-    } else {
-      setError("Access Denied: Invalid Admin PIN");
+  const verifyPin = async (pin: string) => {
+    try {
+      const res = await fetch("/api/v1/auth-portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ portal: "admin", pin })
+      });
+      const data = await res.json();
+      
+      if (res.ok && data.success) {
+        setIsAuthenticated(true);
+        sessionStorage.setItem("admin_auth", "true");
+        setError("");
+      } else {
+        setError(data.error || "Access Denied: Invalid Admin PIN");
+        setPinEntry("");
+      }
+    } catch (err) {
+      setError("Network error. Please try again.");
       setPinEntry("");
     }
   };

@@ -53,21 +53,28 @@ export default function Home() {
     }
   };
 
-  const verifyPin = (pin: string) => {
-    if (targetPortal === "admin") {
-      if (pin === "999999") {
-        router.push("/admin");
+  const verifyPin = async (pin: string) => {
+    try {
+      const res = await fetch("/api/v1/auth-portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ portal: targetPortal, pin })
+      });
+      const data = await res.json();
+      
+      if (res.ok && data.success) {
+        if (targetPortal === "admin") {
+          router.push("/admin");
+        } else if (targetPortal === "kiosk") {
+          router.push("/kiosk");
+        }
       } else {
-        setError("Access Denied: Invalid Admin PIN");
+        setError(data.error || `Access Denied: Invalid ${targetPortal === "admin" ? "Admin" : "Kiosk"} PIN`);
         setEnteredPin("");
       }
-    } else if (targetPortal === "kiosk") {
-      if (pin === "888888") {
-        router.push("/kiosk");
-      } else {
-        setError("Access Denied: Invalid Kiosk PIN");
-        setEnteredPin("");
-      }
+    } catch (err) {
+      setError("Network error. Please try again.");
+      setEnteredPin("");
     }
   };
 
