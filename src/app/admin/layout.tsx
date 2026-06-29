@@ -29,16 +29,50 @@ export default function AdminLayout({
     }
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Default PIN is 1234 if not set in Vercel Env Vars
-    const ADMIN_PIN = process.env.NEXT_PUBLIC_ADMIN_PIN || "1234";
-    if (pinEntry === ADMIN_PIN) {
+  useEffect(() => {
+    if (isAuthenticated) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key >= "0" && e.key <= "9") {
+        handlePinKeyPress(e.key);
+      } else if (e.key === "Backspace") {
+        handlePinKeyPress("backspace");
+      } else if (e.key === "Delete" || e.key.toLowerCase() === "c") {
+        handlePinKeyPress("clear");
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isAuthenticated, pinEntry]);
+
+  const handlePinKeyPress = (key: string) => {
+    setError("");
+    if (key === "clear") {
+      setPinEntry("");
+    } else if (key === "backspace") {
+      setPinEntry((prev) => prev.slice(0, -1));
+    } else if (pinEntry.length < 6) {
+      const nextPin = pinEntry + key;
+      setPinEntry(nextPin);
+      
+      if (nextPin.length === 6) {
+        verifyPin(nextPin);
+      }
+    }
+  };
+
+  const verifyPin = (pin: string) => {
+    // Default PIN is 999999 if not set in Vercel Env Vars
+    const ADMIN_PIN = process.env.NEXT_PUBLIC_ADMIN_PIN || "999999";
+    if (pin === ADMIN_PIN) {
       setIsAuthenticated(true);
       sessionStorage.setItem("admin_auth", "true");
       setError("");
     } else {
-      setError("Invalid Admin PIN");
+      setError("Access Denied: Invalid Admin PIN");
       setPinEntry("");
     }
   };
@@ -71,34 +105,161 @@ export default function AdminLayout({
       <div className={`admin-shell ${isLightTheme ? "light-theme" : ""}`} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
         <div className="bg-mesh" />
         <div className="glass animate-slide-up" style={{ padding: '3rem', borderRadius: '24px', textAlign: 'center', maxWidth: '400px', width: '90%', zIndex: 10 }}>
-          <div style={{ marginBottom: '2rem' }}>
-            <span style={{ fontSize: '3rem' }}>🔒</span>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <h2 className="text-gradient" style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>
+              Access Code
+            </h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              Enter the 6-digit code for the Admin Dashboard.
+            </p>
           </div>
-          <h2 style={{ marginBottom: '0.5rem', fontWeight: '800' }} className="text-gradient">Admin Access</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '2rem' }}>Please enter the admin PIN to continue</p>
           
-          {error && <div style={{ color: '#f43f5e', marginBottom: '1rem', fontSize: '0.9rem', fontWeight: '600', padding: '0.5rem', background: 'rgba(244, 63, 94, 0.1)', borderRadius: '8px' }}>{error}</div>}
+          {error && (
+            <div style={{ 
+              color: 'var(--brand-secondary)', 
+              fontSize: '0.85rem', 
+              fontWeight: '600', 
+              marginBottom: '1rem',
+              padding: '0.5rem 1rem',
+              background: 'rgba(244, 63, 94, 0.08)',
+              borderRadius: '8px',
+              border: '1px solid rgba(244, 63, 94, 0.15)',
+              width: '100%'
+            }}>
+              ⚠️ {error}
+            </div>
+          )}
           
-          <form onSubmit={handleLogin}>
-            <input 
-              type="password" 
-              placeholder="••••" 
-              value={pinEntry}
-              onChange={(e) => setPinEntry(e.target.value)}
-              className="input-modern"
-              style={{ width: '100%', marginBottom: '1.5rem', textAlign: 'center', letterSpacing: '1rem', fontSize: '1.5rem', padding: '1rem' }}
-              autoFocus
-            />
-            <button type="submit" className="btn-modern btn-primary" style={{ width: '100%', padding: '1rem' }}>
-              Unlock Dashboard
+          {/* Code circles indicators */}
+          <div style={{ 
+            display: 'flex', 
+            gap: '0.5rem', 
+            justifyContent: 'center', 
+            marginBottom: '2rem',
+            width: '100%' 
+          }}>
+            {[0, 1, 2, 3, 4, 5].map((i) => {
+              const filled = pinEntry.length > i;
+              return (
+                <div
+                  key={i}
+                  style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '10px',
+                    border: `2px solid ${filled ? 'var(--brand-primary-light)' : 'var(--glass-border)'}`,
+                    background: filled ? 'rgba(124, 58, 237, 0.08)' : 'rgba(255,255,255,0.01)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.5rem',
+                    fontWeight: 700,
+                    color: 'var(--text-main)',
+                    boxShadow: filled ? '0 0 10px rgba(124, 58, 237, 0.15)' : 'none',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  {filled ? "•" : ""}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Numeric Keypad */}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(3, 1fr)', 
+            gap: '0.6rem', 
+            width: '100%',
+            marginBottom: '1.5rem'
+          }}>
+            {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => handlePinKeyPress(n)}
+                style={{
+                  height: '50px',
+                  borderRadius: '12px',
+                  border: '1px solid var(--glass-border)',
+                  background: 'rgba(255,255,255,0.02)',
+                  fontSize: '1.1rem',
+                  fontWeight: 700,
+                  color: 'var(--text-main)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                className="glass-hover"
+              >
+                {n}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => handlePinKeyPress("clear")}
+              style={{
+                height: '50px',
+                borderRadius: '12px',
+                border: '1px solid var(--glass-border)',
+                background: 'rgba(255,255,255,0.02)',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                color: 'var(--brand-secondary)',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              className="glass-hover"
+            >
+              CLR
             </button>
-          </form>
-          
-          <div style={{ marginTop: '2.5rem' }}>
-            <Link href="/" style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textDecoration: 'none', fontWeight: '600' }} className="glass-hover">
-              ← Back to Homepage
-            </Link>
+            <button
+              type="button"
+              onClick={() => handlePinKeyPress("0")}
+              style={{
+                height: '50px',
+                borderRadius: '12px',
+                border: '1px solid var(--glass-border)',
+                background: 'rgba(255,255,255,0.02)',
+                fontSize: '1.1rem',
+                fontWeight: 700,
+                color: 'var(--text-main)',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              className="glass-hover"
+            >
+              0
+            </button>
+            <button
+              type="button"
+              onClick={() => handlePinKeyPress("backspace")}
+              style={{
+                height: '50px',
+                borderRadius: '12px',
+                border: '1px solid var(--glass-border)',
+                background: 'rgba(255,255,255,0.02)',
+                fontSize: '1.1rem',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s'
+              }}
+              className="glass-hover"
+            >
+              ⌫
+            </button>
           </div>
+          
+          <Link href="/">
+            <button 
+              className="btn-modern btn-secondary" 
+              style={{ width: '100%', padding: '0.7rem', borderRadius: '10px', fontSize: '0.85rem' }}
+            >
+              Cancel
+            </button>
+          </Link>
         </div>
       </div>
     );
