@@ -146,3 +146,10 @@ model AuditLog {
   performedBy         String?
   createdAt           DateTime @default(now())
 }
+
+model SystemConfig {
+  id        String   @id @default("default")
+  adminPin  String   @default("999999")
+  kioskPin  String   @default("888888")
+  updatedAt DateTime @updatedAt
+}

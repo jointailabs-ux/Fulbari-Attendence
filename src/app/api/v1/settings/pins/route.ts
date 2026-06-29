@@ -3,9 +3,8 @@ import prisma from '@/lib/prisma';
 
 export async function POST(req: Request) {
   try {
-    const { portal, pin } = await req.json();
+    const { currentAdminPin, newAdminPin, newKioskPin } = await req.json();
     
-    // Fetch system config from DB, creating default if it doesn't exist
     let config = await prisma.systemConfig.findUnique({ where: { id: "default" } });
     
     if (!config) {
@@ -17,14 +16,20 @@ export async function POST(req: Request) {
         }
       });
     }
-    
-    if (portal === "admin") {
-      if (pin === config.adminPin) return NextResponse.json({ success: true });
-    } else if (portal === "kiosk") {
-      if (pin === config.kioskPin) return NextResponse.json({ success: true });
+
+    if (config.adminPin !== currentAdminPin) {
+      return NextResponse.json({ error: "Access Denied: Incorrect current admin PIN." }, { status: 401 });
     }
-    
-    return NextResponse.json({ error: "Access Denied: Invalid PIN" }, { status: 401 });
+
+    const updatedConfig = await prisma.systemConfig.update({
+      where: { id: "default" },
+      data: {
+        ...(newAdminPin && { adminPin: newAdminPin }),
+        ...(newKioskPin && { kioskPin: newKioskPin })
+      }
+    });
+
+    return NextResponse.json({ success: true, message: "PINs updated successfully." });
   } catch (error) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }

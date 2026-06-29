@@ -100,6 +100,7 @@ export default function AdminLayout({
     { name: "Slots", href: "/admin/qr", icon: "👆" },
     { name: "Financials", href: "/admin/financials", icon: "💰" },
     { name: "Payroll", href: "/admin/payroll", icon: "📑" },
+    { name: "Settings", href: "/admin/settings", icon: "⚙️" },
     { name: "Clock-In Kiosk", href: "/kiosk?from=admin", icon: "🧬" },
   ];
 
@@ -107,6 +108,7 @@ export default function AdminLayout({
     { name: "Home", href: "/", icon: "🏠" },
     { name: "Dashboard", href: "/admin", icon: "📊" },
     { name: "Staff", href: "/admin/staff", icon: "👥" },
+    { name: "Settings", href: "/admin/settings", icon: "⚙️" },
     { name: "Kiosk", href: "/kiosk?from=admin", icon: "🧬" },
   ];
 
