@@ -64,8 +64,10 @@ export default function Home() {
       
       if (res.ok && data.success) {
         if (targetPortal === "admin") {
+          sessionStorage.setItem("admin_auth", "true");
           router.push("/admin");
         } else if (targetPortal === "kiosk") {
+          sessionStorage.setItem("kiosk_auth", "true");
           router.push("/kiosk");
         }
       } else {
