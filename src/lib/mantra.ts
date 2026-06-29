@@ -41,10 +41,10 @@ async function morfinPost(
   // The local Mantra MorFin service uses 8030 for HTTP and 8031 for HTTPS.
   // For Vercel (HTTPS), we must try HTTPS first to avoid Mixed Content blocks.
   const urlsToTry = [
-    `https://127.0.0.1:8031/morfinauth/${endpoint}`,
-    `https://localhost:8031/morfinauth/${endpoint}`,
     `http://127.0.0.1:8030/morfinauth/${endpoint}`,
     `http://localhost:8030/morfinauth/${endpoint}`,
+    `https://127.0.0.1:8031/morfinauth/${endpoint}`,
+    `https://localhost:8031/morfinauth/${endpoint}`,
   ];
 
   let lastErrorMsg = "";

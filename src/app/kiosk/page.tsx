@@ -162,15 +162,12 @@ export default function KioskPage() {
     try {
       // If device not connected, attempt auto-init before failing
       if (!wasConnectedRef.current) {
-        const result = await discoverAndInitDevice();
-        wasConnectedRef.current = result.connected;
-        if (mountedRef.current) {
-          setDeviceStatus(result);
+        if (isInitializingRef.current) {
+          throw new Error("Scanner is currently connecting in the background. Please wait a few seconds and try again.");
         }
-        if (!result.connected) {
-          throw new Error(
-            result.error || "Scanner not connected. Please plug in the MFS500 and wait for it to initialize automatically."
-          );
+        await initDevice();
+        if (!wasConnectedRef.current) {
+          throw new Error("Scanner not connected. Please plug in the MFS500.");
         }
       }
 
@@ -265,13 +262,12 @@ export default function KioskPage() {
 
     try {
       if (!wasConnectedRef.current) {
-        const result = await discoverAndInitDevice();
-        wasConnectedRef.current = result.connected;
-        if (mountedRef.current) {
-          setDeviceStatus(result);
+        if (isInitializingRef.current) {
+          throw new Error("Scanner is currently connecting. Please wait a few seconds and try again.");
         }
-        if (!result.connected) {
-          throw new Error(result.error || "Scanner not connected. Please plug in the MFS500.");
+        await initDevice();
+        if (!wasConnectedRef.current) {
+          throw new Error("Scanner not connected. Please plug in the MFS500.");
         }
       }
 
