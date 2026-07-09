@@ -17,11 +17,19 @@ export async function POST(req: Request) {
         }
       });
     }
+
+    const managerPin = process.env.MANAGER_PIN || "777777";
     
-    if (portal === "admin") {
-      if (pin === config.adminPin) return NextResponse.json({ success: true });
-    } else if (portal === "kiosk") {
-      if (pin === config.kioskPin) return NextResponse.json({ success: true });
+    // If the frontend explicitly requested a portal (e.g. from /admin login page)
+    if (portal === "admin" && pin === config.adminPin) return NextResponse.json({ success: true, role: "admin" });
+    if (portal === "kiosk" && pin === config.kioskPin) return NextResponse.json({ success: true, role: "kiosk" });
+    if (portal === "manager" && pin === managerPin) return NextResponse.json({ success: true, role: "manager" });
+
+    // If no portal was specified, dynamically determine it
+    if (!portal) {
+      if (pin === config.adminPin) return NextResponse.json({ success: true, role: "admin" });
+      if (pin === managerPin) return NextResponse.json({ success: true, role: "manager" });
+      if (pin === config.kioskPin) return NextResponse.json({ success: true, role: "kiosk" });
     }
     
     return NextResponse.json({ error: "Access Denied: Invalid PIN" }, { status: 401 });

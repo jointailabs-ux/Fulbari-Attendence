@@ -86,10 +86,16 @@ async function morfinPost(
   }
 
   clearTimeout(timeoutId);
+  
+  let suggestion = "Please ensure the MorFinAuthClientSvc is running on your computer.";
+  if (lastErrorMsg.includes("Failed to fetch") && typeof window !== "undefined" && window.location.protocol === "https:") {
+     suggestion += " If it is running, Chrome might be blocking the connection. Click the Lock icon next to the URL, go to Site Settings, and change 'Insecure Content' to Allow.";
+  }
+
   return {
     ok: false,
     data: null,
-    error: `Could not connect to local MorFin service. Please ensure the MorFinAuthClientSvc is running. (Last error: ${lastErrorMsg})`,
+    error: `Could not connect to local scanner service. ${suggestion} (Last error: ${lastErrorMsg})`,
   };
 }
 
