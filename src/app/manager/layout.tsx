@@ -275,11 +275,11 @@ export default function ManagerLayout({
   }
 
   return (
-    <div className={`admin-shell animate-slide-up ${isLightTheme ? "light-theme" : ""}`}>
+    <div className={`admin-shell ${isLightTheme ? "light-theme" : ""}`}>
       <div className="bg-mesh" />
       
       {/* Sidebar - Hidden on Mobile */}
-      <aside className="sidebar-modern glass" style={{ borderRadius: 0, borderTop: 'none', borderBottom: 'none', borderLeft: 'none' }}>
+      <aside className="sidebar-modern glass animate-slide-up" style={{ borderRadius: 0, borderTop: 'none', borderBottom: 'none', borderLeft: 'none' }}>
         <div style={{ padding: '0 0.5rem 2rem 0.5rem' }}>
           <h2 className="text-gradient" style={{ fontSize: '1.75rem', fontWeight: '800' }}>
             Fulbari
@@ -369,7 +369,7 @@ export default function ManagerLayout({
       </div>
 
       {/* Main Content Area */}
-      <main className="main-content">
+      <main className="main-content animate-slide-up">
         <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
           {children}
         </div>
