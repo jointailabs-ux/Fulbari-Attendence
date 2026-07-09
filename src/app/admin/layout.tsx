@@ -108,6 +108,9 @@ export default function AdminLayout({
     { name: "Home", href: "/", icon: "🏠" },
     { name: "Dashboard", href: "/admin", icon: "📊" },
     { name: "Staff", href: "/admin/staff", icon: "👥" },
+    { name: "Slots", href: "/admin/qr", icon: "👆" },
+    { name: "Finance", href: "/admin/financials", icon: "💰" },
+    { name: "Payroll", href: "/admin/payroll", icon: "📑" },
     { name: "Settings", href: "/admin/settings", icon: "⚙️" },
     { name: "Kiosk", href: "/kiosk?from=admin", icon: "🧬" },
   ];
@@ -359,7 +362,7 @@ export default function AdminLayout({
             key={link.href}
             href={link.href} 
             className={`sidebar-link ${pathname === link.href ? "active" : ""}`}
-            style={{ flexDirection: 'column', gap: '4px', padding: '0.5rem', flex: 1, borderRadius: '20px' }}
+            style={{ flexDirection: 'column', gap: '4px', padding: '0.5rem', flex: '0 0 auto', minWidth: '64px', borderRadius: '20px' }}
           >
             <span style={{ fontSize: '1.25rem' }}>{link.icon}</span>
             <span style={{ fontSize: '0.6rem' }}>{link.name}</span>
