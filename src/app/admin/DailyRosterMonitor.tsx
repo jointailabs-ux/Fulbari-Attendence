@@ -224,8 +224,8 @@ export default function DailyRosterMonitor({ roster }: { roster: RosterItem[] })
           <tbody>
             {filteredRoster.map((item) => (
               <tr key={item.id}>
-                <td style={{ fontWeight: "700", fontSize: "0.95rem" }}>{item.name}</td>
-                <td>
+                <td data-label="Staff Member" style={{ fontWeight: "700", fontSize: "0.95rem" }}>{item.name}</td>
+                <td data-label="Outlet Location">
                   <span
                     style={{
                       padding: "0.2rem 0.6rem",
@@ -239,25 +239,25 @@ export default function DailyRosterMonitor({ roster }: { roster: RosterItem[] })
                     📍 {item.location}
                   </span>
                 </td>
-                <td>
+                <td data-label="Assignment Slot">
                   <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
                     {item.slotName}
                   </span>
                 </td>
-                <td>{getStatusBadge(item.state)}</td>
-                <td style={{ fontFamily: "monospace", fontSize: "0.85rem" }}>
+                <td data-label="Attendance Status">{getStatusBadge(item.state)}</td>
+                <td data-label="Clock In" style={{ fontFamily: "monospace", fontSize: "0.85rem" }}>
                   {formatTime(item.startTime)}
                 </td>
-                <td style={{ fontFamily: "monospace", fontSize: "0.85rem" }}>
+                <td data-label="Clock Out" style={{ fontFamily: "monospace", fontSize: "0.85rem" }}>
                   {formatTime(item.endTime)}
                 </td>
-                <td style={{ fontFamily: "monospace", fontSize: "0.85rem", fontWeight: "700", color: item.breakTimeStr !== "--" ? "#f59e0b" : "var(--text-muted)" }}>
+                <td data-label="Break Time" style={{ fontFamily: "monospace", fontSize: "0.85rem", fontWeight: "700", color: item.breakTimeStr !== "--" ? "#f59e0b" : "var(--text-muted)" }}>
                   {item.breakTimeStr}
                 </td>
-                <td style={{ fontFamily: "monospace", fontSize: "0.85rem", fontWeight: "800", color: item.workTimeStr !== "--" ? "var(--brand-accent)" : "var(--text-muted)" }}>
+                <td data-label="Work Time" style={{ fontFamily: "monospace", fontSize: "0.85rem", fontWeight: "800", color: item.workTimeStr !== "--" ? "var(--brand-accent)" : "var(--text-muted)" }}>
                   {item.workTimeStr}
                 </td>
-                <td style={{ textAlign: "right" }}>
+                <td data-label="Actions" style={{ textAlign: "right" }}>
                   <a
                     href={`/admin/staff/${item.id}`}
                     className="btn-modern btn-secondary"

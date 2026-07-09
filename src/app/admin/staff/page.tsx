@@ -128,7 +128,7 @@ export default function StaffManagement() {
             <tbody>
               {staffList.map((staff: any) => (
                 <tr key={staff.id} style={{ opacity: staff.isActive ? 1 : 0.5 }}>
-                  <td>
+                  <td data-label="Personnel">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                       <div style={{ width: '32px', height: '32px', background: 'rgba(99, 102, 241, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', color: 'var(--brand-primary-light)' }}>
                         {staff.name.charAt(0)}
@@ -136,22 +136,22 @@ export default function StaffManagement() {
                       <span style={{ fontWeight: '600' }}>{staff.name}</span>
                     </div>
                   </td>
-                  <td>
+                  <td data-label="Work Location">
                     <span style={{ fontSize: '0.85rem' }}>{staff.slot?.outlet?.name || "Unassigned"}</span>
                   </td>
-                  <td>
+                  <td data-label="Assigned Slot">
                     <span style={{ padding: '0.2rem 0.6rem', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '500' }}>
                       {staff.slot?.name || "Pending Slot"}
                     </span>
                   </td>
-                  <td style={{ fontWeight: '500' }}>₹{staff.monthlySalary}</td>
-                  <td>
+                  <td data-label="Base Salary" style={{ fontWeight: '500' }}>₹{staff.monthlySalary}</td>
+                  <td data-label="Status">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: staff.isActive ? 'var(--brand-accent)' : 'var(--brand-secondary)' }}></div>
                       <span style={{ fontSize: '0.85rem', fontWeight: '600' }}>{staff.isActive ? 'Active' : 'Inactive'}</span>
                     </div>
                   </td>
-                  <td style={{ textAlign: 'right' }}>
+                  <td data-label="Management" style={{ textAlign: 'right' }}>
                     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', alignItems: 'center' }}>
                       <Link href={`/admin/staff/${staff.id}`} className="btn-modern btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>
                         Profile
