@@ -134,14 +134,62 @@ export async function DELETE(
   try {
     const { id } = await params;
     
-    // Hard delete staff profile (cascade delete of history is handled by DB)
-    await prisma.staffProfile.delete({
-      where: { id }
+    // Perform manual cascade delete of all related records in a transaction to bypass DB constraint limits
+    await prisma.$transaction(async (tx) => {
+      // 1. Delete break logs related to this staff's attendances
+      await tx.breakLog.deleteMany({
+        where: {
+          attendance: {
+            staffId: id
+          }
+        }
+      });
+
+      // 2. Delete attendance records
+      await tx.attendanceRecord.deleteMany({
+        where: { staffId: id }
+      });
+
+      // 3. Delete payroll records
+      await tx.payrollRecord.deleteMany({
+        where: { staffId: id }
+      });
+
+      // 4. Delete advances
+      await tx.advance.deleteMany({
+        where: { staffId: id }
+      });
+
+      // 5. Delete leave records
+      await tx.leaveRecord.deleteMany({
+        where: { staffId: id }
+      });
+
+      // 6. Delete leave requests
+      await tx.leaveRequest.deleteMany({
+        where: { staffId: id }
+      });
+
+      // 7. Delete employee documents
+      await tx.employeeDocument.deleteMany({
+        where: { staffId: id }
+      });
+
+      // 8. Delete fingerprint templates
+      await tx.fingerprintTemplate.deleteMany({
+        where: { staffId: id }
+      });
+
+      // 9. Finally, delete the staff profile
+      await tx.staffProfile.delete({
+        where: { id }
+      });
     });
 
     return new NextResponse(null, { status: 204 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error deleting staff:', error);
-    return NextResponse.json({ error: 'Failed to delete staff profile' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to delete staff profile', details: error.message }, { status: 500 });
   }
 }
+
