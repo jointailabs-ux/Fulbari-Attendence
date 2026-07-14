@@ -13,6 +13,8 @@ export async function GET(req: Request) {
   }
 
   try {
+    const pfEnabled = searchParams.get('pf') === 'true';
+
     // 1. Fetch all active or relevant staff profiles
     const staffProfiles = await prisma.staffProfile.findMany({
       where: {
@@ -29,17 +31,33 @@ export async function GET(req: Request) {
         try {
           const payroll = await calculateStaffPayroll(profile.id, month);
           
+          const simpleEarned = payroll.simple.earnedSalary;
+          const strictEarned = payroll.strict.earnedSalary;
+          
+          const simplePf = pfEnabled ? parseFloat((simpleEarned * 0.12).toFixed(2)) : 0;
+          const strictPf = pfEnabled ? parseFloat((strictEarned * 0.12).toFixed(2)) : 0;
+          
+          const simpleAdvanceDeducted = Math.min(payroll.pendingAdvances, Math.max(0, simpleEarned - simplePf));
+          const strictAdvanceDeducted = Math.min(payroll.pendingAdvances, Math.max(0, strictEarned - strictPf));
+          
+          const simpleNet = Math.max(0, simpleEarned - simplePf - simpleAdvanceDeducted);
+          const strictNet = Math.max(0, strictEarned - strictPf - strictAdvanceDeducted);
+
           return {
             staffId: payroll.staffId,
             name: payroll.name,
             month: payroll.monthYear,
             monthlySalary: payroll.monthlySalary,
-            pfAmount: "0.00", // PRD v3.0 works with raw base salary (no PF deductions)
+            pfAmount: pfEnabled ? "12%" : "0.00",
+            simplePf: simplePf.toFixed(2),
+            strictPf: strictPf.toFixed(2),
             inHandBase: payroll.monthlySalary.toFixed(2),
-            strictRaw: payroll.strict.earnedSalary.toFixed(2),
-            simpleRaw: payroll.simple.earnedSalary.toFixed(2),
-            strictFinal: payroll.strict.netPayable.toFixed(2),
-            simpleFinal: payroll.simple.netPayable.toFixed(2),
+            strictRaw: strictEarned.toFixed(2),
+            simpleRaw: simpleEarned.toFixed(2),
+            strictFinal: strictNet.toFixed(2),
+            simpleFinal: simpleNet.toFixed(2),
+            simpleAdvanceDeducted: simpleAdvanceDeducted.toFixed(2),
+            strictAdvanceDeducted: strictAdvanceDeducted.toFixed(2),
             totalAdvance: payroll.pendingAdvances.toFixed(2),
             warnings: {
               highAdvance: payroll.pendingAdvances > (payroll.monthlySalary * 0.5),

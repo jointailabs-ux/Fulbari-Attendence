@@ -80,7 +80,7 @@ const navLinks = [
   { name: "Dashboard", short: "HUB", href: "/admin", icon: Icons.Dashboard },
   { name: "Staff", short: "STAFF", href: "/admin/staff", icon: Icons.Staff },
   { name: "Slots", short: "SLOTS", href: "/admin/qr", icon: Icons.Slots },
-  { name: "Finance", short: "FINANCE", href: "/admin/financials", icon: Icons.Finance },
+  { name: "Advance", short: "ADVANCE", href: "/admin/advance", icon: Icons.Finance },
   { name: "Leaves", short: "LEAVES", href: "/admin/leaves", icon: Icons.Leaves },
   { name: "Payroll", short: "PAYROLL", href: "/admin/payroll", icon: Icons.Payroll },
   { name: "Settings", short: "SETTINGS", href: "/admin/settings", icon: Icons.Settings },

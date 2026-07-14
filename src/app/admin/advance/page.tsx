@@ -134,7 +134,7 @@ export default function FinancialsManagement() {
       {/* ── Header ── */}
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 className="text-gradient" style={{ fontSize: '2.5rem', marginBottom: '0.25rem' }}>Financial Ledger</h1>
+          <h1 className="text-gradient" style={{ fontSize: '2.5rem', marginBottom: '0.25rem' }}>Advance Ledger</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
             Outstanding: <span style={{ color: 'var(--brand-secondary)', fontWeight: 800 }}>₹{totalOutstanding.toLocaleString("en-IN")}</span> across {activeAdvances.length} active settlements
           </p>

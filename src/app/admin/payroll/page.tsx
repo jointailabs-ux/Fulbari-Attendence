@@ -34,12 +34,13 @@ export default function PayrollCalculationPage() {
   const [loading, setLoading] = useState(false);
   const [selections, setSelections] = useState<Record<string, 'strict' | 'simple'>>({});
   const [searchQuery, setSearchQuery] = useState("");
+  const [pfEnabled, setPfEnabled] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const [calcRes, releaseRes] = await Promise.all([
-        fetch(`/api/v1/payroll/calculate?month=${month}`),
+        fetch(`/api/v1/payroll/calculate?month=${month}&pf=${pfEnabled}`),
         fetch(`/api/v1/payroll/release?month=${month}`)
       ]);
       const calcData = await calcRes.json();
@@ -63,7 +64,7 @@ export default function PayrollCalculationPage() {
 
   useEffect(() => {
     fetchData();
-  }, [month]);
+  }, [month, pfEnabled]);
 
   const handleModeChange = (staffId: string, mode: 'strict' | 'simple') => {
     setSelections(prev => ({ ...prev, [staffId]: mode }));
@@ -72,6 +73,7 @@ export default function PayrollCalculationPage() {
   const handleRelease = async (staffResult: any) => {
     const mode = selections[staffResult.staffId];
     const finalPayable = mode === 'strict' ? staffResult.strictFinal : staffResult.simpleFinal;
+    const finalAdvanceDeducted = mode === 'strict' ? staffResult.strictAdvanceDeducted : staffResult.simpleAdvanceDeducted;
     
     const confirmRelease = confirm(`Release ₹${finalPayable} to ${staffResult.name} for ${month}?`);
     if (!confirmRelease) return;
@@ -87,7 +89,7 @@ export default function PayrollCalculationPage() {
           simpleSalary: staffResult.simpleRaw,
           selectedMode: mode.toUpperCase(),
           finalPayable: parseFloat(finalPayable),
-          advancesDeducted: parseFloat(staffResult.totalAdvance)
+          advancesDeducted: parseFloat(finalAdvanceDeducted)
         })
       });
 
@@ -206,6 +208,40 @@ export default function PayrollCalculationPage() {
             onChange={(e) => setMonth(e.target.value)} 
           />
         </div>
+
+        <div 
+          className="glass" 
+          style={{
+            position: "relative", overflow: "hidden", borderRadius: "18px",
+            background: "rgba(12,12,18,0.7)", border: "1px solid rgba(255,255,255,0.07)",
+            backdropFilter: "blur(20px)", padding: "1.1rem 1.25rem", display: "flex", flexDirection: "column", gap: "0.4rem",
+            justifyContent: "space-between"
+          }}
+        >
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: "linear-gradient(90deg, #f43f5e, #fb7185)" }} />
+          <span style={{ color: "var(--text-muted)", fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: "0.25rem" }}>
+            PF Deduction (12%)
+          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginTop: "0.4rem" }}>
+            <button
+              onClick={() => setPfEnabled(!pfEnabled)}
+              style={{
+                width: "48px", height: "26px", borderRadius: "13px",
+                background: pfEnabled ? "#ff6b00" : "rgba(255,255,255,0.1)",
+                border: "none", cursor: "pointer", position: "relative", transition: "all 0.3s"
+              }}
+            >
+              <div style={{
+                width: "20px", height: "20px", borderRadius: "50%", background: "#fff",
+                position: "absolute", top: "3px", left: pfEnabled ? "25px" : "3px",
+                transition: "all 0.3s", boxShadow: "0 2px 4px rgba(0,0,0,0.2)"
+              }} />
+            </button>
+            <span style={{ fontSize: "0.85rem", fontWeight: 750, color: pfEnabled ? "#ff6b00" : "var(--text-muted)" }}>
+              {pfEnabled ? "ENABLED" : "DISABLED"}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Search Filter Bar */}
@@ -318,9 +354,15 @@ export default function PayrollCalculationPage() {
                         <span>Earned base:</span>
                         <span>₹{r.simpleRaw}</span>
                       </div>
+                      {pfEnabled && (
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                          <span>PF (12%):</span>
+                          <span style={{ color: "#fb7185" }}>-₹{r.simplePf}</span>
+                        </div>
+                      )}
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-muted)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "0.3rem", marginBottom: "0.3rem" }}>
                         <span>Advance Debt:</span>
-                        <span style={{ color: "#fb7185" }}>-₹{r.totalAdvance}</span>
+                        <span style={{ color: "#fb7185" }}>-₹{r.simpleAdvanceDeducted}</span>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: "0.95rem" }}>
                         <span>Net Payable:</span>
@@ -347,9 +389,15 @@ export default function PayrollCalculationPage() {
                         <span>Late/Early penalties:</span>
                         <span style={{ color: "#fb7185" }}>-₹{(r.metrics.penaltyLate + r.metrics.penaltyEarly).toFixed(2)}</span>
                       </div>
+                      {pfEnabled && (
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                          <span>PF (12%):</span>
+                          <span style={{ color: "#fb7185" }}>-₹{r.strictPf}</span>
+                        </div>
+                      )}
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-muted)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "0.3rem", marginBottom: "0.3rem" }}>
                         <span>Advance Debt:</span>
-                        <span style={{ color: "#fb7185" }}>-₹{r.totalAdvance}</span>
+                        <span style={{ color: "#fb7185" }}>-₹{r.strictAdvanceDeducted}</span>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: "0.95rem" }}>
                         <span>Net Payable:</span>
