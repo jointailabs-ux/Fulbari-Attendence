@@ -2,6 +2,19 @@
 
 import React, { useEffect, useState } from "react";
 
+const GRAD_PALETTES = [
+  ["#8b5cf6", "#d946ef"],
+  ["#06b6d4", "#3b82f6"],
+  ["#fb923c", "#fcd34d"],
+  ["#10b981", "#06b6d4"],
+];
+
+const TerminalIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+  </svg>
+);
+
 export default function SlotManagement() {
   const [slots, setSlots] = useState<any[]>([]);
   const [isSlotModalOpen, setIsSlotModalOpen] = useState(false);
@@ -73,77 +86,115 @@ export default function SlotManagement() {
     }
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const FormLabel = ({ children }: { children: React.ReactNode }) => (
+    <label style={{ display: "block", marginBottom: "0.4rem", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+      {children}
+    </label>
+  );
 
   return (
-    <div className="animate-slide-up" style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1.5rem' }}>
+    <div className="animate-slide-up" style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 className="text-gradient" style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>Staff Slots</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Manage staff slot assignments for the attendance system.</p>
+          <h1 className="text-gradient" style={{ fontSize: '2.5rem', marginBottom: '0.25rem' }}>Staff Slots</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Manage slots and terminal designations for the attendance roster.</p>
         </div>
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <button className="btn-modern btn-primary" onClick={() => setIsSlotModalOpen(true)}>
-            <span style={{ fontSize: '1.2rem' }}>+</span> Add New Slot
-          </button>
-        </div>
+        <button className="btn-modern btn-primary" onClick={() => setIsSlotModalOpen(true)} style={{ padding: "0.7rem 1.5rem", fontSize: "0.9rem" }}>
+          + Add Slot
+        </button>
       </header>
 
-      <div className="grid-auto">
-        {slots.map((slot: any) => (
-          <div key={slot.id} className="glass glass-hover" style={{ textAlign: 'center', padding: '2.5rem 1.5rem', position: 'relative' }}>
-            <div style={{ position: 'absolute', top: '1.25rem', right: '1.25rem' }}>
-              <button 
-                onClick={() => { setEditingSlot(slot); setIsEditModalOpen(true); }}
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--glass-border)', color: 'var(--text-muted)', borderRadius: '8px', padding: '0.4rem 0.6rem', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '700' }}
-              >
-                EDIT
-              </button>
-            </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1rem" }}>
+        {slots.map((slot: any, idx) => {
+          const [c1, c2] = GRAD_PALETTES[idx % GRAD_PALETTES.length];
+          const hasActiveStaff = slot.profiles?.some((p: any) => p.isActive);
+          const assignedStaffName = slot.profiles?.filter((p: any) => p.isActive)[0]?.name;
 
-            <div style={{ 
-              width: '80px', height: '80px', 
-              background: 'rgba(99, 102, 241, 0.1)', 
-              borderRadius: '50%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              margin: '0 auto 1.5rem auto',
-              fontSize: '2rem',
-            }}>
-              👆
-            </div>
+          return (
+            <div 
+              key={slot.id} 
+              style={{
+                borderRadius: "18px", overflow: "hidden",
+                background: "rgba(12,12,18,0.7)",
+                border: "1px solid rgba(255,255,255,0.07)",
+                backdropFilter: "blur(20px)",
+                padding: "1.25rem 1.4rem",
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.75rem",
+                position: "relative",
+                transition: "transform 0.2s, box-shadow 0.2s",
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = "translateY(-3px)";
+                e.currentTarget.style.boxShadow = `0 12px 30px ${c1}18, 0 4px 20px rgba(0,0,0,0.5)`;
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = "";
+                e.currentTarget.style.boxShadow = "";
+              }}
+            >
+              {/* Colored top accent bar */}
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: `linear-gradient(90deg, ${c1}, ${c2})` }} />
 
-            <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{slot.name}</h3>
-            
-            <div style={{ 
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-              marginBottom: '1.5rem' 
-            }}>
+              {/* Upper Section: Icon + Edit */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginTop: "0.25rem" }}>
+                <div style={{
+                  width: "42px", height: "42px", borderRadius: "12px",
+                  background: `linear-gradient(135deg, ${c1}15, ${c2}15)`,
+                  border: `1px solid ${c1}25`, color: c1,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  boxShadow: `0 4px 10px ${c1}10`
+                }}>
+                  <TerminalIcon />
+                </div>
+
+                <button 
+                  onClick={() => { setEditingSlot(slot); setIsEditModalOpen(true); }}
+                  style={{
+                    background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)",
+                    color: "var(--text-muted)", borderRadius: "8px", padding: "0.35rem 0.6rem",
+                    cursor: "pointer", fontSize: "0.65rem", fontWeight: "700", transition: "all 0.2s"
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "#fff"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.color = "var(--text-muted)"; }}
+                >
+                  EDIT
+                </button>
+              </div>
+
+              {/* Designation Name */}
+              <div style={{ marginTop: "0.25rem" }}>
+                <h3 style={{ fontSize: "1.1rem", fontWeight: 800 }}>{slot.name}</h3>
+                <code style={{ fontSize: "0.65rem", color: "var(--text-muted)", background: "rgba(255,255,255,0.02)", padding: "0.1rem 0.3rem", borderRadius: "4px" }}>
+                  ID: {slot.id.slice(0, 8)}
+                </code>
+              </div>
+
+              {/* Assignment Status Pill */}
               <div style={{ 
-                width: '8px', height: '8px', borderRadius: '50%',
-                background: slot.profiles?.some((p: any) => p.isActive) ? 'var(--brand-accent)' : 'rgba(255,255,255,0.1)'
-              }} />
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                {slot.profiles?.filter((p: any) => p.isActive).length > 0 
-                  ? `Assigned to ${slot.profiles.filter((p: any) => p.isActive)[0]?.name}` 
-                  : 'Unassigned'
-                }
-              </span>
+                display: "inline-flex", alignItems: "center", gap: "0.4rem",
+                padding: "0.3rem 0.7rem", borderRadius: "8px", width: "fit-content",
+                background: hasActiveStaff ? "rgba(16,185,129,0.1)" : "rgba(255,255,255,0.03)",
+                border: `1px solid ${hasActiveStaff ? "rgba(16,185,129,0.2)" : "rgba(255,255,255,0.08)"}`
+              }}>
+                <div style={{
+                  width: "6px", height: "6px", borderRadius: "50%",
+                  background: hasActiveStaff ? "#10b981" : "rgba(255,255,255,0.2)"
+                }} />
+                <span style={{ fontSize: "0.75rem", fontWeight: 700, color: hasActiveStaff ? "#10b981" : "var(--text-muted)" }}>
+                  {hasActiveStaff ? `Assigned: ${assignedStaffName}` : "Unassigned"}
+                </span>
+              </div>
             </div>
-
-            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '0.75rem', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
-              <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: '700', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>SLOT ID</p>
-              <code style={{ fontSize: '0.7rem', color: 'var(--brand-primary-light)', wordBreak: 'break-all' }}>{slot.id.slice(0, 8)}...</code>
-            </div>
-          </div>
-        ))}
+          );
+        })}
 
         {slots.length === 0 && (
-          <div className="glass" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '6rem 2rem' }}>
+          <div className="glass" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '6rem 2rem', borderRadius: "20px" }}>
              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🏗️</div>
-            <h2 style={{ marginBottom: '0.5rem' }}>No Terminals Provisioned</h2>
-            <p style={{ color: 'var(--text-muted)' }}>Start by adding your first counter or staff slot.</p>
+            <h2 style={{ marginBottom: '0.5rem' }}>No Slots Provisioned</h2>
+            <p style={{ color: 'var(--text-muted)' }}>Start by adding your first slot.</p>
           </div>
         )}
       </div>
@@ -151,18 +202,18 @@ export default function SlotManagement() {
       {/* Modern New Slot Modal */}
       {isSlotModalOpen && (
         <div className="modal-overlay" onClick={() => setIsSlotModalOpen(false)}>
-          <div className="glass modal-content animate-slide-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-              <h2 className="text-gradient" style={{ fontSize: '1.75rem' }}>New Terminal</h2>
+          <div className="glass modal-content animate-slide-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px', padding: "2rem" }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.75rem' }}>
+              <h2 className="text-gradient" style={{ fontSize: '1.5rem' }}>New Slot</h2>
               <button onClick={() => setIsSlotModalOpen(false)} className="modal-close">&times;</button>
             </div>
-            <form onSubmit={handleCreateSlot} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <form onSubmit={handleCreateSlot} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>Terminal Designation</label>
+                <FormLabel>Slot Designation</FormLabel>
                 <input name="name" required className="input-modern" placeholder="e.g. Front Counter, Bar Terminal" value={newSlotName} onChange={(e) => setNewSlotName(e.target.value)} />
               </div>
-              <button type="submit" className="btn-modern btn-primary" style={{ width: '100%', marginTop: '1rem' }} disabled={loading}>
-                {loading ? 'Initializing...' : 'Provision Terminal'}
+              <button type="submit" className="btn-modern btn-primary" style={{ width: '100%', marginTop: '0.5rem' }} disabled={loading}>
+                {loading ? 'Initializing...' : 'Provision Slot'}
               </button>
             </form>
           </div>
@@ -172,14 +223,14 @@ export default function SlotManagement() {
       {/* Modern Edit Slot Modal */}
       {isEditModalOpen && (
         <div className="modal-overlay" onClick={() => { setIsEditModalOpen(false); setEditingSlot(null); }}>
-          <div className="glass modal-content animate-slide-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-              <h2 className="text-gradient" style={{ fontSize: '1.75rem' }}>Update Terminal</h2>
+          <div className="glass modal-content animate-slide-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '400px', padding: "2rem" }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.75rem' }}>
+              <h2 className="text-gradient" style={{ fontSize: '1.5rem' }}>Update Slot</h2>
               <button onClick={() => { setIsEditModalOpen(false); setEditingSlot(null); }} className="modal-close">&times;</button>
             </div>
-            <form onSubmit={handleUpdateSlot} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <form onSubmit={handleUpdateSlot} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>Terminal Designation</label>
+                <FormLabel>Slot Designation</FormLabel>
                 <input 
                   name="name" 
                   required 
@@ -188,8 +239,8 @@ export default function SlotManagement() {
                   onChange={(e) => setEditingSlot({ ...editingSlot, name: e.target.value })} 
                 />
               </div>
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                 <button type="button" onClick={() => handleDeleteSlot(editingSlot.id, editingSlot.name)} style={{ background: 'rgba(244, 63, 94, 0.1)', border: '1px solid rgba(244, 63, 94, 0.2)', color: 'var(--brand-secondary)', padding: '0.75rem', borderRadius: '12px', cursor: 'pointer' }}>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                 <button type="button" onClick={() => handleDeleteSlot(editingSlot.id, editingSlot.name)} style={{ background: 'rgba(244, 63, 94, 0.1)', border: '1px solid rgba(244, 63, 94, 0.2)', color: 'var(--brand-secondary)', padding: '0.75rem', borderRadius: '12px', cursor: 'pointer', transition: "all 0.2s" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(244,63,94,0.18)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(244, 63, 94, 0.1)"}>
                    🗑️
                  </button>
                  <button type="submit" className="btn-modern btn-primary" style={{ flex: 1 }} disabled={loading}>

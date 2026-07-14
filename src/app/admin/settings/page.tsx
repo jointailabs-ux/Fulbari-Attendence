@@ -65,10 +65,12 @@ export default function SettingsPage() {
         <p style={{ color: 'var(--text-muted)' }}>Manage your system access codes.</p>
       </div>
 
-      <div className="glass" style={{ padding: '2rem', borderRadius: '16px', maxWidth: '600px' }}>
-        <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <div className="glass" style={{ padding: '2rem', borderRadius: '18px', maxWidth: '600px', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3.5px", background: "linear-gradient(90deg, #8b5cf6, #d946ef)" }} />
+        <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
           <span>🔒</span> PIN Management
         </h2>
+
         
         {message && <div style={{ color: 'var(--brand-primary)', marginBottom: '1rem', padding: '0.75rem', background: 'rgba(99, 102, 241, 0.1)', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>{message}</div>}
         {error && <div style={{ color: '#f43f5e', marginBottom: '1rem', padding: '0.75rem', background: 'rgba(244, 63, 94, 0.1)', borderRadius: '8px', border: '1px solid rgba(244, 63, 94, 0.2)' }}>{error}</div>}

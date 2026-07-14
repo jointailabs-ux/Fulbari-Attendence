@@ -92,31 +92,87 @@ export default function PayrollCalculationPage() {
 
       {/* Monthly Summary Cards */}
       <div className="grid-auto">
-        <div className="glass stat-card">
-           <span className="stat-label">Total Salary Expense ({month})</span>
-           <span className="stat-value" style={{ color: 'var(--brand-accent)' }}>₹{totalReleased.toLocaleString()}</span>
-           <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-muted)' }}>
-             From {releasedRecords.length} completed payouts
-           </div>
+        <div 
+          className="glass" 
+          style={{
+            position: "relative", overflow: "hidden", borderRadius: "18px",
+            background: "rgba(12,12,18,0.7)", border: "1px solid rgba(255,255,255,0.07)",
+            backdropFilter: "blur(20px)", padding: "1.25rem 1.4rem", display: "flex", flexDirection: "column", gap: "0.5rem"
+          }}
+        >
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: "linear-gradient(90deg, #10b981, #34d399)" }} />
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginTop: "0.25rem" }}>
+            <span style={{ color: "var(--text-muted)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              Total Salary Expense ({month})
+            </span>
+            <div style={{
+              width: "36px", height: "36px", borderRadius: "10px",
+              background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.25)", color: "#10b981",
+              display: "flex", alignItems: "center", justifyContent: "center"
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+          </div>
+          <h3 style={{ fontSize: "1.75rem", fontWeight: 900, fontFamily: "var(--font-heading)", background: "linear-gradient(to right, #10b981, #34d399)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            ₹{totalReleased.toLocaleString()}
+          </h3>
+          <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: 600 }}>
+            From {releasedRecords.length} completed payouts
+          </div>
         </div>
-        <div className="glass stat-card">
-           <span className="stat-label">Pending Payouts</span>
-           <span className="stat-value" style={{ color: '#f59e0b' }}>{pendingCount}</span>
-           <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-muted)' }}>
-             Personnel awaiting authorization
-           </div>
+
+        <div 
+          className="glass" 
+          style={{
+            position: "relative", overflow: "hidden", borderRadius: "18px",
+            background: "rgba(12,12,18,0.7)", border: "1px solid rgba(255,255,255,0.07)",
+            backdropFilter: "blur(20px)", padding: "1.25rem 1.4rem", display: "flex", flexDirection: "column", gap: "0.5rem"
+          }}
+        >
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: "linear-gradient(90deg, #fb923c, #fcd34d)" }} />
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginTop: "0.25rem" }}>
+            <span style={{ color: "var(--text-muted)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              Pending Payouts
+            </span>
+            <div style={{
+              width: "36px", height: "36px", borderRadius: "10px",
+              background: "rgba(251,146,60,0.15)", border: "1px solid rgba(251,146,60,0.25)", color: "#fb923c",
+              display: "flex", alignItems: "center", justifyContent: "center"
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+            </div>
+          </div>
+          <h3 style={{ fontSize: "1.75rem", fontWeight: 900, fontFamily: "var(--font-heading)", background: "linear-gradient(to right, #fb923c, #fcd34d)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            {pendingCount}
+          </h3>
+          <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: 600 }}>
+            Personnel awaiting authorization
+          </div>
         </div>
-        <div className="glass stat-card" style={{ cursor: 'pointer' }}>
-           <span className="stat-label">Select Cycle</span>
-           <input 
-              type="month" 
-              className="input-modern" 
-              style={{ marginTop: '0.5rem', background: 'rgba(255,255,255,0.05)', border: 'none' }} 
-              value={month} 
-              onChange={(e) => setMonth(e.target.value)} 
-           />
+
+        <div 
+          className="glass" 
+          style={{
+            position: "relative", overflow: "hidden", borderRadius: "18px",
+            background: "rgba(12,12,18,0.7)", border: "1px solid rgba(255,255,255,0.07)",
+            backdropFilter: "blur(20px)", padding: "1.25rem 1.4rem", display: "flex", flexDirection: "column", gap: "0.5rem",
+            justifyContent: "space-between"
+          }}
+        >
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: "linear-gradient(90deg, #8b5cf6, #d946ef)" }} />
+          <span style={{ color: "var(--text-muted)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: "0.25rem" }}>
+            Select Cycle
+          </span>
+          <input 
+            type="month" 
+            className="input-modern" 
+            style={{ width: "100%", padding: "0.5rem 0.75rem", fontSize: "0.9rem", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.08)", marginTop: "0.3rem" }} 
+            value={month} 
+            onChange={(e) => setMonth(e.target.value)} 
+          />
         </div>
       </div>
+
 
       {/* Action Area: Calculate/Pending */}
       <section className="animate-slide-up">
