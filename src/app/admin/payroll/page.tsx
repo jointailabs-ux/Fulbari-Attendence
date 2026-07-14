@@ -33,6 +33,7 @@ export default function PayrollCalculationPage() {
   const [releasedRecords, setReleasedRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selections, setSelections] = useState<Record<string, 'strict' | 'simple'>>({});
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchData = async () => {
     setLoading(true);
@@ -104,8 +105,13 @@ export default function PayrollCalculationPage() {
   };
 
   const totalReleased = releasedRecords.reduce((acc, curr) => acc + curr.finalPayable, 0);
-  const pendingDrafts = results.filter(r => !releasedRecords.some(rr => rr.staffId === r.staffId));
-  const pendingCount = pendingDrafts.length;
+  
+  // Filter drafts by search query
+  const pendingDrafts = results
+    .filter(r => !releasedRecords.some(rr => rr.staffId === r.staffId))
+    .filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+  const pendingCount = results.filter(r => !releasedRecords.some(rr => rr.staffId === r.staffId)).length;
 
   return (
     <div className="animate-slide-up" style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
@@ -117,6 +123,7 @@ export default function PayrollCalculationPage() {
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Comprehensive monthly payroll generation and disbursement history.</p>
         </div>
       </header>
+
 
       {/* ── Monthly Summary Cards ── */}
       <div className="grid-auto">
@@ -201,6 +208,21 @@ export default function PayrollCalculationPage() {
         </div>
       </div>
 
+      {/* Search Filter Bar */}
+      <div style={{ position: "relative", width: "100%", maxWidth: "450px" }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ position: "absolute", left: "0.85rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", pointerEvents: "none" }}>
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          type="text"
+          className="input-modern"
+          placeholder="Search personnel by name…"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{ paddingLeft: "2.3rem", paddingTop: "0.55rem", paddingBottom: "0.55rem", fontSize: "0.85rem" }}
+        />
+      </div>
+
       {/* ── Draft Payroll Matrix (Beautiful Card List) ── */}
       <section>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
@@ -216,7 +238,9 @@ export default function PayrollCalculationPage() {
         {pendingDrafts.length === 0 ? (
           <div className="glass" style={{ padding: '4rem 2rem', textAlign: 'center', borderRadius: '20px' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🎯</div>
-            <p style={{ color: 'var(--text-muted)', fontWeight: 600 }}>All payouts released for the month of {month}!</p>
+            <p style={{ color: 'var(--text-muted)', fontWeight: 600 }}>
+              {searchQuery ? `No drafts matching "${searchQuery}"` : `All payouts released for the month of ${month}!`}
+            </p>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -367,7 +391,7 @@ export default function PayrollCalculationPage() {
       </section>
 
       {/* ── Disbursement History Area (Released Receipts) ── */}
-      {releasedRecords.length > 0 && (
+      {releasedRecords.filter(rec => rec.staff?.name?.toLowerCase().includes(searchQuery.toLowerCase())).length > 0 && (
         <section>
           <div style={{ marginBottom: '1.25rem' }}>
             <h2 style={{ fontSize: '1.35rem', fontWeight: 800 }}>Disbursement History ({month})</h2>
@@ -375,54 +399,57 @@ export default function PayrollCalculationPage() {
           </div>
           
           <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-            {releasedRecords.map((rec: any, idx: number) => {
-              const [c1, c2] = GRAD_PALETTES[idx % GRAD_PALETTES.length];
-              return (
-                <div
-                  key={rec.id}
-                  style={{
-                    display: "flex", flexWrap: "wrap", alignItems: "center", gap: "1rem",
-                    padding: "0.85rem 1.1rem", borderRadius: "14px",
-                    background: "rgba(16, 185, 129, 0.02)", border: "1px solid rgba(16, 185, 129, 0.15)"
-                  }}
-                >
-                  <Avatar name={rec.staff?.name || "Unknown"} index={idx} />
-                  <div style={{ flex: 1, minWidth: "160px" }}>
-                    <p style={{ fontWeight: 800, fontSize: "0.95rem" }}>{rec.staff?.name}</p>
-                    <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                      Released: {new Date(rec.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                    </p>
+            {releasedRecords
+              .filter(rec => rec.staff?.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+              .map((rec: any, idx: number) => {
+                const [c1, c2] = GRAD_PALETTES[idx % GRAD_PALETTES.length];
+                return (
+                  <div
+                    key={rec.id}
+                    style={{
+                      display: "flex", flexWrap: "wrap", alignItems: "center", gap: "1rem",
+                      padding: "0.85rem 1.1rem", borderRadius: "14px",
+                      background: "rgba(16, 185, 129, 0.02)", border: "1px solid rgba(16, 185, 129, 0.15)"
+                    }}
+                  >
+                    <Avatar name={rec.staff?.name || "Unknown"} index={idx} />
+                    <div style={{ flex: 1, minWidth: "160px" }}>
+                      <p style={{ fontWeight: 800, fontSize: "0.95rem" }}>{rec.staff?.name}</p>
+                      <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                        Released: {new Date(rec.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    
+                    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "1.5rem" }}>
+                      <div style={{ textAlign: "center" }}>
+                        <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Calculation Mode</p>
+                        <span style={{ padding: '0.15rem 0.5rem', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--brand-primary-light)', borderRadius: '6px', fontSize: '0.7rem', fontWeight: '700' }}>
+                          {rec.selectedMode}
+                        </span>
+                      </div>
+
+                      <div style={{ textAlign: "center" }}>
+                        <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Debt Settled</p>
+                        <p style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--brand-secondary)" }}>-₹{rec.advancesDeducted}</p>
+                      </div>
+
+                      <div style={{ textAlign: "center" }}>
+                        <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Net Paid</p>
+                        <p style={{ fontWeight: 900, fontSize: "1.2rem", color: "#10b981" }}>₹{rec.finalPayable.toLocaleString("en-IN")}</p>
+                      </div>
+
+                      <div style={{ textAlign: "right", minWidth: "80px" }}>
+                        <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Receipt ID</p>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{rec.id.slice(0,8).toUpperCase()}</span>
+                      </div>
+                    </div>
                   </div>
-                  
-                  <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "1.5rem" }}>
-                    <div style={{ textAlign: "center" }}>
-                      <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Calculation Mode</p>
-                      <span style={{ padding: '0.15rem 0.5rem', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--brand-primary-light)', borderRadius: '6px', fontSize: '0.7rem', fontWeight: '700' }}>
-                        {rec.selectedMode}
-                      </span>
-                    </div>
-
-                    <div style={{ textAlign: "center" }}>
-                      <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Debt Settled</p>
-                      <p style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--brand-secondary)" }}>-₹{rec.advancesDeducted}</p>
-                    </div>
-
-                    <div style={{ textAlign: "center" }}>
-                      <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Net Paid</p>
-                      <p style={{ fontWeight: 900, fontSize: "1.2rem", color: "#10b981" }}>₹{rec.finalPayable.toLocaleString("en-IN")}</p>
-                    </div>
-
-                    <div style={{ textAlign: "right", minWidth: "80px" }}>
-                      <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Receipt ID</p>
-                      <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{rec.id.slice(0,8).toUpperCase()}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         </section>
       )}
     </div>
   );
 }
+

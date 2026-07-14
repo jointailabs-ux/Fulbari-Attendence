@@ -39,6 +39,7 @@ export default function FinancialsManagement() {
   // Filters
   const [filterStaffId, setFilterStaffId] = useState("");
   const [filterMonth, setFilterMonth] = useState(""); // YYYY-MM
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchData = async () => {
     try {
@@ -106,15 +107,18 @@ export default function FinancialsManagement() {
     }
   };
 
-  const activeAdvances = advances.filter((a: any) => a.isActive && a.status === 'PENDING');
+  const activeAdvances = advances
+    .filter((a: any) => a.isActive && a.status === 'PENDING')
+    .filter((a: any) => a.staff?.name?.toLowerCase().includes(searchQuery.toLowerCase()));
   
   const historyAdvances = useMemo(() => {
     return advances.filter((a: any) => {
       const matchesStaff = filterStaffId ? a.staffId === filterStaffId : true;
       const matchesMonth = filterMonth ? a.date.startsWith(filterMonth) : true;
-      return matchesStaff && matchesMonth;
+      const matchesSearch = a.staff?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesStaff && matchesMonth && matchesSearch;
     });
-  }, [advances, filterStaffId, filterMonth]);
+  }, [advances, filterStaffId, filterMonth, searchQuery]);
 
   const totalOutstanding = activeAdvances.reduce((sum, a) => sum + a.amount, 0);
 
@@ -145,12 +149,28 @@ export default function FinancialsManagement() {
         </div>
       </header>
 
+      {/* ── Global Search Filter Bar ── */}
+      <div style={{ position: "relative", width: "100%", maxWidth: "450px" }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ position: "absolute", left: "0.85rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", pointerEvents: "none" }}>
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          type="text"
+          className="input-modern"
+          placeholder="Search personnel by name…"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{ paddingLeft: "2.3rem", paddingTop: "0.55rem", paddingBottom: "0.55rem", fontSize: "0.85rem" }}
+        />
+      </div>
+
       {/* ── Outstanding Advances Grid ── */}
       <section>
         <div style={{ marginBottom: '1.25rem' }}>
           <h2 style={{ fontSize: '1.35rem', fontWeight: 800 }}>Pending Settlements</h2>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Outstanding advances that will be auto-deducted in the next payroll run.</p>
         </div>
+
         
         {activeAdvances.length === 0 ? (
           <div className="glass" style={{ padding: '3.5rem 2rem', textAlign: 'center', borderRadius: '20px' }}>
