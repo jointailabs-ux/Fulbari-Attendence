@@ -58,7 +58,18 @@ export default function StaffProfilePage() {
 
   const [staff, setStaff] = useState<StaffData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"overview" | "salary">("overview");
+  const [tab, setTab] = useState<"overview" | "salary" | "leaves">("overview");
+
+  // Leaves management states
+  const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
+  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
+  const [submittingLeave, setSubmittingLeave] = useState(false);
+  const [leaveForm, setLeaveForm] = useState({
+    startDate: "",
+    endDate: "",
+    type: "FULL",
+    reason: "",
+  });
 
   useEffect(() => {
     // Auth guard — must have logged in via /staff
@@ -68,6 +79,7 @@ export default function StaffProfilePage() {
       return;
     }
     fetchData();
+    fetchLeaveRequests();
   }, [staffId]);
 
   const fetchData = async () => {
@@ -83,9 +95,54 @@ export default function StaffProfilePage() {
     }
   };
 
+  const fetchLeaveRequests = async () => {
+    try {
+      const res = await fetch(`/api/v1/leaves/request?staffId=${staffId}`);
+      if (res.ok) {
+        setLeaveRequests(await res.json());
+      }
+    } catch (e) {
+      console.error("Error fetching leave requests:", e);
+    }
+  };
+
   const handleLogout = () => {
     sessionStorage.removeItem(`staff_auth_${staffId}`);
     router.push("/staff");
+  };
+
+  const handleLeaveSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!leaveForm.startDate || !leaveForm.endDate || !leaveForm.reason) {
+      alert("Please fill in all fields.");
+      return;
+    }
+
+    setSubmittingLeave(true);
+    try {
+      const res = await fetch("/api/v1/leaves/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          staffId,
+          ...leaveForm,
+        }),
+      });
+
+      if (res.ok) {
+        alert("Leave request submitted successfully!");
+        setIsLeaveModalOpen(false);
+        setLeaveForm({ startDate: "", endDate: "", type: "FULL", reason: "" });
+        fetchLeaveRequests();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to submit request");
+      }
+    } catch {
+      alert("Network error. Please try again.");
+    } finally {
+      setSubmittingLeave(false);
+    }
   };
 
   if (loading) {
@@ -104,6 +161,12 @@ export default function StaffProfilePage() {
   const statusInfo = STATUS_MAP[staff.currentMonth.todayStatus] || STATUS_MAP.NOT_STARTED;
   const joinDate = new Date(staff.joiningDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
   const totalEarned = staff.payrolls.reduce((s, p) => s + p.finalPayable, 0);
+
+  const FormLabel = ({ children }: { children: React.ReactNode }) => (
+    <label style={{ display: "block", marginBottom: "0.4rem", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+      {children}
+    </label>
+  );
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg-dark)", position: "relative" }}>
@@ -201,21 +264,24 @@ export default function StaffProfilePage() {
 
         {/* Tab Nav */}
         <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", background: "rgba(255,255,255,0.02)", padding: "0.4rem", borderRadius: "14px", border: "1px solid var(--glass-border)", width: "fit-content" }}>
-          {(["overview", "salary"] as const).map((t) => (
+          {[
+            { id: "overview", label: "👤 Profile" },
+            { id: "salary", label: "💸 Salary History" },
+            { id: "leaves", label: "📝 Leave Requests" },
+          ].map((t) => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
+              key={t.id}
+              onClick={() => setTab(t.id as any)}
               style={{
                 padding: "0.5rem 1.25rem", borderRadius: "10px",
                 fontWeight: 700, fontSize: "0.85rem", cursor: "pointer",
-                background: tab === t ? "rgba(139,92,246,0.2)" : "transparent",
-                color: tab === t ? "var(--brand-primary-light)" : "var(--text-muted)",
-                border: tab === t ? "1px solid rgba(139,92,246,0.3)" : "1px solid transparent",
+                background: tab === t.id ? "rgba(139,92,246,0.2)" : "transparent",
+                color: tab === t.id ? "var(--brand-primary-light)" : "var(--text-muted)",
+                border: tab === t.id ? "1px solid rgba(139,92,246,0.3)" : "1px solid transparent",
                 transition: "all 0.2s ease",
-                textTransform: "capitalize"
               }}
             >
-              {t === "overview" ? "👤 Profile" : "💸 Salary History"}
+              {t.label}
             </button>
           ))}
         </div>
@@ -319,7 +385,144 @@ export default function StaffProfilePage() {
             )}
           </div>
         )}
+
+        {/* Leave Requests Tab */}
+        {tab === "leaves" && (
+          <div className="animate-slide-up" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <h2 style={{ fontSize: "1.25rem", fontWeight: 800 }}>My Leave Requests</h2>
+                <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>Submit and monitor your leave requests.</p>
+              </div>
+              <button 
+                onClick={() => setIsLeaveModalOpen(true)}
+                className="btn-modern btn-primary"
+                style={{ padding: "0.55rem 1.25rem", fontSize: "0.8rem" }}
+              >
+                + Request Leave
+              </button>
+            </div>
+
+            {leaveRequests.length === 0 ? (
+              <div className="glass" style={{ padding: "4rem", textAlign: "center", borderRadius: "20px" }}>
+                <div style={{ fontSize: "2rem", marginBottom: "0.75rem" }}>📝</div>
+                <p style={{ color: "var(--text-muted)", fontWeight: 600 }}>No leaves requested yet.</p>
+                <p style={{ color: "var(--text-muted)", fontSize: "0.78rem", marginTop: "0.3rem" }}>When you submit a leave request, it will appear here with its status.</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                {leaveRequests.map((req) => {
+                  const statusColors = 
+                    req.status === "APPROVED" ? { text: "#10b981", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.2)" } :
+                    req.status === "REJECTED" ? { text: "#f43f5e", bg: "rgba(244,63,94,0.08)", border: "rgba(244,63,94,0.15)" } :
+                    { text: "#fb923c", bg: "rgba(251,146,60,0.1)", border: "rgba(251,146,60,0.2)" };
+
+                  const startStr = new Date(req.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+                  const endStr = new Date(req.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+
+                  return (
+                    <div key={req.id} className="glass" style={{ padding: "1.2rem 1.25rem", borderRadius: "16px", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "0.5rem" }}>
+                        <div>
+                          <p style={{ fontWeight: 800, fontSize: "0.95rem" }}>
+                            {startStr} {startStr !== endStr ? `to ${endStr}` : ""}
+                          </p>
+                          <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "0.1rem" }}>
+                            Type: <strong style={{ color: "var(--brand-primary-light)" }}>{req.type === "FULL" ? "Full Day" : "Half Day"}</strong>
+                          </p>
+                        </div>
+                        <span style={{
+                          padding: "0.25rem 0.6rem", borderRadius: "6px",
+                          background: statusColors.bg, border: `1px solid ${statusColors.border}`,
+                          fontSize: "0.7rem", fontWeight: 800, color: statusColors.text
+                        }}>
+                          {req.status}
+                        </span>
+                      </div>
+                      
+                      <div style={{ background: "rgba(255,255,255,0.02)", padding: "0.6rem 0.75rem", borderRadius: "10px", border: "1px solid var(--glass-border)" }}>
+                        <span style={{ display: "block", fontSize: "0.6rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.2rem" }}>Reason</span>
+                        <p style={{ fontSize: "0.8rem", color: "var(--text-main)", margin: 0 }}>{req.reason}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
       </main>
+
+      {/* ── Request Leave Modal ── */}
+      {isLeaveModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsLeaveModalOpen(false)}>
+          <div className="glass modal-content animate-slide-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "450px", padding: "2rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.75rem" }}>
+              <h2 className="text-gradient" style={{ fontSize: "1.5rem" }}>Request Leave</h2>
+              <button onClick={() => setIsLeaveModalOpen(false)} className="modal-close">&times;</button>
+            </div>
+            
+            <form onSubmit={handleLeaveSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                <div>
+                  <FormLabel>Start Date</FormLabel>
+                  <input 
+                    type="date" 
+                    required 
+                    className="input-modern" 
+                    value={leaveForm.startDate} 
+                    onChange={(e) => setLeaveForm({ ...leaveForm, startDate: e.target.value })} 
+                  />
+                </div>
+                <div>
+                  <FormLabel>End Date</FormLabel>
+                  <input 
+                    type="date" 
+                    required 
+                    className="input-modern" 
+                    value={leaveForm.endDate} 
+                    onChange={(e) => setLeaveForm({ ...leaveForm, endDate: e.target.value })} 
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <FormLabel>Leave Duration Type</FormLabel>
+                <select 
+                  className="input-modern" 
+                  value={leaveForm.type} 
+                  onChange={(e) => setLeaveForm({ ...leaveForm, type: e.target.value })}
+                >
+                  <option value="FULL">Full Day</option>
+                  <option value="HALF">Half Day</option>
+                </select>
+              </div>
+
+              <div>
+                <FormLabel>Reason for Leave</FormLabel>
+                <input 
+                  type="text" 
+                  required 
+                  className="input-modern" 
+                  placeholder="e.g. Family medical emergency, festival, vacation..." 
+                  value={leaveForm.reason} 
+                  onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })} 
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                className="btn-modern btn-primary" 
+                style={{ width: "100%", marginTop: "0.5rem" }}
+                disabled={submittingLeave}
+              >
+                {submittingLeave ? "Submitting..." : "Submit Leave Request"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

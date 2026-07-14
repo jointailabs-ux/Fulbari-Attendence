@@ -53,7 +53,9 @@ model StaffProfile {
   documents           EmployeeDocument[]
   leaves              LeaveRecord[]
   fingerprints        FingerprintTemplate[]
+  leaveRequests       LeaveRequest[]
 }
+
 
 model FingerprintTemplate {
   id              String   @id @default(uuid())
@@ -152,3 +154,18 @@ model SystemConfig {
   kioskPin  String   @default("888888")
   updatedAt DateTime @updatedAt
 }
+
+model LeaveRequest {
+  id          String   @id @default(uuid())
+  staffId     String
+  startDate   DateTime
+  endDate     DateTime
+  type        String   // FULL, HALF
+  reason      String
+  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  staff       StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
+}
+

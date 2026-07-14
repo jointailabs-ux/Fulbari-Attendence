@@ -8,6 +8,7 @@ import AdvancesTab from "./AdvancesTab";
 import DocumentsTab from "./DocumentsTab";
 import PayrollTab from "./PayrollTab";
 import BiometricsTab from "./BiometricsTab";
+import LeavesTab from "./LeavesTab";
 
 export default function EmployeeProfile({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -38,10 +39,12 @@ export default function EmployeeProfile({ params }: { params: Promise<{ id: stri
     { id: "overview", label: "Profile", icon: "👤" },
     { id: "attendance", label: "Attendance", icon: "📅" },
     { id: "advances", label: "Debt/Advances", icon: "💰" },
+    { id: "leaves", label: "Leaves", icon: "📝" },
     { id: "payroll", label: "Financials", icon: "📑" },
     { id: "documents", label: "Documents", icon: "📂" },
     { id: "biometrics", label: "Biometrics", icon: "🧬" },
   ];
+
 
   return (
     <div className="animate-slide-up" style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
@@ -95,10 +98,12 @@ export default function EmployeeProfile({ params }: { params: Promise<{ id: stri
         {activeTab === "overview" && <OverviewTab staff={staff} refresh={fetchProfile} />}
         {activeTab === "attendance" && <AttendanceTab staffId={id} />}
         {activeTab === "advances" && <AdvancesTab staffId={id} />}
+        {activeTab === "leaves" && <LeavesTab staffId={id} />}
         {activeTab === "payroll" && <PayrollTab staffId={id} />}
         {activeTab === "documents" && <DocumentsTab staffId={id} />}
         {activeTab === "biometrics" && <BiometricsTab staff={staff} refresh={fetchProfile} />}
       </div>
+
     </div>
   );
 }
