@@ -212,8 +212,8 @@ export default function StaffManagement() {
                   <input name="phone" required className="input-modern" placeholder="+91 00000 00000" value={formData.phone} onChange={handleInputChange} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>Security PIN (4 Digits)</label>
-                  <input name="pin" required type="password" maxLength={4} className="input-modern" placeholder="••••" value={formData.pin} onChange={handleInputChange} />
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>Security PIN (6 Digits)</label>
+                  <input name="pin" required type="password" maxLength={6} className="input-modern" placeholder="••••••" value={formData.pin} onChange={handleInputChange} />
                 </div>
               </div>
 
@@ -293,8 +293,8 @@ export default function StaffManagement() {
               </div>
 
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>Security Override PIN</label>
-                <input name="pin" type="password" maxLength={4} className="input-modern" placeholder="Leave blank to maintain current" value={editingStaff.pin || ""} onChange={handleEditInputChange} />
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>Security Override PIN (6 digits)</label>
+                <input name="pin" type="password" maxLength={6} className="input-modern" placeholder="Leave blank to maintain current" value={editingStaff.pin || ""} onChange={handleEditInputChange} />
               </div>
 
               <div>

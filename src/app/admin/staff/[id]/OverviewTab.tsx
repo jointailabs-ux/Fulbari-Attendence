@@ -56,8 +56,8 @@ export default function OverviewTab({ staff, refresh }: { staff: any; refresh: (
       };
 
       if (formData.pin.trim()) {
-        if (!/^\d{4}$/.test(formData.pin.trim())) {
-          alert("PIN must be exactly 4 digits.");
+        if (!/^\d{6}$/.test(formData.pin.trim())) {
+          alert("PIN must be exactly 6 digits.");
           return;
         }
         payload.pin = formData.pin.trim();
@@ -178,12 +178,12 @@ export default function OverviewTab({ staff, refresh }: { staff: any; refresh: (
               </select>
             </div>
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)' }}>Overriding security PIN (4 digits)</label>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)' }}>Overriding security PIN (6 digits)</label>
               <input 
                 className="input-modern" 
                 type="password"
-                maxLength={4}
-                placeholder="•••• (Leave blank to keep existing PIN)"
+                maxLength={6}
+                placeholder="•••••• (Leave blank to keep existing PIN)"
                 value={formData.pin} 
                 onChange={(e) => setFormData({...formData, pin: e.target.value})} 
               />

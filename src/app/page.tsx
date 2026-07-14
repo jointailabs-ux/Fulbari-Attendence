@@ -236,6 +236,27 @@ export default function Home() {
             ⌫
           </button>
         </div>
+
+        {/* Employee Portal Link */}
+        <div style={{ marginTop: '1.75rem', width: '100%', borderTop: '1px solid var(--glass-border)', paddingTop: '1.5rem' }}>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.75rem', fontWeight: 600 }}>
+            ARE YOU AN EMPLOYEE?
+          </p>
+          <a href="/staff" style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+            width: '100%', padding: '0.75rem',
+            background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(6,182,212,0.08))',
+            border: '1px solid rgba(139,92,246,0.2)',
+            borderRadius: '12px', fontWeight: 700, fontSize: '0.9rem',
+            color: 'var(--brand-primary-light)',
+            transition: 'all 0.2s ease',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(6,182,212,0.15))')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(6,182,212,0.08))')}
+          >
+            👤 My Employee Portal
+          </a>
+        </div>
       </div>
     </main>
   );
