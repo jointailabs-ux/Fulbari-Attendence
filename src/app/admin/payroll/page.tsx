@@ -35,6 +35,12 @@ export default function PayrollCalculationPage() {
   const [selections, setSelections] = useState<Record<string, 'strict' | 'simple'>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [pfEnabled, setPfEnabled] = useState(false);
+  const [showOriginal, setShowOriginal] = useState<Record<string, boolean>>({});
+
+  const toggleOriginal = (staffId: string) => {
+    setShowOriginal(prev => ({ ...prev, [staffId]: !prev[staffId] }));
+  };
+
 
   const fetchData = async () => {
     setLoading(true);
@@ -347,7 +353,25 @@ export default function PayrollCalculationPage() {
                       transition: "all 0.2s"
                     }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-                        <span style={{ fontSize: "0.75rem", fontWeight: 800, color: mode === "simple" ? "#10b981" : "var(--text-muted)" }}>SIMPLE PAYOUT</span>
+                        <span style={{ fontSize: "0.75rem", fontWeight: 800, color: mode === "simple" ? "#10b981" : "var(--text-muted)", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+                          SIMPLE PAYOUT
+                          <button
+                            type="button"
+                            onClick={() => toggleOriginal(r.staffId)}
+                            title="Check Original Salary (100% Attendance)"
+                            style={{
+                              background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)",
+                              color: "var(--brand-primary-light)", width: "18px", height: "18px",
+                              borderRadius: "4px", fontSize: "0.68rem", cursor: "pointer",
+                              display: "inline-flex", alignItems: "center", justifyContent: "center",
+                              transition: "all 0.2s"
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"}
+                            onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.06)"}
+                          >
+                            ℹ️
+                          </button>
+                        </span>
                         {mode === "simple" && <span style={{ fontSize: "0.65rem", background: "#10b981", color: "#000", padding: "0.1rem 0.4rem", borderRadius: "4px", fontWeight: 800 }}>SELECTED</span>}
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-muted)" }}>
@@ -368,6 +392,41 @@ export default function PayrollCalculationPage() {
                         <span>Net Payable:</span>
                         <span style={{ color: "#10b981" }}>₹{r.simpleFinal}</span>
                       </div>
+
+                      {/* Collapsible Original Salary Projection Details */}
+                      {showOriginal[r.staffId] && (
+                        <div style={{
+                          marginTop: "0.75rem", padding: "0.65rem 0.75rem", borderRadius: "10px",
+                          background: "rgba(139, 92, 246, 0.04)", border: "1px dashed rgba(139, 92, 246, 0.25)",
+                          animation: "fadeIn 0.2s ease"
+                        }}>
+                          <p style={{ fontSize: "0.65rem", fontWeight: 900, color: "var(--brand-primary-light)", marginBottom: "0.4rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                            Original Salary (100% Attendance)
+                          </p>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.15rem" }}>
+                            <span>Full-month Base:</span>
+                            <span style={{ color: "#fff", fontWeight: 700 }}>₹{r.monthlySalary}</span>
+                          </div>
+                          {pfEnabled && (
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.15rem" }}>
+                              <span>PF Deduction (12%):</span>
+                              <span style={{ color: "#fb7185" }}>-₹{(r.monthlySalary * 0.12).toFixed(2)}</span>
+                            </div>
+                          )}
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.15rem" }}>
+                            <span>Max Advance:</span>
+                            <span style={{ color: "#fb7185" }}>
+                              -₹{Math.min(parseFloat(r.totalAdvance), Math.max(0, r.monthlySalary - (pfEnabled ? r.monthlySalary * 0.12 : 0))).toFixed(2)}
+                            </span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: "0.82rem", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "0.25rem", marginTop: "0.25rem" }}>
+                            <span>Projected Net:</span>
+                            <span style={{ color: "#10b981" }}>
+                              ₹{Math.max(0, r.monthlySalary - (pfEnabled ? r.monthlySalary * 0.12 : 0) - Math.min(parseFloat(r.totalAdvance), Math.max(0, r.monthlySalary - (pfEnabled ? r.monthlySalary * 0.12 : 0)))).toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Strict Mode Box */}
