@@ -639,10 +639,48 @@ tr:last-child td {
 
 .modal-content {
   width: 100%;
-  background: rgba(15, 15, 20, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 3rem;
+  background: rgba(15, 15, 20, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 2rem;
   border-radius: var(--radius-xl);
-  box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.9), inset 0 1px 1px rgba(255,255,255,0.2);
+  box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.9), inset 0 1px 1px rgba(255,255,255,0.15);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Modal close button */
+.modal-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  background: rgba(244,63,94,0.1);
+  border-color: rgba(244,63,94,0.25);
+  color: var(--brand-secondary);
+}
+
+/* Staff card grid mobile */
+@media (max-width: 480px) {
+  .modal-content {
+    padding: 1.5rem 1.25rem;
+    border-radius: 20px;
+  }
+  .modal-overlay {
+    padding: 1rem 0.75rem;
+    align-items: flex-end;
+  }
 }
 
