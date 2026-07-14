@@ -7,62 +7,75 @@ import { usePathname, useRouter } from "next/navigation";
 // ─── SVG Icon Components ─────────────────────────────────────────────────────
 const Icons = {
   Dashboard: () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-      <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
+      <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
     </svg>
   ),
   Staff: () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
       <circle cx="9" cy="7" r="4"/>
       <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
     </svg>
   ),
   Slots: () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 2C8.5 2 6 5 6 8c0 4 6 13 6 13s6-9 6-13c0-3-2.5-6-6-6z"/>
-      <circle cx="12" cy="8" r="2"/>
+      <circle cx="12" cy="8" r="2.5"/>
     </svg>
   ),
   Finance: () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
     </svg>
   ),
   Payroll: () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/>
+      <polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
     </svg>
   ),
   Settings: () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="3"/>
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
     </svg>
   ),
   Kiosk: () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
     </svg>
   ),
   Logout: () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
       <polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/>
     </svg>
   ),
+  Menu: () => (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="3" y1="12" x2="21" y2="12"/>
+      <line x1="3" y1="6" x2="21" y2="6"/>
+      <line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  ),
+  Close: () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"/>
+      <line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  )
 };
 
 const navLinks = [
-  { name: "Dashboard", href: "/admin", icon: Icons.Dashboard },
-  { name: "Staff", href: "/admin/staff", icon: Icons.Staff },
-  { name: "Slots", href: "/admin/qr", icon: Icons.Slots },
-  { name: "Finance", href: "/admin/financials", icon: Icons.Finance },
-  { name: "Payroll", href: "/admin/payroll", icon: Icons.Payroll },
-  { name: "Settings", href: "/admin/settings", icon: Icons.Settings },
-  { name: "Kiosk", href: "/kiosk?from=admin", icon: Icons.Kiosk },
+  { name: "Dashboard", short: "HUB", href: "/admin", icon: Icons.Dashboard },
+  { name: "Staff", short: "STAFF", href: "/admin/staff", icon: Icons.Staff },
+  { name: "Slots", short: "SLOTS", href: "/admin/qr", icon: Icons.Slots },
+  { name: "Finance", short: "FINANCE", href: "/admin/financials", icon: Icons.Finance },
+  { name: "Payroll", short: "PAYROLL", href: "/admin/payroll", icon: Icons.Payroll },
+  { name: "Settings", short: "SETTINGS", href: "/admin/settings", icon: Icons.Settings },
+  { name: "Kiosk", short: "KIOSK", href: "/kiosk?from=admin", icon: Icons.Kiosk },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -72,6 +85,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pinEntry, setPinEntry] = useState("");
   const [error, setError] = useState("");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
@@ -155,7 +169,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {[0, 1, 2, 3, 4, 5].map((i) => {
               const filled = pinEntry.length > i;
               return (
-                <div key={i} style={{ width: "42px", height: "42px", borderRadius: "10px", border: `2px solid ${filled ? "var(--brand-primary-light)" : "var(--glass-border)"}`, background: filled ? "rgba(124, 58, 237, 0.08)" : "rgba(255,255,255,0.01)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", fontWeight: 700, color: "var(--text-main)", boxShadow: filled ? "0 0 10px rgba(124, 58, 237, 0.15)" : "none", transition: "all 0.15s ease" }}>
+                <div key={i} style={{ width: "42px", height: "42px", borderRadius: "10px", border: `2px solid ${filled ? "var(--brand-primary-light)" : "var(--glass-border)"}`, background: filled ? "rgba(12, 12, 18, 0.4)" : "rgba(255,255,255,0.01)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", fontWeight: 700, color: "var(--text-main)", boxShadow: filled ? "0 0 10px rgba(124, 58, 237, 0.15)" : "none", transition: "all 0.15s ease" }}>
                   {filled ? "•" : ""}
                 </div>
               );
@@ -175,22 +189,29 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
+  // Helper to check if a route link is active
+  const isLinkActive = (href: string) => {
+    const route = href.split("?")[0];
+    return pathname === route || (route !== "/admin" && pathname.startsWith(route));
+  };
+
+  // Bottom primary floating links (Hub, Staff, Slots, Finance)
+  const bottomBarLinks = navLinks.slice(0, 4);
+
   return (
     <div className={`admin-shell ${isLightTheme ? "light-theme" : ""}`}>
       <div className="bg-mesh" />
 
       {/* ── Desktop Sidebar ── */}
       <aside className="sidebar-modern glass" style={{ borderRadius: 0, borderTop: "none", borderBottom: "none", borderLeft: "none", position: "sticky", top: 0, height: "100vh", overflowY: "auto" }}>
-        {/* Brand */}
         <div style={{ padding: "0 0.5rem 2rem 0.5rem" }}>
           <h2 className="text-gradient" style={{ fontSize: "1.75rem", fontWeight: "800" }}>Fulbari</h2>
           <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: "600", letterSpacing: "0.12em" }}>CONTROL CENTER</p>
         </div>
 
-        {/* Nav Links */}
         <nav style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
           {navLinks.map((link) => {
-            const isActive = pathname === link.href || (link.href !== "/admin" && pathname.startsWith(link.href.split("?")[0]));
+            const isActive = isLinkActive(link.href);
             const isKiosk = link.name === "Kiosk";
             return (
               <Link key={link.href} href={link.href}
@@ -206,9 +227,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
 
-        {/* Bottom Section */}
         <div style={{ marginTop: "auto" }}>
-          {/* Theme Toggle */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1rem", marginBottom: "1rem", borderTop: "1px solid var(--glass-border)", paddingTop: "1.5rem" }}>
             <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{isLightTheme ? "Light" : "Dark"} Mode</span>
             <div onClick={toggleTheme} style={{ width: "44px", height: "24px", background: "rgba(255,255,255,0.05)", borderRadius: "20px", position: "relative", cursor: "pointer", border: "1px solid var(--glass-border)" }}>
@@ -216,7 +235,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
           </div>
 
-          {/* Logout Button */}
           <button
             onClick={handleLogout}
             style={{
@@ -226,41 +244,137 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               cursor: "pointer", fontWeight: 700, fontSize: "0.9rem",
               transition: "all 0.2s ease", fontFamily: "var(--font-heading)"
             }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(244,63,94,0.12)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(244,63,94,0.06)"; }}
           >
             <Icons.Logout />
             Sign Out
           </button>
-
-          {/* Status */}
-          <div style={{ marginTop: "1rem", padding: "0.9rem 1.1rem", background: "rgba(255,255,255,0.02)", borderRadius: "var(--radius-md)", border: "1px solid var(--glass-border)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-              <div style={{ width: "8px", height: "8px", background: "var(--brand-accent)", borderRadius: "50%", boxShadow: "0 0 10px var(--brand-accent)" }} />
-              <span style={{ fontSize: "0.8rem", fontWeight: "600" }}>System Live</span>
-            </div>
-            <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginTop: "0.3rem" }}>v3.0.0-stable</p>
-          </div>
         </div>
       </aside>
 
-      {/* ── Mobile Bottom Nav ── */}
+      {/* ── Mobile Floating Bottom Nav Bar (Floating Pill) ── */}
       <div className="bottom-nav-modern">
-        {navLinks.map((link) => {
-          const isActive = pathname === link.href || (link.href !== "/admin" && pathname.startsWith(link.href.split("?")[0]));
+        {bottomBarLinks.map((link) => {
+          const isActive = isLinkActive(link.href);
           return (
             <Link key={link.href} href={link.href} className={`mobile-nav-item ${isActive ? "active" : ""}`}>
               <span className="mobile-nav-icon"><link.icon /></span>
-              <span className="mobile-nav-label">{link.name}</span>
+              <span className="mobile-nav-label" style={{ fontSize: "0.55rem" }}>{link.short}</span>
+              {isActive && <div className="active-dot" />}
             </Link>
           );
         })}
-        {/* Logout in mobile nav */}
-        <button onClick={handleLogout} className="mobile-nav-item mobile-nav-logout">
-          <span className="mobile-nav-icon"><Icons.Logout /></span>
-          <span className="mobile-nav-label">Logout</span>
+        {/* Mobile Menu Toggle Button */}
+        <button 
+          onClick={() => setIsMobileMenuOpen(true)} 
+          className={`mobile-nav-item ${isMobileMenuOpen ? "active" : ""}`}
+        >
+          <span className="mobile-nav-icon"><Icons.Menu /></span>
+          <span className="mobile-nav-label" style={{ fontSize: "0.55rem" }}>MENU</span>
         </button>
       </div>
+
+      {/* ── Mobile Full-Screen Main Menu Overlay Modal ── */}
+      {isMobileMenuOpen && (
+        <div 
+          style={{
+            position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
+            background: "rgba(6, 6, 10, 0.95)", backdropFilter: "blur(20px)",
+            zIndex: 9999, display: "flex", flexDirection: "column",
+            justifyContent: "space-between", padding: "2.5rem 1.5rem",
+            animation: "fadeIn 0.25s ease-out"
+          }}
+        >
+          {/* Header */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <h2 style={{ fontSize: "1.75rem", fontWeight: 900, color: "#fff", margin: 0, letterSpacing: "-0.01em" }}>
+                MAIN MENU
+              </h2>
+              <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: "0.2rem 0 0 0", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                Control Center
+              </p>
+            </div>
+            
+            {/* Close Button */}
+            <button 
+              onClick={() => setIsMobileMenuOpen(false)}
+              style={{
+                width: "40px", height: "40px", borderRadius: "50%",
+                background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", transition: "all 0.2s"
+              }}
+            >
+              <Icons.Close />
+            </button>
+          </div>
+
+          {/* Grid Menu Content (3x4 Layout) */}
+          <div style={{
+            display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "1.25rem 0.75rem", margin: "auto 0"
+          }}>
+            {navLinks.map((link) => {
+              const isActive = isLinkActive(link.href);
+              const isKiosk = link.name === "Kiosk";
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  style={{
+                    display: "flex", flexDirection: "column", alignItems: "center",
+                    gap: "0.6rem", textDecoration: "none", color: "inherit"
+                  }}
+                >
+                  <div style={{
+                    width: "72px", height: "72px", borderRadius: "24px",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    background: isActive 
+                      ? "linear-gradient(135deg, #e11d48, #be123c)" // Red glow for active, matching Pos
+                      : "rgba(255,255,255,0.02)",
+                    border: `1px solid ${isActive ? "rgba(225,29,72,0.4)" : "rgba(255,255,255,0.06)"}`,
+                    color: isActive ? "#fff" : "rgba(255,255,255,0.7)",
+                    boxShadow: isActive ? "0 8px 24px rgba(225,29,72,0.3)" : "none",
+                    transition: "all 0.2s ease"
+                  }}>
+                    <link.icon />
+                  </div>
+                  <span style={{
+                    fontSize: "0.65rem", fontWeight: 800,
+                    textTransform: "uppercase", letterSpacing: "0.05em",
+                    color: isActive ? "#fff" : "var(--text-muted)"
+                  }}>
+                    {link.short}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Terminate Session Footer Button */}
+          <button
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              handleLogout();
+            }}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", justifyContent: "center",
+              gap: "0.75rem", padding: "1.1rem", borderRadius: "18px",
+              border: "1px solid rgba(255,255,255,0.06)",
+              background: "rgba(255,255,255,0.08)", color: "#fb7185",
+              cursor: "pointer", fontWeight: 800, fontSize: "0.85rem",
+              textTransform: "uppercase", letterSpacing: "0.08em",
+              transition: "all 0.2s"
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
+          >
+            <Icons.Logout />
+            Terminate Session
+          </button>
+        </div>
+      )}
 
       {/* ── Main Content ── */}
       <main className="main-content animate-slide-up">
