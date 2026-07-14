@@ -603,8 +603,11 @@ tr:last-child td {
 /* Modals */
 .modal-overlay {
   position: fixed;
-  top: 0; left: 0; width: 100vw; height: 100vh;
-  background: rgba(0, 0, 0, 0.6);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.82);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   z-index: 2000;
@@ -622,12 +625,12 @@ tr:last-child td {
 
 .modal-content {
   width: 100%;
-  background: rgba(15, 15, 20, 0.9);
+  background: #0b0b12 !important; /* Fully opaque background */
   border: 1px solid rgba(255, 255, 255, 0.12);
   padding: 2rem;
   border-radius: var(--radius-xl);
-  box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.9), inset 0 1px 1px rgba(255,255,255,0.15);
-  max-height: 90vh;
+  box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.95), inset 0 1px 1px rgba(255,255,255,0.15);
+  max-height: 85vh;
   overflow-y: auto;
 }
 
@@ -663,7 +666,7 @@ tr:last-child td {
   }
   .modal-overlay {
     padding: 1rem 0.75rem;
-    align-items: flex-end;
+    align-items: center; /* Center vertically on mobile devices to prevent cutoff */
   }
 }
 

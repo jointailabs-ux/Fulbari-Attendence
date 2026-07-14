@@ -457,7 +457,7 @@ export default function StaffProfilePage() {
       {/* ── Request Leave Modal ── */}
       {isLeaveModalOpen && (
         <div className="modal-overlay" onClick={() => setIsLeaveModalOpen(false)}>
-          <div className="glass modal-content animate-slide-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "450px", padding: "2rem" }}>
+          <div className="glass modal-content animate-slide-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "450px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.75rem" }}>
               <h2 className="text-gradient" style={{ fontSize: "1.5rem" }}>Request Leave</h2>
               <button onClick={() => setIsLeaveModalOpen(false)} className="modal-close">&times;</button>
@@ -505,7 +505,7 @@ export default function StaffProfilePage() {
                   type="text" 
                   required 
                   className="input-modern" 
-                  placeholder="e.g. Family medical emergency, festival, vacation..." 
+                  placeholder="e.g. Family medical emergency, festival..." 
                   value={leaveForm.reason} 
                   onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })} 
                 />
@@ -517,7 +517,7 @@ export default function StaffProfilePage() {
                 style={{ width: "100%", marginTop: "0.5rem" }}
                 disabled={submittingLeave}
               >
-                {submittingLeave ? "Submitting..." : "Submit Leave Request"}
+                {submittingLeave ? "Submitting..." : "Submit Request"}
               </button>
             </form>
           </div>
