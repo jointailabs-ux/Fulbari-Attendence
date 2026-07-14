@@ -273,108 +273,120 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </button>
       </div>
 
-      {/* ── Mobile Full-Screen Main Menu Overlay Modal ── */}
+      {/* ── Mobile Main Menu Overlay Popup Modal ── */}
       {isMobileMenuOpen && (
         <div 
+          onClick={() => setIsMobileMenuOpen(false)}
           style={{
             position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
-            background: "rgba(6, 6, 10, 0.95)", backdropFilter: "blur(20px)",
-            zIndex: 9999, display: "flex", flexDirection: "column",
-            justifyContent: "space-between", padding: "2.5rem 1.5rem",
+            background: "rgba(0, 0, 0, 0.75)", backdropFilter: "blur(12px)",
+            zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center",
+            padding: "1rem",
             animation: "fadeIn 0.25s ease-out"
           }}
         >
-          {/* Header */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <h2 style={{ fontSize: "1.75rem", fontWeight: 900, color: "#fff", margin: 0, letterSpacing: "-0.01em" }}>
-                MAIN MENU
-              </h2>
-              <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: "0.2rem 0 0 0", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                Control Center
-              </p>
+          {/* Modal Content Box */}
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%", maxWidth: "390px",
+              background: "rgba(15, 15, 22, 0.95)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              borderRadius: "24px", padding: "1.75rem 1.25rem",
+              boxShadow: "0 25px 60px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.08)",
+              display: "flex", flexDirection: "column", gap: "1.5rem"
+            }}
+          >
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <h2 style={{ fontSize: "1.5rem", fontWeight: 900, color: "#fff", margin: 0, letterSpacing: "-0.01em" }}>
+                  MAIN MENU
+                </h2>
+                <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", margin: "0.1rem 0 0 0", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                  Control Center
+                </p>
+              </div>
+              
+              {/* Close Button */}
+              <button 
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{
+                  width: "36px", height: "36px", borderRadius: "50%",
+                  background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                  color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer", transition: "all 0.2s"
+                }}
+              >
+                <Icons.Close />
+              </button>
             </div>
-            
-            {/* Close Button */}
-            <button 
-              onClick={() => setIsMobileMenuOpen(false)}
+
+            {/* Grid Menu Content (3x4 Layout) */}
+            <div style={{
+              display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
+              gap: "1.25rem 0.5rem"
+            }}>
+              {navLinks.map((link) => {
+                const isActive = isLinkActive(link.href);
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    style={{
+                      display: "flex", flexDirection: "column", alignItems: "center",
+                      gap: "0.5rem", textDecoration: "none", color: "inherit"
+                    }}
+                  >
+                    <div style={{
+                      width: "68px", height: "68px", borderRadius: "22px",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      background: isActive 
+                        ? "linear-gradient(135deg, #e11d48, #be123c)"
+                        : "rgba(255,255,255,0.02)",
+                      border: `1px solid ${isActive ? "rgba(225,29,72,0.4)" : "rgba(255,255,255,0.06)"}`,
+                      color: isActive ? "#fff" : "rgba(255,255,255,0.7)",
+                      boxShadow: isActive ? "0 8px 20px rgba(225,29,72,0.3)" : "none",
+                      transition: "all 0.15s ease"
+                    }}>
+                      <link.icon />
+                    </div>
+                    <span style={{
+                      fontSize: "0.6rem", fontWeight: 800,
+                      textTransform: "uppercase", letterSpacing: "0.05em",
+                      color: isActive ? "#fff" : "var(--text-muted)"
+                    }}>
+                      {link.short}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Terminate Session Footer Button */}
+            <button
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                handleLogout();
+              }}
               style={{
-                width: "40px", height: "40px", borderRadius: "50%",
-                background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
-                color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
-                cursor: "pointer", transition: "all 0.2s"
+                width: "100%", display: "flex", alignItems: "center", justifyContent: "center",
+                gap: "0.6rem", padding: "0.9rem", borderRadius: "16px",
+                border: "1px solid rgba(255,255,255,0.06)",
+                background: "rgba(255,255,255,0.06)", color: "#fb7185",
+                cursor: "pointer", fontWeight: 800, fontSize: "0.8rem",
+                textTransform: "uppercase", letterSpacing: "0.08em",
+                transition: "all 0.2s"
               }}
             >
-              <Icons.Close />
+              <Icons.Logout />
+              Terminate Session
             </button>
           </div>
-
-          {/* Grid Menu Content (3x4 Layout) */}
-          <div style={{
-            display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "1.25rem 0.75rem", margin: "auto 0"
-          }}>
-            {navLinks.map((link) => {
-              const isActive = isLinkActive(link.href);
-              const isKiosk = link.name === "Kiosk";
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  style={{
-                    display: "flex", flexDirection: "column", alignItems: "center",
-                    gap: "0.6rem", textDecoration: "none", color: "inherit"
-                  }}
-                >
-                  <div style={{
-                    width: "72px", height: "72px", borderRadius: "24px",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    background: isActive 
-                      ? "linear-gradient(135deg, #e11d48, #be123c)" // Red glow for active, matching Pos
-                      : "rgba(255,255,255,0.02)",
-                    border: `1px solid ${isActive ? "rgba(225,29,72,0.4)" : "rgba(255,255,255,0.06)"}`,
-                    color: isActive ? "#fff" : "rgba(255,255,255,0.7)",
-                    boxShadow: isActive ? "0 8px 24px rgba(225,29,72,0.3)" : "none",
-                    transition: "all 0.2s ease"
-                  }}>
-                    <link.icon />
-                  </div>
-                  <span style={{
-                    fontSize: "0.65rem", fontWeight: 800,
-                    textTransform: "uppercase", letterSpacing: "0.05em",
-                    color: isActive ? "#fff" : "var(--text-muted)"
-                  }}>
-                    {link.short}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* Terminate Session Footer Button */}
-          <button
-            onClick={() => {
-              setIsMobileMenuOpen(false);
-              handleLogout();
-            }}
-            style={{
-              width: "100%", display: "flex", alignItems: "center", justifyContent: "center",
-              gap: "0.75rem", padding: "1.1rem", borderRadius: "18px",
-              border: "1px solid rgba(255,255,255,0.06)",
-              background: "rgba(255,255,255,0.08)", color: "#fb7185",
-              cursor: "pointer", fontWeight: 800, fontSize: "0.85rem",
-              textTransform: "uppercase", letterSpacing: "0.08em",
-              transition: "all 0.2s"
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
-          >
-            <Icons.Logout />
-            Terminate Session
-          </button>
         </div>
       )}
+
 
       {/* ── Main Content ── */}
       <main className="main-content animate-slide-up">
