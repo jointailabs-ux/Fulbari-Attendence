@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import DocumentsTab from "../../admin/staff/[id]/DocumentsTab";
 
 interface PayrollRecord {
   id: string;
@@ -23,6 +24,8 @@ interface StaffData {
   isActive: boolean;
   address?: string;
   emergencyContact?: string;
+  dateOfBirth?: string;
+  bloodGroup?: string;
   slot?: { name: string; outlet?: { name: string; shiftStartTime: string; shiftEndTime: string } };
   payrolls: PayrollRecord[];
   currentMonth: {
@@ -58,7 +61,7 @@ export default function StaffProfilePage() {
 
   const [staff, setStaff] = useState<StaffData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"overview" | "salary" | "leaves">("overview");
+  const [tab, setTab] = useState<"overview" | "documents" | "salary" | "leaves">("overview");
 
   // Leaves management states
   const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
@@ -69,6 +72,14 @@ export default function StaffProfilePage() {
     endDate: "",
     type: "FULL",
     reason: "",
+  });
+
+  // Edit details states
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [submittingEdit, setSubmittingEdit] = useState(false);
+  const [editForm, setEditForm] = useState({
+    dateOfBirth: "",
+    bloodGroup: "",
   });
 
   useEffect(() => {
@@ -142,6 +153,31 @@ export default function StaffProfilePage() {
       alert("Network error. Please try again.");
     } finally {
       setSubmittingLeave(false);
+    }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmittingEdit(true);
+    try {
+      const res = await fetch(`/api/v1/staff-portal/${staffId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editForm),
+      });
+
+      if (res.ok) {
+        alert("Personal details updated successfully!");
+        setIsEditModalOpen(false);
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to update details");
+      }
+    } catch {
+      alert("Network error. Please try again.");
+    } finally {
+      setSubmittingEdit(false);
     }
   };
 
@@ -266,6 +302,7 @@ export default function StaffProfilePage() {
         <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", background: "rgba(255,255,255,0.02)", padding: "0.4rem", borderRadius: "14px", border: "1px solid var(--glass-border)", width: "fit-content" }}>
           {[
             { id: "overview", label: "👤 Profile" },
+            { id: "documents", label: "📂 Documents" },
             { id: "salary", label: "💸 Salary History" },
             { id: "leaves", label: "📝 Leave Requests" },
           ].map((t) => (
@@ -299,6 +336,8 @@ export default function StaffProfilePage() {
                 { label: "Monthly Salary", value: `₹${staff.monthlySalary.toLocaleString("en-IN")}`, icon: "💰" },
                 { label: "Joining Date", value: joinDate, icon: "📆" },
                 { label: "Shift Hours", value: staff.slot?.outlet ? `${staff.slot.outlet.shiftStartTime} – ${staff.slot.outlet.shiftEndTime}` : "—", icon: "🕐" },
+                { label: "Date of Birth", value: staff.dateOfBirth ? new Date(staff.dateOfBirth).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : "Not provided", icon: "🎂" },
+                { label: "Blood Group", value: staff.bloodGroup || "Not provided", icon: "🩸" },
                 { label: "Emergency Contact", value: staff.emergencyContact || "Not provided", icon: "🚨" },
                 { label: "Address", value: staff.address || "Not provided", icon: "🏠" },
               ].map((item, i) => (
@@ -311,6 +350,29 @@ export default function StaffProfilePage() {
                 </div>
               ))}
             </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "2rem" }}>
+              <button 
+                onClick={() => {
+                  setEditForm({
+                    dateOfBirth: staff.dateOfBirth ? new Date(staff.dateOfBirth).toISOString().slice(0, 10) : "",
+                    bloodGroup: staff.bloodGroup || "",
+                  });
+                  setIsEditModalOpen(true);
+                }}
+                className="btn-modern btn-primary"
+                style={{ padding: "0.6rem 1.5rem", fontSize: "0.85rem" }}
+              >
+                ✏️ Edit Personal Details
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Documents Tab */}
+        {tab === "documents" && (
+          <div className="animate-slide-up">
+            <h2 style={{ fontSize: "1.25rem", fontWeight: 800, marginBottom: "1.5rem" }}>My Documents</h2>
+            <DocumentsTab staffId={staffId} />
           </div>
         )}
 
@@ -518,6 +580,60 @@ export default function StaffProfilePage() {
                 disabled={submittingLeave}
               >
                 {submittingLeave ? "Submitting..." : "Submit Request"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit Personal Details Modal ── */}
+      {isEditModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsEditModalOpen(false)}>
+          <div className="glass modal-content animate-slide-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "450px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.75rem" }}>
+              <h2 className="text-gradient" style={{ fontSize: "1.5rem" }}>Edit Details</h2>
+              <button onClick={() => setIsEditModalOpen(false)} className="modal-close">&times;</button>
+            </div>
+            
+            <form onSubmit={handleEditSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+              <div>
+                <FormLabel>Date of Birth</FormLabel>
+                <input 
+                  type="date" 
+                  required 
+                  className="input-modern" 
+                  value={editForm.dateOfBirth} 
+                  onChange={(e) => setEditForm({ ...editForm, dateOfBirth: e.target.value })} 
+                />
+              </div>
+              
+              <div>
+                <FormLabel>Blood Group</FormLabel>
+                <select 
+                  className="input-modern" 
+                  value={editForm.bloodGroup} 
+                  onChange={(e) => setEditForm({ ...editForm, bloodGroup: e.target.value })}
+                  required
+                >
+                  <option value="">Select Blood Group...</option>
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                </select>
+              </div>
+
+              <button 
+                type="submit" 
+                className="btn-modern btn-primary" 
+                style={{ width: "100%", marginTop: "0.5rem" }}
+                disabled={submittingEdit}
+              >
+                {submittingEdit ? "Saving..." : "Save Changes"}
               </button>
             </form>
           </div>

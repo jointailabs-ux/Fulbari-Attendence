@@ -44,6 +44,8 @@ model StaffProfile {
   joiningDate         DateTime
   leavingDate         DateTime?
   isActive            Boolean  @default(true)
+  dateOfBirth         DateTime?
+  bloodGroup          String?
   createdAt           DateTime @default(now())
 
   slot                StaffSlot @relation(fields: [slotId], references: [id], onDelete: Cascade)

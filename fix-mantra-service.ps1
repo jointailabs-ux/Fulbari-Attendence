@@ -4,7 +4,8 @@
 # 1. Trusts the expired Mantra certificate and completely reinstalls the driver to clear cached blocks (Code 52).
 # 2. Replaces the 64-bit DLL with the correct 32-bit DLL to prevent service crashes.
 
-$logPath = "c:\Users\Koushik\Downloads\Fulbari Attendence Salary\fix-log.txt"
+# Determine log path dynamically
+$logPath = Join-Path $PSScriptRoot "fix-log.txt"
 "Starting fix script at $(Get-Date)" | Out-File -FilePath $logPath
 
 function Log($msg, $color="White") {

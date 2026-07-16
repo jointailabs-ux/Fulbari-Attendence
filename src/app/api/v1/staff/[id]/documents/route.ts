@@ -20,9 +20,15 @@ export async function POST(
       return NextResponse.json({ error: 'File and documentType are required' }, { status: 400 });
     }
 
-    // Validate file type
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
-    if (!allowedTypes.includes(file.type)) {
+    // Validate file type (robust extension check as fallback for MIME-type mismatches)
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
+
+    const isValidMime = allowedTypes.includes(file.type);
+    const isValidExt = allowedExtensions.includes(fileExtension || '');
+
+    if (!isValidMime && !isValidExt) {
       return NextResponse.json({ error: 'Invalid file type. Only PDF, JPG, and PNG are allowed.' }, { status: 400 });
     }
 
@@ -36,7 +42,6 @@ export async function POST(
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const fileExtension = file.name.split('.').pop();
     const fileName = `${id}_${documentType}_${uuidv4()}.${fileExtension}`;
     const filePath = join(UPLOAD_DIR, fileName);
 

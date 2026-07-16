@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import prisma from '../../lib/prisma';
 import DashboardStats from "./DashboardStats";
 import EmergencyPopup from "./EmergencyPopup";
+import BirthdayPopup from "./BirthdayPopup";
 import DailyRosterMonitor from "./DailyRosterMonitor";
 
 export default async function AdminDashboard() {
@@ -180,6 +181,38 @@ export default async function AdminDashboard() {
       extra: `₹${a.amount || 0}` 
     }));
 
+    // Calculate birthday notifications (2 days prior or today)
+    const birthdayAlerts: { id: string; name: string; daysRemaining: number }[] = [];
+    activeStaffProfiles.forEach(staff => {
+      if (staff.dateOfBirth) {
+        const dob = new Date(staff.dateOfBirth);
+        const dobMonth = dob.getMonth();
+        const dobDate = dob.getDate();
+        
+        const currentYear = istTime.getFullYear();
+        let bday = new Date(currentYear, dobMonth, dobDate);
+        const todayReset = new Date(istTime.getFullYear(), istTime.getMonth(), istTime.getDate());
+        
+        let diffTime = bday.getTime() - todayReset.getTime();
+        let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays < 0) {
+          bday = new Date(currentYear + 1, dobMonth, dobDate);
+          diffTime = bday.getTime() - todayReset.getTime();
+          diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        }
+        
+        if (diffDays >= 0 && diffDays <= 2) {
+          birthdayAlerts.push({
+            id: staff.id,
+            name: staff.name,
+            daysRemaining: diffDays
+          });
+        }
+      }
+    });
+    birthdayAlerts.sort((a, b) => a.daysRemaining - b.daysRemaining);
+
     const totalMonthlyExpense = releasedSalaries.reduce((acc, curr) => acc + (curr.finalPayable || 0), 0);
     const totalAdvancesThisMonth = advancesThisMonth.reduce((acc, curr) => acc + (curr.amount || 0), 0);
     const totalExpectedSalary = activeStaffProfilesFull.reduce((acc, curr) => acc + (curr.monthlySalary || 0), 0);
@@ -202,6 +235,8 @@ export default async function AdminDashboard() {
           </div>
         </header>
         
+        <BirthdayPopup alerts={birthdayAlerts} />
+
         <EmergencyPopup alerts={highAdvanceAlerts} />
 
         <DashboardStats 

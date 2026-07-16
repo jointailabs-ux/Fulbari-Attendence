@@ -78,3 +78,29 @@ export async function GET(
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export async function PUT(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await req.json();
+    const { dateOfBirth, bloodGroup } = body;
+
+    const updatedStaff = await prisma.staffProfile.update({
+      where: { id },
+      data: {
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+        bloodGroup: bloodGroup || null,
+      }
+    });
+
+    const { hashedPin, ...safeStaff } = updatedStaff;
+    return NextResponse.json(safeStaff);
+  } catch (error) {
+    console.error('Staff portal update error:', error);
+    return NextResponse.json({ error: 'Failed to update details' }, { status: 500 });
+  }
+}
+

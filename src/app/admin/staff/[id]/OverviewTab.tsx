@@ -12,6 +12,8 @@ interface FormData {
   slotId: string;
   isActive: boolean;
   pin: string; // blank by default, overwrites when provided
+  dateOfBirth: string;
+  bloodGroup: string;
 }
 
 export default function OverviewTab({ staff, refresh }: { staff: any; refresh: () => void }) {
@@ -25,7 +27,9 @@ export default function OverviewTab({ staff, refresh }: { staff: any; refresh: (
     address: staff.address || '',
     slotId: staff.slotId || '',
     isActive: staff.isActive !== undefined ? staff.isActive : true,
-    pin: ''
+    pin: '',
+    dateOfBirth: staff.dateOfBirth ? new Date(staff.dateOfBirth).toISOString().slice(0, 10) : '',
+    bloodGroup: staff.bloodGroup || ''
   });
 
   // Fetch slots roster for dropdown select
@@ -52,7 +56,9 @@ export default function OverviewTab({ staff, refresh }: { staff: any; refresh: (
         emergencyContact: formData.emergencyContact,
         address: formData.address,
         slotId: formData.slotId,
-        isActive: formData.isActive
+        isActive: formData.isActive,
+        dateOfBirth: formData.dateOfBirth ? new Date(formData.dateOfBirth).toISOString() : null,
+        bloodGroup: formData.bloodGroup || null
       };
 
       if (formData.pin.trim()) {
@@ -197,6 +203,33 @@ export default function OverviewTab({ staff, refresh }: { staff: any; refresh: (
                 onChange={(e) => setFormData({...formData, emergencyContact: e.target.value})} 
               />
             </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)' }}>Date of Birth</label>
+              <input 
+                className="input-modern" 
+                type="date"
+                value={formData.dateOfBirth} 
+                onChange={(e) => setFormData({...formData, dateOfBirth: e.target.value})} 
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)' }}>Blood Group</label>
+              <select 
+                className="input-modern"
+                value={formData.bloodGroup}
+                onChange={(e) => setFormData({...formData, bloodGroup: e.target.value})}
+              >
+                <option value="">Select Blood Group...</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+              </select>
+            </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)' }}>Residential Address</label>
               <textarea 
@@ -218,6 +251,8 @@ export default function OverviewTab({ staff, refresh }: { staff: any; refresh: (
             <DetailItem label="Primary Location" value={staff.slot?.outlet?.name || "Unknown"} />
             <DetailItem label="Monthly Salary" value={`₹${staff.monthlySalary}`} />
             <DetailItem label="Activation Date" value={new Date(staff.joiningDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })} />
+            <DetailItem label="Date of Birth" value={staff.dateOfBirth ? new Date(staff.dateOfBirth).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : "Not provided"} />
+            <DetailItem label="Blood Group" value={staff.bloodGroup || "Not provided"} />
             <DetailItem label="Emergency Dispatch" value={staff.emergencyContact || "No data provided"} />
             <DetailItem label="Primary Residency" value={staff.address || "No data provided"} />
           </div>

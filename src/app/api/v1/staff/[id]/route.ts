@@ -98,13 +98,15 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await req.json();
-    const { name, phone, pin, monthlySalary, slotId, isActive } = body;
+    const { name, phone, pin, monthlySalary, slotId, isActive, dateOfBirth, bloodGroup } = body;
 
     const updateData: any = {
       name,
       phone,
       monthlySalary: monthlySalary ? Number(monthlySalary) : undefined,
-      isActive
+      isActive,
+      dateOfBirth: dateOfBirth !== undefined ? (dateOfBirth ? new Date(dateOfBirth) : null) : undefined,
+      bloodGroup: bloodGroup !== undefined ? bloodGroup : undefined
     };
 
     if (slotId) {
