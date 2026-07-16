@@ -99,3 +99,35 @@ export async function GET(
     return NextResponse.json({ error: 'Failed to fetch documents', details: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const { searchParams } = new URL(req.url);
+    const docId = searchParams.get('docId');
+
+    if (!docId) {
+      return NextResponse.json({ error: 'docId query param is required' }, { status: 400 });
+    }
+
+    // Ensure the document belongs to this staff member before deleting
+    const doc = await prisma.employeeDocument.findFirst({
+      where: { id: docId, staffId: id }
+    });
+
+    if (!doc) {
+      return NextResponse.json({ error: 'Document not found or unauthorized' }, { status: 404 });
+    }
+
+    await prisma.employeeDocument.delete({ where: { id: docId } });
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error('Error deleting document:', error);
+    return NextResponse.json({ error: 'Failed to delete document', details: error.message }, { status: 500 });
+  }
+}
+

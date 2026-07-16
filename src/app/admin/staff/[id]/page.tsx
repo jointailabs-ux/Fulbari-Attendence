@@ -36,13 +36,13 @@ export default function EmployeeProfile({ params }: { params: Promise<{ id: stri
   if (!staff) return <div style={{ padding: '4rem', textAlign: 'center' }}>Personnel record not found.</div>;
 
   const tabs = [
-    { id: "overview", label: "Profile", icon: "👤" },
-    { id: "attendance", label: "Attendance", icon: "📅" },
-    { id: "advances", label: "Debt/Advances", icon: "💰" },
-    { id: "leaves", label: "Leaves", icon: "📝" },
-    { id: "payroll", label: "Financials", icon: "📑" },
-    { id: "documents", label: "Documents", icon: "📂" },
-    { id: "biometrics", label: "Biometrics", icon: "🧬" },
+    { id: "overview",    label: "Profile",    short: "Profile",    icon: "👤" },
+    { id: "attendance", label: "Attendance",  short: "Attend.",   icon: "📅" },
+    { id: "advances",   label: "Advances",   short: "Advances",  icon: "💰" },
+    { id: "leaves",     label: "Leaves",     short: "Leaves",    icon: "📝" },
+    { id: "payroll",    label: "Financials", short: "Finance",   icon: "📑" },
+    { id: "documents",  label: "Documents",  short: "Docs",      icon: "📂" },
+    { id: "biometrics", label: "Biometrics", short: "Biometrics",icon: "🧬" },
   ];
 
 
@@ -71,24 +71,65 @@ export default function EmployeeProfile({ params }: { params: Promise<{ id: stri
         </div>
       </header>
 
-      {/* Modern Tabs Navigation */}
-      <nav className="glass" style={{ display: 'flex', gap: '0.5rem', padding: '0.5rem', borderRadius: '20px', overflowX: 'auto' }}>
+      {/* Responsive Tabs Navigation */}
+      <style>{`
+        .profile-tab-nav {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 0.4rem;
+          padding: 0.5rem;
+          border-radius: 20px;
+        }
+        .profile-tab-btn {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 0.3rem;
+          padding: 0.6rem 0.3rem;
+          border-radius: 14px;
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          font-size: 0.65rem;
+          font-weight: 700;
+          letter-spacing: 0.03em;
+          white-space: nowrap;
+          background: transparent;
+          color: var(--text-muted);
+        }
+        .profile-tab-btn.active {
+          background: var(--brand-primary);
+          color: white;
+          box-shadow: 0 4px 15px rgba(99,102,241,0.35);
+        }
+        .profile-tab-btn:hover:not(.active) {
+          background: rgba(255,255,255,0.07);
+          color: var(--text-primary);
+        }
+        .profile-tab-icon { font-size: 1.2rem; }
+        @media (max-width: 640px) {
+          .profile-tab-nav {
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.4rem;
+          }
+          .profile-tab-btn {
+            padding: 0.7rem 0.25rem;
+            font-size: 0.6rem;
+            border-radius: 12px;
+          }
+          .profile-tab-icon { font-size: 1.3rem; }
+        }
+      `}</style>
+      <nav className="glass profile-tab-nav">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`btn-modern ${activeTab === tab.id ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ 
-              flex: 1, 
-              padding: '0.75rem 1.5rem', 
-              fontSize: '0.85rem', 
-              borderRadius: '16px',
-              border: 'none',
-              background: activeTab === tab.id ? undefined : 'transparent'
-            }}
+            className={`profile-tab-btn${activeTab === tab.id ? ' active' : ''}`}
           >
-            <span style={{ marginRight: '0.5rem' }}>{tab.icon}</span>
-            {tab.label}
+            <span className="profile-tab-icon">{tab.icon}</span>
+            <span>{tab.short}</span>
           </button>
         ))}
       </nav>
