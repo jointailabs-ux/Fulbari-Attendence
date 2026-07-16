@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../../../lib/prisma';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { v4 as uuidv4 } from 'uuid';
 
-const UPLOAD_DIR = join(process.cwd(), 'uploads');
+const MAX_FILE_SIZE_MB = 5;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 export async function POST(
   req: Request,
@@ -20,6 +18,11 @@ export async function POST(
       return NextResponse.json({ error: 'File and documentType are required' }, { status: 400 });
     }
 
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      return NextResponse.json({ error: `File too large. Maximum size is ${MAX_FILE_SIZE_MB}MB.` }, { status: 400 });
+    }
+
     // Validate file type (robust extension check as fallback for MIME-type mismatches)
     const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
@@ -32,22 +35,21 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid file type. Only PDF, JPG, and PNG are allowed.' }, { status: 400 });
     }
 
-    // Ensure upload directory exists
-    try {
-      await mkdir(UPLOAD_DIR, { recursive: true });
-    } catch {
-      // Ignore if directory already exists
+    // Convert file to base64 data URL — stored directly in DB, no filesystem needed
+    const bytes = await file.arrayBuffer();
+    const base64 = Buffer.from(bytes).toString('base64');
+
+    // Determine correct MIME type for the data URL prefix
+    let mimeType = file.type;
+    if (!mimeType || mimeType === 'application/octet-stream') {
+      if (fileExtension === 'pdf') mimeType = 'application/pdf';
+      else if (fileExtension === 'jpg' || fileExtension === 'jpeg') mimeType = 'image/jpeg';
+      else if (fileExtension === 'png') mimeType = 'image/png';
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    const dataUrl = `data:${mimeType};base64,${base64}`;
 
-    const fileName = `${id}_${documentType}_${uuidv4()}.${fileExtension}`;
-    const filePath = join(UPLOAD_DIR, fileName);
-
-    await writeFile(filePath, buffer);
-
-    // Check if document of this type already exists for this staff
+    // Upsert: update if doc type exists, create otherwise
     const existingDoc = await prisma.employeeDocument.findFirst({
       where: { staffId: id, documentType }
     });
@@ -56,22 +58,28 @@ export async function POST(
     if (existingDoc) {
       savedDoc = await prisma.employeeDocument.update({
         where: { id: existingDoc.id },
-        data: { fileUrl: fileName, uploadedAt: new Date() }
+        data: { fileUrl: dataUrl, uploadedAt: new Date() }
       });
     } else {
       savedDoc = await prisma.employeeDocument.create({
         data: {
           staffId: id,
           documentType,
-          fileUrl: fileName
+          fileUrl: dataUrl
         }
       });
     }
 
-    return NextResponse.json(savedDoc);
-  } catch (error) {
+    // Return without the huge base64 payload — client only needs the id/type to refresh
+    return NextResponse.json({
+      id: savedDoc.id,
+      staffId: savedDoc.staffId,
+      documentType: savedDoc.documentType,
+      uploadedAt: savedDoc.uploadedAt
+    });
+  } catch (error: any) {
     console.error('Error uploading document:', error);
-    return NextResponse.json({ error: 'Failed to upload document' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to upload document', details: error.message }, { status: 500 });
   }
 }
 
@@ -84,9 +92,10 @@ export async function GET(
     const documents = await prisma.employeeDocument.findMany({
       where: { staffId: id }
     });
+    // Return documents with fileUrl so the client can render the data URL directly
     return NextResponse.json(documents);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching documents:', error);
-    return NextResponse.json({ error: 'Failed to fetch documents' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch documents', details: error.message }, { status: 500 });
   }
 }
