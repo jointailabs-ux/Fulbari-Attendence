@@ -86,7 +86,11 @@ export function calculateSalaryMetrics(
   earlyPenaltiesTotal: number
 ) {
   const R_day = baseSalary / totalDays;
-  const D_paid = presentCount + fullLeavesCount + (0.5 * halfLeavesCount);
+  const L_taken = fullLeavesCount + (0.5 * halfLeavesCount);
+  const L_free_used = Math.min(L_taken, 4);
+  const L_free_unused = Math.max(0, 4 - L_taken);
+
+  const D_paid = presentCount + L_free_used + L_free_unused;
   
   // Mode 1: Simple Payout
   const S_earned_simple = R_day * D_paid;
@@ -94,7 +98,7 @@ export function calculateSalaryMetrics(
   const S_net_simple = S_earned_simple - A_deducted_simple;
 
   // Mode 2: Strict Payout
-  const L_unexcused = Math.max(0, totalDays - (presentCount + fullLeavesCount + (0.5 * halfLeavesCount)));
+  const L_unexcused = Math.max(0, totalDays - (presentCount + L_taken));
   const Penalty_absence = L_unexcused * R_day;
   
   const S_earned_strict = Math.max(0, (R_day * D_paid) - (latePenaltiesTotal + earlyPenaltiesTotal + Penalty_absence));
@@ -129,7 +133,10 @@ export async function calculateStaffPayroll(
   const [year, month] = monthYear.split('-').map(Number);
   const startDate = new Date(Date.UTC(year, month - 1, 1));
   const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59));
-  const D_total = endDate.getDate();
+  let D_total = endDate.getDate();
+  if (month === 8) {
+    D_total = 30; // Override to 30 days for August as per rules
+  }
 
   const staff = await prisma.staffProfile.findUnique({
     where: { id: staffId },
@@ -168,12 +175,15 @@ export async function calculateStaffPayroll(
   // Pending advances sum
   const A_pending = staff.advances.reduce((acc, curr) => acc + curr.amount, 0);
 
-  // Leave tallies
-  const L_full = staff.leaves.filter(l => l.type === 'FULL').length;
-  const L_half = staff.leaves.filter(l => l.type === 'HALF').length;
+  // Present count capped at D_total
+  const D_present = Math.min(staff.attendances.length, D_total);
+
+  // Leave tallies capped to ensure presence + leaves <= D_total
+  const L_full_raw = staff.leaves.filter(l => l.type === 'FULL').length;
+  const L_half_raw = staff.leaves.filter(l => l.type === 'HALF').length;
   
-  // Present count
-  const D_present = staff.attendances.length;
+  const L_full = Math.min(L_full_raw, D_total - D_present);
+  const L_half = Math.min(L_half_raw, (D_total - D_present - L_full) * 2);
 
   // Expected shift times (e.g. "09:00", "17:00")
   const shiftStartTime = staff.slot?.outlet?.shiftStartTime || '09:00';
