@@ -32,6 +32,39 @@ export async function POST(req: Request) {
       );
     }
 
+    // Auto-close any open shifts from previous days
+    try {
+      const nowTmp = new Date();
+      const istTimeTmp = new Date(nowTmp.getTime() + 5.5 * 60 * 60 * 1000);
+      const todayTmp = new Date(Date.UTC(istTimeTmp.getUTCFullYear(), istTimeTmp.getUTCMonth(), istTimeTmp.getUTCDate(), 0, 0, 0, 0));
+
+      const openRecords = await prisma.attendanceRecord.findMany({
+        where: {
+          shiftDate: { lt: todayTmp },
+          state: { in: ["SHIFT_STARTED", "ON_BREAK"] }
+        }
+      });
+
+      for (const record of openRecords) {
+        const autoEndTime = new Date(record.shiftDate.getTime() + 18.5 * 60 * 60 * 1000);
+        
+        await prisma.breakLog.updateMany({
+          where: { attendanceId: record.id, endTime: null },
+          data: { endTime: autoEndTime }
+        });
+
+        await prisma.attendanceRecord.update({
+          where: { id: record.id },
+          data: {
+            state: "SHIFT_ENDED",
+            endTime: autoEndTime
+          }
+        });
+      }
+    } catch (err) {
+      console.error("Auto-close pending shifts error:", err);
+    }
+
     // Calculate today's date in IST
     const now = new Date();
     const istTime = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
@@ -62,6 +95,15 @@ export async function POST(req: Request) {
 
     // Auto-detect action
     if (currentState === "NOT_STARTED") {
+      // Clock-in restriction check: only after 12 PM (noon)
+      const istHour = istTime.getUTCHours();
+      if (istHour < 12) {
+        return NextResponse.json(
+          { error: "Clock-in is only allowed after 12:00 PM (noon)." },
+          { status: 400 }
+        );
+      }
+
       // Clock IN — create new attendance record
       await prisma.attendanceRecord.create({
         data: {

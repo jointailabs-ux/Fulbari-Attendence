@@ -6,6 +6,62 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const dateStr = searchParams.get("date");
 
+    // 1. One-time cleanup: Delete any accidental August 2nd, 2026 attendance records created before 12:00 PM (noon)
+    try {
+      const aug2 = new Date(Date.UTC(2026, 7, 2, 0, 0, 0, 0));
+      const recordsToDelete = await prisma.attendanceRecord.findMany({
+        where: {
+          shiftDate: aug2,
+          startTime: { lt: new Date(Date.UTC(2026, 7, 2, 6, 30, 0, 0)) } // before 12:00 PM IST
+        }
+      });
+      if (recordsToDelete.length > 0) {
+        const ids = recordsToDelete.map(r => r.id);
+        await prisma.breakLog.deleteMany({
+          where: { attendanceId: { in: ids } }
+        });
+        await prisma.attendanceRecord.deleteMany({
+          where: { id: { in: ids } }
+        });
+        console.log(`Successfully cleaned up ${ids.length} accidental August 2nd records.`);
+      }
+    } catch (e) {
+      console.error("Cleanup August 2nd error:", e);
+    }
+
+    // 2. Auto-close any open shifts from previous days
+    try {
+      const nowTmp = new Date();
+      const istTimeTmp = new Date(nowTmp.getTime() + 5.5 * 60 * 60 * 1000);
+      const todayTmp = new Date(Date.UTC(istTimeTmp.getUTCFullYear(), istTimeTmp.getUTCMonth(), istTimeTmp.getUTCDate(), 0, 0, 0, 0));
+
+      const openRecords = await prisma.attendanceRecord.findMany({
+        where: {
+          shiftDate: { lt: todayTmp },
+          state: { in: ["SHIFT_STARTED", "ON_BREAK"] }
+        }
+      });
+
+      for (const record of openRecords) {
+        const autoEndTime = new Date(record.shiftDate.getTime() + 18.5 * 60 * 60 * 1000);
+        
+        await prisma.breakLog.updateMany({
+          where: { attendanceId: record.id, endTime: null },
+          data: { endTime: autoEndTime }
+        });
+
+        await prisma.attendanceRecord.update({
+          where: { id: record.id },
+          data: {
+            state: "SHIFT_ENDED",
+            endTime: autoEndTime
+          }
+        });
+      }
+    } catch (err) {
+      console.error("Auto-close pending shifts error:", err);
+    }
+
     let queryDate: Date;
     if (dateStr) {
       const [year, month, day] = dateStr.split("-").map(Number);

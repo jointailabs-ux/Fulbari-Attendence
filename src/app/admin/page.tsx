@@ -14,6 +14,58 @@ export default async function AdminDashboard() {
   const today = new Date(Date.UTC(istTime.getUTCFullYear(), istTime.getUTCMonth(), istTime.getUTCDate(), 0, 0, 0, 0));
 
   try {
+    // 1. One-time cleanup: Delete any accidental August 2nd, 2026 attendance records created before 12:00 PM (noon)
+    try {
+      const aug2 = new Date(Date.UTC(2026, 7, 2, 0, 0, 0, 0));
+      const recordsToDelete = await prisma.attendanceRecord.findMany({
+        where: {
+          shiftDate: aug2,
+          startTime: { lt: new Date(Date.UTC(2026, 7, 2, 6, 30, 0, 0)) } // before 12:00 PM IST
+        }
+      });
+      if (recordsToDelete.length > 0) {
+        const ids = recordsToDelete.map(r => r.id);
+        await prisma.breakLog.deleteMany({
+          where: { attendanceId: { in: ids } }
+        });
+        await prisma.attendanceRecord.deleteMany({
+          where: { id: { in: ids } }
+        });
+        console.log(`Successfully cleaned up ${ids.length} accidental August 2nd records.`);
+      }
+    } catch (e) {
+      console.error("Cleanup August 2nd error:", e);
+    }
+
+    // 2. Auto-close any open shifts from previous days
+    try {
+      const openRecords = await prisma.attendanceRecord.findMany({
+        where: {
+          shiftDate: { lt: today },
+          state: { in: ["SHIFT_STARTED", "ON_BREAK"] }
+        }
+      });
+
+      for (const record of openRecords) {
+        const autoEndTime = new Date(record.shiftDate.getTime() + 18.5 * 60 * 60 * 1000);
+        
+        await prisma.breakLog.updateMany({
+          where: { attendanceId: record.id, endTime: null },
+          data: { endTime: autoEndTime }
+        });
+
+        await prisma.attendanceRecord.update({
+          where: { id: record.id },
+          data: {
+            state: "SHIFT_ENDED",
+            endTime: autoEndTime
+          }
+        });
+      }
+    } catch (err) {
+      console.error("Auto-close pending shifts error:", err);
+    }
+
     // Calculate dates first
     const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const currentMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59);
