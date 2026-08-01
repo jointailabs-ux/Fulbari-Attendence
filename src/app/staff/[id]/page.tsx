@@ -80,6 +80,7 @@ export default function StaffProfilePage() {
   const [editForm, setEditForm] = useState({
     dateOfBirth: "",
     bloodGroup: "",
+    pin: "",
   });
 
   useEffect(() => {
@@ -158,6 +159,10 @@ export default function StaffProfilePage() {
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (editForm.pin.trim() && !/^\d{6}$/.test(editForm.pin.trim())) {
+      alert("PIN must be exactly 6 digits.");
+      return;
+    }
     setSubmittingEdit(true);
     try {
       const res = await fetch(`/api/v1/staff-portal/${staffId}`, {
@@ -356,6 +361,7 @@ export default function StaffProfilePage() {
                   setEditForm({
                     dateOfBirth: staff.dateOfBirth ? new Date(staff.dateOfBirth).toISOString().slice(0, 10) : "",
                     bloodGroup: staff.bloodGroup || "",
+                    pin: "",
                   });
                   setIsEditModalOpen(true);
                 }}
@@ -625,6 +631,18 @@ export default function StaffProfilePage() {
                   <option value="O+">O+</option>
                   <option value="O-">O-</option>
                 </select>
+              </div>
+
+              <div>
+                <FormLabel>Change Login PIN (6 digits)</FormLabel>
+                <input 
+                  type="text" 
+                  maxLength={6}
+                  className="input-modern" 
+                  placeholder="•••••• (Leave blank to keep existing)"
+                  value={editForm.pin} 
+                  onChange={(e) => setEditForm({ ...editForm, pin: e.target.value })} 
+                />
               </div>
 
               <button 

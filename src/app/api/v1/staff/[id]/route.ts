@@ -98,7 +98,7 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await req.json();
-    const { name, phone, pin, monthlySalary, slotId, isActive, dateOfBirth, bloodGroup } = body;
+    const { name, phone, pin, monthlySalary, slotId, isActive, dateOfBirth, bloodGroup, emergencyContact, address } = body;
 
     const updateData: any = {
       name,
@@ -106,7 +106,9 @@ export async function PUT(
       monthlySalary: monthlySalary ? Number(monthlySalary) : undefined,
       isActive,
       dateOfBirth: dateOfBirth !== undefined ? (dateOfBirth ? new Date(dateOfBirth) : null) : undefined,
-      bloodGroup: bloodGroup !== undefined ? bloodGroup : undefined
+      bloodGroup: bloodGroup !== undefined ? bloodGroup : undefined,
+      emergencyContact: emergencyContact !== undefined ? emergencyContact : undefined,
+      address: address !== undefined ? address : undefined
     };
 
     if (slotId) {

@@ -86,14 +86,23 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await req.json();
-    const { dateOfBirth, bloodGroup } = body;
+    const { dateOfBirth, bloodGroup, pin } = body;
+
+    const updateData: any = {
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+      bloodGroup: bloodGroup || null,
+    };
+
+    if (pin && pin.trim()) {
+      if (!/^\d{6}$/.test(pin.trim())) {
+        return NextResponse.json({ error: 'PIN must be exactly 6 digits' }, { status: 400 });
+      }
+      updateData.hashedPin = Buffer.from(pin.trim()).toString('base64');
+    }
 
     const updatedStaff = await prisma.staffProfile.update({
       where: { id },
-      data: {
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-        bloodGroup: bloodGroup || null,
-      }
+      data: updateData
     });
 
     const { hashedPin, ...safeStaff } = updatedStaff;

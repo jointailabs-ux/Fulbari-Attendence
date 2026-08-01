@@ -27,7 +27,7 @@ export default function OverviewTab({ staff, refresh }: { staff: any; refresh: (
     address: staff.address || '',
     slotId: staff.slotId || '',
     isActive: staff.isActive !== undefined ? staff.isActive : true,
-    pin: '',
+    pin: staff.hashedPin ? atob(staff.hashedPin) : '',
     dateOfBirth: staff.dateOfBirth ? new Date(staff.dateOfBirth).toISOString().slice(0, 10) : '',
     bloodGroup: staff.bloodGroup || ''
   });
@@ -184,12 +184,12 @@ export default function OverviewTab({ staff, refresh }: { staff: any; refresh: (
               </select>
             </div>
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)' }}>Overriding security PIN (6 digits)</label>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)' }}>Security PIN (6 digits)</label>
               <input 
                 className="input-modern" 
-                type="password"
+                type="text"
                 maxLength={6}
-                placeholder="•••••• (Leave blank to keep existing PIN)"
+                placeholder="6-digit PIN"
                 value={formData.pin} 
                 onChange={(e) => setFormData({...formData, pin: e.target.value})} 
               />
@@ -247,6 +247,7 @@ export default function OverviewTab({ staff, refresh }: { staff: any; refresh: (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2.5rem' }}>
             <DetailItem label="Official Name" value={staff.name} />
             <DetailItem label="Verified Phone" value={staff.phone} />
+            <DetailItem label="Security PIN" value={staff.hashedPin ? atob(staff.hashedPin) : "Not set"} />
             <DetailItem label="Active Slot" value={staff.slot?.name || "UNASSIGNED"} />
             <DetailItem label="Primary Location" value={staff.slot?.outlet?.name || "Unknown"} />
             <DetailItem label="Monthly Salary" value={`₹${staff.monthlySalary}`} />
