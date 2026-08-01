@@ -395,10 +395,7 @@ export default function PayrollCalculationPage() {
                   }}>
                     {/* Left: Tally details */}
                     <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
-                      <div>
-                        <span style={{ display: "block", fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Gross Earned</span>
-                        <span style={{ fontSize: "1rem", fontWeight: 800, color: "#fff" }}>₹{grossEarned}</span>
-                      </div>
+
                       
                       {pfEnabled && (
                         <div>

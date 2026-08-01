@@ -83,10 +83,11 @@ export function calculateSalaryMetrics(
   halfLeavesCount: number,
   pendingAdvancesAmt: number,
   latePenaltiesTotal: number,
-  earlyPenaltiesTotal: number
+  earlyPenaltiesTotal: number,
+  daysElapsed: number = totalDays
 ) {
   const R_day = baseSalary / totalDays;
-  const leavesTaken = Math.max(0, totalDays - presentCount);
+  const leavesTaken = Math.max(0, daysElapsed - presentCount);
   const deductibleLeaves = Math.max(0, leavesTaken - 4);
   const S_earned = Math.max(0, baseSalary - (deductibleLeaves * R_day));
   
@@ -98,6 +99,7 @@ export function calculateSalaryMetrics(
     paidDays: totalDays - deductibleLeaves,
     unexcusedAbsences: deductibleLeaves,
     penaltyAbsence: deductibleLeaves * R_day,
+    leavesTaken,
     simple: {
       earnedSalary: parseFloat(S_earned.toFixed(2)),
       advancesDeducted: parseFloat(A_deducted.toFixed(2)),
@@ -257,6 +259,19 @@ export async function calculateStaffPayroll(
     }
   });
 
+  // Calculate daysElapsed in the month (handling current vs past vs future months)
+  const now = new Date();
+  const istTime = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
+  const curYear = istTime.getUTCFullYear();
+  const curMonth = istTime.getUTCMonth() + 1; // 1-indexed
+
+  let daysElapsed = D_total;
+  if (year === curYear && month === curMonth) {
+    daysElapsed = Math.min(D_total, istTime.getUTCDate());
+  } else if (year > curYear || (year === curYear && month > curMonth)) {
+    daysElapsed = 0;
+  }
+
   const metrics = calculateSalaryMetrics(
     S_base,
     D_total,
@@ -265,7 +280,8 @@ export async function calculateStaffPayroll(
     L_half,
     A_pending,
     penaltyLate,
-    penaltyEarly
+    penaltyEarly,
+    daysElapsed
   );
 
   return {
@@ -276,7 +292,7 @@ export async function calculateStaffPayroll(
     dailyWage: parseFloat(metrics.dailyWage.toFixed(2)),
     totalDaysInMonth: D_total,
     daysPresent: D_present,
-    fullLeaves: L_full,
+    fullLeaves: metrics.leavesTaken,
     halfLeaves: L_half,
     unexcusedAbsences: metrics.unexcusedAbsences,
     paidDays: metrics.paidDays,
