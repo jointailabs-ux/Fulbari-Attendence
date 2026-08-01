@@ -73,12 +73,19 @@ const Icons = {
       <line x1="9" y1="15" x2="15" y2="15"/>
       <line x1="9" y1="11" x2="15" y2="11"/>
     </svg>
+  ),
+  Attendance: () => (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <polyline points="12 6 12 12 16 14"/>
+    </svg>
   )
 };
 
 const navLinks = [
   { name: "Dashboard", short: "HUB", href: "/admin", icon: Icons.Dashboard },
   { name: "Staff", short: "STAFF", href: "/admin/staff", icon: Icons.Staff },
+  { name: "Attendance", short: "ATTEND", href: "/admin/attendance", icon: Icons.Attendance },
   { name: "Slots", short: "SLOTS", href: "/admin/qr", icon: Icons.Slots },
   { name: "Advance", short: "ADVANCE", href: "/admin/advance", icon: Icons.Finance },
   { name: "Leaves", short: "LEAVES", href: "/admin/leaves", icon: Icons.Leaves },

@@ -1,5 +1,6 @@
 "use client";
-import React, { useState, useMemo, useEffect, useRef } from "react";
+
+import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 
 interface RosterItem {
@@ -46,72 +47,60 @@ const STATUS_MAP = {
   NOT_STARTED: { label: "Not Started / Absent", color: "#94a3b8", bg: "rgba(148, 163, 184, 0.08)", icon: "⚪" },
 };
 
-export default function DailyRosterMonitor({ roster }: { roster: RosterItem[] }) {
-  const [filter, setFilter] = useState<"ALL" | "PRESENT" | "BREAK" | "ENDED" | "ABSENT">("ALL");
-  const [searchQuery, setSearchQuery] = useState("");
+export default function AttendanceHistoryPage() {
   const [selectedDate, setSelectedDate] = useState("");
+  const [roster, setRoster] = useState<RosterItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedOutlet, setSelectedOutlet] = useState("ALL");
   const [selectedSlot, setSelectedSlot] = useState("ALL");
-  const [currentRoster, setCurrentRoster] = useState<RosterItem[]>(roster);
-  const [loading, setLoading] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "PRESENT" | "BREAK" | "ENDED" | "ABSENT">("ALL");
 
+  // Format today's date in local YYYY-MM-DD
   useEffect(() => {
     const localNow = new Date();
     const tzOffset = localNow.getTimezoneOffset() * 60000;
-    const todayStr = new Date(localNow.getTime() - tzOffset).toISOString().split("T")[0];
-    setSelectedDate(todayStr);
+    const localDateStr = new Date(localNow.getTime() - tzOffset).toISOString().split("T")[0];
+    setSelectedDate(localDateStr);
   }, []);
 
-  useEffect(() => {
-    setCurrentRoster(roster);
-  }, [roster]);
-
-  const fetchRosterForDate = async (dateStr: string) => {
+  const fetchAttendance = async (dateStr: string) => {
+    if (!dateStr) return;
     setLoading(true);
     try {
       const res = await fetch(`/api/v1/admin/attendance?date=${dateStr}`);
       if (res.ok) {
         const data = await res.json();
-        setCurrentRoster(data.roster || []);
+        setRoster(data.roster || []);
       }
     } catch (e) {
-      console.error("Error loading roster for date:", e);
+      console.error("Error loading attendance records:", e);
     } finally {
       setLoading(false);
     }
   };
 
-  const isFirstRun = useRef(true);
   useEffect(() => {
-    if (isFirstRun.current) {
-      isFirstRun.current = false;
-      return;
-    }
     if (selectedDate) {
-      fetchRosterForDate(selectedDate);
+      fetchAttendance(selectedDate);
     }
   }, [selectedDate]);
 
-  const counts = {
-    ALL: currentRoster.length,
-    PRESENT: currentRoster.filter((r) => r.state === "SHIFT_STARTED").length,
-    BREAK: currentRoster.filter((r) => r.state === "ON_BREAK").length,
-    ENDED: currentRoster.filter((r) => r.state === "SHIFT_ENDED").length,
-    ABSENT: currentRoster.filter((r) => r.state === "NOT_STARTED").length,
-  };
-
+  // Extract unique locations and slots from the full roster for options
   const uniqueOutlets = useMemo(() => {
-    const outlets = currentRoster.map((r) => r.location).filter(Boolean);
+    const outlets = roster.map((r) => r.location).filter(Boolean);
     return Array.from(new Set(outlets));
-  }, [currentRoster]);
+  }, [roster]);
 
   const uniqueSlots = useMemo(() => {
-    const slots = currentRoster.map((r) => r.slotName).filter(Boolean);
+    const slots = roster.map((r) => r.slotName).filter(Boolean);
     return Array.from(new Set(slots));
-  }, [currentRoster]);
+  }, [roster]);
 
+  // Calculate filtered roster list
   const filteredRoster = useMemo(() => {
-    return currentRoster.filter((item) => {
+    return roster.filter((item) => {
+      // 1. Search Query Filter
       const matchesSearch = 
         item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -119,19 +108,29 @@ export default function DailyRosterMonitor({ roster }: { roster: RosterItem[] })
 
       if (!matchesSearch) return false;
 
-      if (filter !== "ALL") {
-        if (filter === "PRESENT" && item.state !== "SHIFT_STARTED") return false;
-        if (filter === "BREAK" && item.state !== "ON_BREAK") return false;
-        if (filter === "ENDED" && item.state !== "SHIFT_ENDED") return false;
-        if (filter === "ABSENT" && item.state !== "NOT_STARTED") return false;
-      }
-
+      // 2. Outlet Location Filter
       if (selectedOutlet !== "ALL" && item.location !== selectedOutlet) return false;
+
+      // 3. Slot Role Filter
       if (selectedSlot !== "ALL" && item.slotName !== selectedSlot) return false;
 
+      // 4. Status Filter
+      if (statusFilter === "ALL") return true;
+      if (statusFilter === "PRESENT") return item.state === "SHIFT_STARTED";
+      if (statusFilter === "BREAK") return item.state === "ON_BREAK";
+      if (statusFilter === "ENDED") return item.state === "SHIFT_ENDED";
+      if (statusFilter === "ABSENT") return item.state === "NOT_STARTED";
       return true;
     });
-  }, [currentRoster, filter, searchQuery, selectedOutlet, selectedSlot]);
+  }, [roster, searchQuery, selectedOutlet, selectedSlot, statusFilter]);
+
+  const counts = {
+    ALL: roster.length,
+    PRESENT: roster.filter((r) => r.state === "SHIFT_STARTED").length,
+    BREAK: roster.filter((r) => r.state === "ON_BREAK").length,
+    ENDED: roster.filter((r) => r.state === "SHIFT_ENDED").length,
+    ABSENT: roster.filter((r) => r.state === "NOT_STARTED").length,
+  };
 
   const formatTime = (isoString: string | null) => {
     if (!isoString) return "--:--";
@@ -143,19 +142,32 @@ export default function DailyRosterMonitor({ roster }: { roster: RosterItem[] })
   };
 
   return (
-    <section style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+    <div className="animate-slide-up" style={{ display: "flex", flexDirection: "column", gap: "1.75rem" }}>
       
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+      {/* ── Header ── */}
+      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "1.5rem" }}>
         <div>
-          <h2 style={{ fontSize: "1.5rem", margin: 0 }} className="text-gradient">Daily Attendance Monitor</h2>
-          <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", margin: "0.2rem 0 0 0" }}>
-            Real-time status roster of all active personnel.
+          <h1 className="text-gradient" style={{ fontSize: "2.5rem", marginBottom: "0.25rem" }}>Attendance Ledger</h1>
+          <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
+            Search and filter historical personnel attendance logs day-by-day.
           </p>
         </div>
-      </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <label style={{ fontSize: "0.8rem", fontWeight: "700", textTransform: "uppercase", color: "var(--text-muted)", letterSpacing: "0.05em" }}>Select Day:</label>
+          <input
+            type="date"
+            className="input-modern"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            style={{ width: "160px", padding: "0.5rem 0.75rem", fontSize: "0.85rem" }}
+          />
+        </div>
+      </header>
 
-      <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
+      {/* ── Filters & Search Row ── */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center" }}>
         
+        {/* Search */}
         <div style={{ position: "relative", flex: "1", minWidth: "220px" }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ position: "absolute", left: "0.85rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", pointerEvents: "none" }}>
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -163,45 +175,40 @@ export default function DailyRosterMonitor({ roster }: { roster: RosterItem[] })
           <input
             type="text"
             className="input-modern"
-            placeholder="Search working staff, location, slot…"
+            placeholder="Search personnel by name or slot…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ paddingLeft: "2.3rem", paddingTop: "0.5rem", paddingBottom: "0.5rem", fontSize: "0.85rem" }}
+            style={{ paddingLeft: "2.3rem", paddingTop: "0.55rem", paddingBottom: "0.55rem", fontSize: "0.85rem" }}
           />
         </div>
 
-        <input
-          type="date"
-          className="input-modern"
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          style={{ width: "150px", paddingTop: "0.5rem", paddingBottom: "0.5rem", fontSize: "0.85rem", cursor: "pointer" }}
-        />
-
+        {/* Outlet Filter */}
         <select
           className="input-modern"
           value={selectedOutlet}
           onChange={(e) => setSelectedOutlet(e.target.value)}
-          style={{ width: "150px", paddingTop: "0.5rem", paddingBottom: "0.5rem", fontSize: "0.85rem", cursor: "pointer" }}
+          style={{ width: "160px", padding: "0.55rem", fontSize: "0.85rem", cursor: "pointer" }}
         >
           <option value="ALL">All Outlets</option>
-          {uniqueOutlets.map((o) => (
-            <option key={o} value={o}>{o}</option>
+          {uniqueOutlets.map((outlet) => (
+            <option key={outlet} value={outlet}>{outlet}</option>
           ))}
         </select>
 
+        {/* Slot Filter */}
         <select
           className="input-modern"
           value={selectedSlot}
           onChange={(e) => setSelectedSlot(e.target.value)}
-          style={{ width: "150px", paddingTop: "0.5rem", paddingBottom: "0.5rem", fontSize: "0.85rem", cursor: "pointer" }}
+          style={{ width: "160px", padding: "0.55rem", fontSize: "0.85rem", cursor: "pointer" }}
         >
           <option value="ALL">All Slots</option>
-          {uniqueSlots.map((s) => (
-            <option key={s} value={s}>{s}</option>
+          {uniqueSlots.map((slot) => (
+            <option key={slot} value={slot}>{slot}</option>
           ))}
         </select>
 
+        {/* Tab Filters */}
         <div style={{ display: "flex", gap: "0.3rem", background: "rgba(255,255,255,0.02)", padding: "0.2rem", borderRadius: "10px", border: "1px solid var(--glass-border)", flexWrap: "wrap" }}>
           {[
             { id: "ALL", label: "All", color: "var(--text-main)" },
@@ -210,7 +217,7 @@ export default function DailyRosterMonitor({ roster }: { roster: RosterItem[] })
             { id: "ENDED", label: "Ended", color: "var(--brand-secondary)" },
             { id: "ABSENT", label: "Absent", color: "var(--text-muted)" },
           ].map((tab) => {
-            const isActive = filter === tab.id;
+            const isActive = statusFilter === tab.id;
             const statusStyle = STATUS_MAP[tab.id === "PRESENT" ? "SHIFT_STARTED" : tab.id === "BREAK" ? "ON_BREAK" : tab.id === "ENDED" ? "SHIFT_ENDED" : tab.id === "ABSENT" ? "NOT_STARTED" : "NOT_STARTED"];
             const activeColor = tab.id === "ALL" ? "var(--brand-primary-light)" : statusStyle.color;
             
@@ -218,7 +225,7 @@ export default function DailyRosterMonitor({ roster }: { roster: RosterItem[] })
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setFilter(tab.id as any)}
+                onClick={() => setStatusFilter(tab.id as any)}
                 style={{
                   padding: "0.35rem 0.75rem",
                   fontSize: "0.75rem",
@@ -239,15 +246,18 @@ export default function DailyRosterMonitor({ roster }: { roster: RosterItem[] })
         </div>
       </div>
 
+      {/* ── Cards Grid ── */}
       {loading ? (
         <div style={{ padding: "4rem", textAlign: "center" }}>
           <div style={{ fontSize: "2rem", animation: "spin 1s linear infinite", display: "inline-block" }}>⟳</div>
-          <p style={{ color: "var(--text-muted)", marginTop: "0.5rem" }}>Loading roster...</p>
+          <p style={{ color: "var(--text-muted)", marginTop: "0.5rem" }}>Loading attendance ledger...</p>
         </div>
       ) : filteredRoster.length === 0 ? (
         <div className="glass" style={{ padding: "4rem 2rem", textAlign: "center", borderRadius: "20px" }}>
-          <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>🍃</div>
-          <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>No personnel found for the selected search & filter criteria.</p>
+          <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>🍃</div>
+          <p style={{ color: "var(--text-muted)", fontWeight: 600 }}>
+            No personnel found matching the query for this date.
+          </p>
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))", gap: "1rem" }}>
@@ -358,9 +368,10 @@ export default function DailyRosterMonitor({ roster }: { roster: RosterItem[] })
           })}
         </div>
       )}
+
       <style jsx global>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
-    </section>
+    </div>
   );
 }
