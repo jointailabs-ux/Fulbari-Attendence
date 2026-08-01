@@ -288,9 +288,13 @@ export default function PayrollCalculationPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             {pendingDrafts.map((r: any, idx: number) => {
               const [c1, c2] = GRAD_PALETTES[idx % GRAD_PALETTES.length];
-              const mode = selections[r.staffId] || 'simple';
-              const netToPay = mode === 'strict' ? r.strictFinal : r.simpleFinal;
-              const grossEarned = mode === 'strict' ? r.strictRaw : r.simpleRaw;
+              const netToPay = r.simpleFinal;
+              const grossEarned = r.simpleRaw;
+              const totalDays = r.metrics.totalDaysInMonth || 30;
+              const dailyWage = r.metrics.dailyWage || (r.monthlySalary / totalDays);
+              const daysPresent = r.metrics.daysPresent;
+              const leavesTaken = r.metrics.fullLeaves;
+              const excessLeaves = r.metrics.unexcusedAbsences;
 
               return (
                 <div
@@ -323,7 +327,7 @@ export default function PayrollCalculationPage() {
                       <div>
                         <p style={{ fontWeight: 800, fontSize: "1rem" }}>{r.name}</p>
                         <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                          Base salary: <strong style={{ color: "#fff" }}>₹{r.monthlySalary.toLocaleString("en-IN")}</strong>
+                          Position Role Slot: <strong style={{ color: "var(--brand-primary-light)" }}>{r.slotName || "Standard Slot"}</strong>
                         </p>
                       </div>
                     </div>
@@ -342,152 +346,99 @@ export default function PayrollCalculationPage() {
                     </div>
                   </div>
 
-                  {/* Calculation Mode Comparison Row */}
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "0.85rem" }}>
-                    
-                    {/* Simple Mode Box */}
-                    <div style={{
-                      padding: "0.85rem 1rem", borderRadius: "12px",
-                      background: mode === "simple" ? "rgba(16,185,129,0.06)" : "rgba(255,255,255,0.02)",
-                      border: `1px solid ${mode === "simple" ? "rgba(16,185,129,0.25)" : "var(--glass-border)"}`,
-                      transition: "all 0.2s"
-                    }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-                        <span style={{ fontSize: "0.75rem", fontWeight: 800, color: mode === "simple" ? "#10b981" : "var(--text-muted)", display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
-                          SIMPLE PAYOUT
-                          <button
-                            type="button"
-                            onClick={() => toggleOriginal(r.staffId)}
-                            title="Check Original Salary (100% Attendance)"
-                            style={{
-                              background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)",
-                              color: "var(--brand-primary-light)", width: "18px", height: "18px",
-                              borderRadius: "4px", fontSize: "0.68rem", cursor: "pointer",
-                              display: "inline-flex", alignItems: "center", justifyContent: "center",
-                              transition: "all 0.2s"
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"}
-                            onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.06)"}
-                          >
-                            ℹ️
-                          </button>
-                        </span>
-                        {mode === "simple" && <span style={{ fontSize: "0.65rem", background: "#10b981", color: "#000", padding: "0.1rem 0.4rem", borderRadius: "4px", fontWeight: 800 }}>SELECTED</span>}
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                        <span>Earned base:</span>
-                        <span>₹{r.simpleRaw}</span>
-                      </div>
-                      {pfEnabled && (
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                          <span>PF (12%):</span>
-                          <span style={{ color: "#fb7185" }}>-₹{r.simplePf}</span>
-                        </div>
-                      )}
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-muted)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "0.3rem", marginBottom: "0.3rem" }}>
-                        <span>Advance Debt:</span>
-                        <span style={{ color: "#fb7185" }}>-₹{r.simpleAdvanceDeducted}</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: "0.95rem" }}>
-                        <span>Net Payable:</span>
-                        <span style={{ color: "#10b981" }}>₹{r.simpleFinal}</span>
-                      </div>
-
-                      {/* Collapsible Original Salary Projection Details */}
-                      {showOriginal[r.staffId] && (
-                        <div style={{
-                          marginTop: "0.75rem", padding: "0.65rem 0.75rem", borderRadius: "10px",
-                          background: "rgba(139, 92, 246, 0.04)", border: "1px dashed rgba(139, 92, 246, 0.25)",
-                          animation: "fadeIn 0.2s ease"
-                        }}>
-                          <p style={{ fontSize: "0.65rem", fontWeight: 900, color: "var(--brand-primary-light)", marginBottom: "0.4rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                            Original Salary (100% Attendance)
-                          </p>
-                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.15rem" }}>
-                            <span>Full-month Base:</span>
-                            <span style={{ color: "#fff", fontWeight: 700 }}>₹{r.monthlySalary}</span>
-                          </div>
-                          {pfEnabled && (
-                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.15rem" }}>
-                              <span>PF Deduction (12%):</span>
-                              <span style={{ color: "#fb7185" }}>-₹{(r.monthlySalary * 0.12).toFixed(2)}</span>
-                            </div>
-                          )}
-                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.15rem" }}>
-                            <span>Max Advance:</span>
-                            <span style={{ color: "#fb7185" }}>
-                              -₹{Math.min(parseFloat(r.totalAdvance), Math.max(0, r.monthlySalary - (pfEnabled ? r.monthlySalary * 0.12 : 0))).toFixed(2)}
-                            </span>
-                          </div>
-                          <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: "0.82rem", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "0.25rem", marginTop: "0.25rem" }}>
-                            <span>Projected Net:</span>
-                            <span style={{ color: "#10b981" }}>
-                              ₹{Math.max(0, r.monthlySalary - (pfEnabled ? r.monthlySalary * 0.12 : 0) - Math.min(parseFloat(r.totalAdvance), Math.max(0, r.monthlySalary - (pfEnabled ? r.monthlySalary * 0.12 : 0)))).toFixed(2)}
-                            </span>
-                          </div>
-                        </div>
-                      )}
+                  {/* Clean Math Grid */}
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+                    gap: "0.75rem",
+                    background: "rgba(0,0,0,0.15)",
+                    padding: "1rem",
+                    borderRadius: "14px",
+                    border: "1px solid rgba(255,255,255,0.03)"
+                  }}>
+                    <div>
+                      <span style={{ display: "block", fontSize: "0.6rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>Base Salary</span>
+                      <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#fff" }}>₹{r.monthlySalary.toLocaleString("en-IN")}</span>
                     </div>
-
-                    {/* Strict Mode Box */}
-                    <div style={{
-                      padding: "0.85rem 1rem", borderRadius: "12px",
-                      background: mode === "strict" ? "rgba(6,182,212,0.06)" : "rgba(255,255,255,0.02)",
-                      border: `1px solid ${mode === "strict" ? "rgba(6,182,212,0.25)" : "var(--glass-border)"}`,
-                      transition: "all 0.2s"
-                    }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-                        <span style={{ fontSize: "0.75rem", fontWeight: 800, color: mode === "strict" ? "#06b6d4" : "var(--text-muted)" }}>STRICT TIMINGS</span>
-                        {mode === "strict" && <span style={{ fontSize: "0.65rem", background: "#06b6d4", color: "#000", padding: "0.1rem 0.4rem", borderRadius: "4px", fontWeight: 800 }}>SELECTED</span>}
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                        <span>Earned base:</span>
-                        <span>₹{r.strictRaw}</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                        <span>Late/Early penalties:</span>
-                        <span style={{ color: "#fb7185" }}>-₹{(r.metrics.penaltyLate + r.metrics.penaltyEarly).toFixed(2)}</span>
-                      </div>
-                      {pfEnabled && (
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                          <span>PF (12%):</span>
-                          <span style={{ color: "#fb7185" }}>-₹{r.strictPf}</span>
-                        </div>
-                      )}
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "var(--text-muted)", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "0.3rem", marginBottom: "0.3rem" }}>
-                        <span>Advance Debt:</span>
-                        <span style={{ color: "#fb7185" }}>-₹{r.strictAdvanceDeducted}</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: "0.95rem" }}>
-                        <span>Net Payable:</span>
-                        <span style={{ color: "#06b6d4" }}>₹{r.strictFinal}</span>
-                      </div>
+                    <div>
+                      <span style={{ display: "block", fontSize: "0.6rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>Days in Month</span>
+                      <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#fff" }}>{totalDays} days</span>
                     </div>
-
+                    <div>
+                      <span style={{ display: "block", fontSize: "0.6rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>Daily Wage</span>
+                      <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#fff" }}>₹{parseFloat(dailyWage.toFixed(2))}</span>
+                    </div>
+                    <div>
+                      <span style={{ display: "block", fontSize: "0.6rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>Days Worked</span>
+                      <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#10b981" }}>{daysPresent} days</span>
+                    </div>
+                    <div>
+                      <span style={{ display: "block", fontSize: "0.6rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>Leaves Taken</span>
+                      <span style={{ fontSize: "0.9rem", fontWeight: 800, color: leavesTaken > 4 ? "#fb923c" : "var(--text-muted)" }}>{leavesTaken} days</span>
+                    </div>
+                    <div>
+                      <span style={{ display: "block", fontSize: "0.6rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>Deducted Days</span>
+                      <span style={{ fontSize: "0.9rem", fontWeight: 800, color: excessLeaves > 0 ? "#fb7185" : "var(--text-muted)" }}>
+                        {excessLeaves} day{excessLeaves !== 1 ? "s" : ""}
+                      </span>
+                    </div>
                   </div>
 
-                  {/* Actions & Selector Footer */}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "0.85rem" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                      <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Disburse Mode:</span>
-                      <select 
-                        className="input-modern" 
-                        style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', minWidth: '130px', width: "auto" }}
-                        value={mode}
-                        onChange={(e) => handleModeChange(r.staffId, e.target.value as any)}
-                      >
-                        <option value="simple">Simple Mode</option>
-                        <option value="strict">Strict Mode</option>
-                      </select>
+                  {/* Financial Breakdown Summary */}
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: "1.5rem",
+                    padding: "0.5rem 0.25rem"
+                  }}>
+                    {/* Left: Tally details */}
+                    <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
+                      <div>
+                        <span style={{ display: "block", fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Gross Earned</span>
+                        <span style={{ fontSize: "1rem", fontWeight: 800, color: "#fff" }}>₹{grossEarned}</span>
+                      </div>
+                      
+                      {pfEnabled && (
+                        <div>
+                          <span style={{ display: "block", fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>PF (12%)</span>
+                          <span style={{ fontSize: "1rem", fontWeight: 800, color: "#fb7185" }}>-₹{r.simplePf}</span>
+                        </div>
+                      )}
+                      
+                      <div>
+                        <span style={{ display: "block", fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Advance Debt</span>
+                        <span style={{ fontSize: "1rem", fontWeight: 800, color: parseFloat(r.totalAdvance) > 0 ? "#fb923c" : "var(--text-muted)" }}>
+                          ₹{parseFloat(r.totalAdvance).toLocaleString("en-IN")}
+                        </span>
+                      </div>
+
+                      <div>
+                        <span style={{ display: "block", fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Advance Deducted</span>
+                        <span style={{ fontSize: "1rem", fontWeight: 800, color: parseFloat(r.simpleAdvanceDeducted) > 0 ? "#fb7185" : "var(--text-muted)" }}>
+                          -₹{r.simpleAdvanceDeducted}
+                        </span>
+                      </div>
                     </div>
 
-                    <button 
-                      className="btn-modern btn-primary" 
-                      style={{ padding: '0.5rem 1.5rem', fontSize: '0.8rem' }}
-                      onClick={() => handleRelease(r)}
-                    >
-                      Authorize Release (₹{netToPay})
-                    </button>
+                    {/* Right: Net Paid + Action */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+                      <div style={{ textAlign: "right" }}>
+                        <span style={{ display: "block", fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em" }}>Net Salary Payable</span>
+                        <span style={{ fontSize: "1.6rem", fontWeight: 900, color: "#10b981", fontFamily: "monospace" }}>
+                          ₹{parseFloat(netToPay).toLocaleString("en-IN")}
+                        </span>
+                      </div>
+
+                      <button
+                        className="btn-modern btn-primary"
+                        onClick={() => handleRelease(r)}
+                        style={{ padding: "0.75rem 1.75rem", fontSize: "0.85rem", fontWeight: 800 }}
+                      >
+                        Release Salary ➔
+                      </button>
+                    </div>
                   </div>
 
                 </div>

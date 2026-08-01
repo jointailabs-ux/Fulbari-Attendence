@@ -86,39 +86,27 @@ export function calculateSalaryMetrics(
   earlyPenaltiesTotal: number
 ) {
   const R_day = baseSalary / totalDays;
-  const L_taken = fullLeavesCount + (0.5 * halfLeavesCount);
-  const L_free_used = Math.min(L_taken, 4);
-  const L_free_unused = Math.max(0, 4 - L_taken);
-
-  const D_paid = presentCount + L_free_used + L_free_unused;
+  const leavesTaken = Math.max(0, totalDays - presentCount);
+  const deductibleLeaves = Math.max(0, leavesTaken - 4);
+  const S_earned = Math.max(0, baseSalary - (deductibleLeaves * R_day));
   
-  // Mode 1: Simple Payout
-  const S_earned_simple = R_day * D_paid;
-  const A_deducted_simple = Math.min(pendingAdvancesAmt, S_earned_simple);
-  const S_net_simple = S_earned_simple - A_deducted_simple;
-
-  // Mode 2: Strict Payout
-  const L_unexcused = Math.max(0, totalDays - (presentCount + L_taken));
-  const Penalty_absence = L_unexcused * R_day;
-  
-  const S_earned_strict = Math.max(0, (R_day * D_paid) - (latePenaltiesTotal + earlyPenaltiesTotal + Penalty_absence));
-  const A_deducted_strict = Math.min(pendingAdvancesAmt, S_earned_strict);
-  const S_net_strict = S_earned_strict - A_deducted_strict;
+  const A_deducted = Math.min(pendingAdvancesAmt, S_earned);
+  const S_net = S_earned - A_deducted;
 
   return {
     dailyWage: R_day,
-    paidDays: D_paid,
-    unexcusedAbsences: L_unexcused,
-    penaltyAbsence: Penalty_absence,
+    paidDays: totalDays - deductibleLeaves,
+    unexcusedAbsences: deductibleLeaves,
+    penaltyAbsence: deductibleLeaves * R_day,
     simple: {
-      earnedSalary: parseFloat(S_earned_simple.toFixed(2)),
-      advancesDeducted: parseFloat(A_deducted_simple.toFixed(2)),
-      netPayable: parseFloat(S_net_simple.toFixed(2))
+      earnedSalary: parseFloat(S_earned.toFixed(2)),
+      advancesDeducted: parseFloat(A_deducted.toFixed(2)),
+      netPayable: parseFloat(S_net.toFixed(2))
     },
     strict: {
-      earnedSalary: parseFloat(S_earned_strict.toFixed(2)),
-      advancesDeducted: parseFloat(A_deducted_strict.toFixed(2)),
-      netPayable: parseFloat(S_net_strict.toFixed(2))
+      earnedSalary: parseFloat(S_earned.toFixed(2)),
+      advancesDeducted: parseFloat(A_deducted.toFixed(2)),
+      netPayable: parseFloat(S_net.toFixed(2))
     }
   };
 }
@@ -182,8 +170,8 @@ export async function calculateStaffPayroll(
   const L_full_raw = staff.leaves.filter(l => l.type === 'FULL').length;
   const L_half_raw = staff.leaves.filter(l => l.type === 'HALF').length;
   
-  const L_full = Math.min(L_full_raw, D_total - D_present);
-  const L_half = Math.min(L_half_raw, (D_total - D_present - L_full) * 2);
+  const L_full = D_total - D_present;
+  const L_half = 0;
 
   // Expected shift times (e.g. "09:00", "17:00")
   const shiftStartTime = staff.slot?.outlet?.shiftStartTime || '09:00';

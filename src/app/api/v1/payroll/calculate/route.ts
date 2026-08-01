@@ -66,6 +66,8 @@ export async function GET(req: Request) {
             lateDetails: payroll.lateDetails,
             earlyDetails: payroll.earlyDetails,
             metrics: {
+              totalDaysInMonth: payroll.totalDaysInMonth,
+              dailyWage: payroll.dailyWage,
               daysPresent: payroll.daysPresent,
               fullLeaves: payroll.fullLeaves,
               halfLeaves: payroll.halfLeaves,
