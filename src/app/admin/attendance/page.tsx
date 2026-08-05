@@ -56,6 +56,46 @@ export default function AttendanceHistoryPage() {
   const [selectedSlot, setSelectedSlot] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "PRESENT" | "BREAK" | "ENDED" | "ABSENT">("ALL");
 
+  const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [manualForm, setManualForm] = useState({
+    staffId: "",
+    date: "",
+    startTime: "08:00",
+    endTime: "17:00",
+  });
+
+  const handleManualSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualForm.staffId || !manualForm.date || !manualForm.startTime) {
+      alert("Please fill all required fields.");
+      return;
+    }
+    
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/v1/admin/attendance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(manualForm),
+      });
+
+      if (res.ok) {
+        alert("Attendance record logged successfully!");
+        setIsManualModalOpen(false);
+        fetchAttendance(selectedDate);
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to save record");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Network error. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   // Format today's date in local YYYY-MM-DD
   useEffect(() => {
     const localNow = new Date();
@@ -152,15 +192,33 @@ export default function AttendanceHistoryPage() {
             Search and filter historical personnel attendance logs day-by-day.
           </p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <label style={{ fontSize: "0.8rem", fontWeight: "700", textTransform: "uppercase", color: "var(--text-muted)", letterSpacing: "0.05em" }}>Select Day:</label>
-          <input
-            type="date"
-            className="input-modern"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            style={{ width: "160px", padding: "0.5rem 0.75rem", fontSize: "0.85rem" }}
-          />
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+          <button
+            onClick={() => {
+              setManualForm({
+                staffId: "",
+                date: selectedDate,
+                startTime: "08:00",
+                endTime: "17:00",
+              });
+              setIsManualModalOpen(true);
+            }}
+            className="btn-modern btn-primary"
+            style={{ padding: "0.55rem 1.25rem", fontSize: "0.85rem", fontWeight: 800 }}
+          >
+            + Manual Log
+          </button>
+          
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <label style={{ fontSize: "0.8rem", fontWeight: "700", textTransform: "uppercase", color: "var(--text-muted)", letterSpacing: "0.05em" }}>Select Day:</label>
+            <input
+              type="date"
+              className="input-modern"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              style={{ width: "160px", padding: "0.5rem 0.75rem", fontSize: "0.85rem" }}
+            />
+          </div>
         </div>
       </header>
 
@@ -349,23 +407,135 @@ export default function AttendanceHistoryPage() {
                   </div>
                 </div>
 
-                {/* Footer Action link */}
-                <Link href={`/admin/staff/${item.id}`} style={{
-                  textAlign: "center", padding: "0.5rem",
-                  background: `linear-gradient(135deg, ${c1}15, ${c2}15)`,
-                  border: `1px solid ${c1}20`, borderRadius: "10px",
-                  fontSize: "0.78rem", fontWeight: 700, color: c1,
-                  display: "block", transition: "all 0.2s"
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = `linear-gradient(135deg, ${c1}25, ${c2}25)`; }}
-                onMouseLeave={e => { e.currentTarget.style.background = `linear-gradient(135deg, ${c1}15, ${c2}15)`; }}
-                >
-                  Manage Profile ➔
-                </Link>
+                {/* Footer Actions Row */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                  <Link href={`/admin/staff/${item.id}`} style={{
+                    textAlign: "center", padding: "0.45rem",
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px",
+                    fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)",
+                    display: "block", transition: "all 0.2s"
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                  >
+                    Profile 👤
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      let startHHMM = "08:00";
+                      let endHHMM = "";
+                      
+                      if (item.startTime) {
+                        const d = new Date(item.startTime);
+                        const local = new Date(d.getTime() + 5.5 * 60 * 60 * 1000);
+                        startHHMM = local.toISOString().slice(11, 16);
+                      }
+                      if (item.endTime) {
+                        const d = new Date(item.endTime);
+                        const local = new Date(d.getTime() + 5.5 * 60 * 60 * 1000);
+                        endHHMM = local.toISOString().slice(11, 16);
+                      }
+                      
+                      setManualForm({
+                        staffId: item.id,
+                        date: selectedDate,
+                        startTime: startHHMM,
+                        endTime: endHHMM,
+                      });
+                      setIsManualModalOpen(true);
+                    }}
+                    style={{
+                      textAlign: "center", padding: "0.45rem",
+                      background: `linear-gradient(135deg, ${c1}15, ${c2}15)`,
+                      border: `1px solid ${c1}20`, borderRadius: "10px",
+                      fontSize: "0.75rem", fontWeight: 700, color: c1,
+                      cursor: "pointer", transition: "all 0.2s"
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = `linear-gradient(135deg, ${c1}25, ${c2}25)`; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = `linear-gradient(135deg, ${c1}15, ${c2}15)`; }}
+                  >
+                    Manual Log 📝
+                  </button>
+                </div>
 
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ── Manual Attendance Modal ── */}
+      {isManualModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsManualModalOpen(false)}>
+          <div className="glass modal-content animate-slide-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "450px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.75rem" }}>
+              <h2 className="text-gradient" style={{ fontSize: "1.5rem" }}>Log Manual Attendance</h2>
+              <button onClick={() => setIsManualModalOpen(false)} className="modal-close">&times;</button>
+            </div>
+            
+            <form onSubmit={handleManualSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+              <div>
+                <label style={{ display: "block", marginBottom: "0.4rem", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Personnel</label>
+                <select
+                  required
+                  className="input-modern"
+                  value={manualForm.staffId}
+                  onChange={(e) => setManualForm({ ...manualForm, staffId: e.target.value })}
+                >
+                  <option value="">Select staff member...</option>
+                  {roster.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name} ({s.slotName})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: "block", marginBottom: "0.4rem", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Date</label>
+                <input
+                  type="date"
+                  required
+                  className="input-modern"
+                  value={manualForm.date}
+                  onChange={(e) => setManualForm({ ...manualForm, date: e.target.value })}
+                />
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                <div>
+                  <label style={{ display: "block", marginBottom: "0.4rem", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Clock In Time</label>
+                  <input
+                    type="time"
+                    required
+                    className="input-modern"
+                    value={manualForm.startTime}
+                    onChange={(e) => setManualForm({ ...manualForm, startTime: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", marginBottom: "0.4rem", fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Clock Out Time</label>
+                  <input
+                    type="time"
+                    className="input-modern"
+                    placeholder="Leave empty if still active"
+                    value={manualForm.endTime}
+                    onChange={(e) => setManualForm({ ...manualForm, endTime: e.target.value })}
+                  />
+                  <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", marginTop: "0.2rem", display: "block" }}>Leave blank to keep shift active</span>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="btn-modern btn-primary"
+                style={{ width: "100%", marginTop: "0.5rem" }}
+                disabled={submitting}
+              >
+                {submitting ? "Logging Shift..." : "Save Shift Record"}
+              </button>
+            </form>
+          </div>
         </div>
       )}
 

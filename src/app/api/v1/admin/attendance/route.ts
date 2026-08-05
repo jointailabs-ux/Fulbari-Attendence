@@ -169,3 +169,81 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Failed to fetch attendance data", details: error.message }, { status: 500 });
   }
 }
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { staffId, date, startTime, endTime } = body;
+
+    if (!staffId || !date || !startTime) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    const [year, month, day] = date.split("-").map(Number);
+    const queryDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+
+    // Parse startTime to UTC (assuming local IST input)
+    const [startH, startM] = startTime.split(":").map(Number);
+    const startUTC = new Date(Date.UTC(year, month - 1, day, startH, startM, 0, 0));
+    // Subtract 5.5 hours to convert from IST to UTC
+    startUTC.setTime(startUTC.getTime() - 5.5 * 60 * 60 * 1000);
+
+    let endUTC: Date | null = null;
+    if (endTime) {
+      const [endH, endM] = endTime.split(":").map(Number);
+      let endDay = day;
+      
+      // If end time is early morning next day (e.g. clock-out after midnight 12 AM / 1 AM / 2 AM),
+      // we check if endHours is less than startHours. If so, it belongs to the next day!
+      if (endH < startH) {
+        endDay = day + 1;
+      }
+      
+      endUTC = new Date(Date.UTC(year, month - 1, endDay, endH, endM, 0, 0));
+      endUTC.setTime(endUTC.getTime() - 5.5 * 60 * 60 * 1000);
+    }
+
+    // Upsert the attendance record
+    const existing = await prisma.attendanceRecord.findFirst({
+      where: { staffId, shiftDate: queryDate }
+    });
+
+    let record;
+    if (existing) {
+      record = await prisma.attendanceRecord.update({
+        where: { id: existing.id },
+        data: {
+          state: endTime ? "SHIFT_ENDED" : "SHIFT_STARTED",
+          startTime: startUTC,
+          endTime: endUTC
+        }
+      });
+    } else {
+      record = await prisma.attendanceRecord.create({
+        data: {
+          staffId,
+          shiftDate: queryDate,
+          state: endTime ? "SHIFT_ENDED" : "SHIFT_STARTED",
+          startTime: startUTC,
+          endTime: endUTC
+        }
+      });
+    }
+
+    // Log the action
+    await prisma.auditLog.create({
+      data: {
+        action: existing ? "MANUAL_ATTENDANCE_UPDATED" : "MANUAL_ATTENDANCE_CREATED",
+        entityType: "AttendanceRecord",
+        entityId: record.id,
+        newValue: JSON.stringify(record),
+        performedBy: "Admin"
+      }
+    });
+
+    return NextResponse.json(record);
+  } catch (error: any) {
+    console.error("Manual attendance error:", error);
+    return NextResponse.json({ error: "Failed to log attendance", details: error.message }, { status: 500 });
+  }
+}
