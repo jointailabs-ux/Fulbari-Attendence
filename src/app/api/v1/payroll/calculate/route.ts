@@ -68,6 +68,7 @@ export async function GET(req: Request) {
             metrics: {
               totalDaysInMonth: payroll.totalDaysInMonth,
               dailyWage: payroll.dailyWage,
+              earnedTillNow: payroll.earnedTillNow,
               daysPresent: payroll.daysPresent,
               fullLeaves: payroll.fullLeaves,
               halfLeaves: payroll.halfLeaves,

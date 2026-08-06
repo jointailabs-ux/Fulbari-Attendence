@@ -59,6 +59,9 @@ export async function GET(
       new Date(a.shiftDate).toISOString().slice(0, 10) === todayStr
     );
 
+    const dailyWage = totalDays > 0 ? parseFloat((staff.monthlySalary / totalDays).toFixed(2)) : 0;
+    const earnedTillNow = parseFloat((dailyWage * presentDays).toFixed(2));
+
     // Return safe data without hashedPin
     const { hashedPin, ...safeStaff } = staff;
 
@@ -68,6 +71,8 @@ export async function GET(
         month: currentMonth,
         presentDays,
         totalDays,
+        dailyWage,
+        earnedTillNow,
         attendancePercent: totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0,
         pendingAdvance,
         todayStatus: todayRecord?.state || 'NOT_STARTED'

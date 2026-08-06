@@ -32,6 +32,8 @@ interface StaffData {
     month: string;
     presentDays: number;
     totalDays: number;
+    dailyWage?: number;
+    earnedTillNow?: number;
     attendancePercent: number;
     pendingAdvance: number;
     todayStatus: string;
@@ -280,9 +282,20 @@ export default function StaffProfilePage() {
                 {statusInfo.icon} Today: {statusInfo.label}
               </div>
             </div>
-            <div style={{ textAlign: "right" }}>
-              <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>MONTHLY SALARY</p>
-              <p style={{ fontSize: "2rem", fontWeight: 900, color: "#10b981" }}>₹{staff.monthlySalary.toLocaleString("en-IN")}</p>
+            <div style={{ textAlign: "right", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+              <div>
+                <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>MONTHLY SALARY</p>
+                <p style={{ fontSize: "1.4rem", fontWeight: 900, color: "#fff" }}>₹{staff.monthlySalary.toLocaleString("en-IN")}</p>
+              </div>
+              <div style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", padding: "0.4rem 0.8rem", borderRadius: "12px" }}>
+                <p style={{ fontSize: "0.65rem", color: "var(--brand-primary-light)", fontWeight: 800, textTransform: "uppercase" }}>EARNED TILL NOW</p>
+                <p style={{ fontSize: "1.5rem", fontWeight: 900, color: "#10b981" }}>
+                  ₹{(staff.currentMonth.earnedTillNow ?? 0).toLocaleString("en-IN")}
+                </p>
+                <p style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>
+                  ₹{(staff.currentMonth.dailyWage ?? 0).toLocaleString("en-IN")}/day × {staff.currentMonth.presentDays} days
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -291,9 +304,10 @@ export default function StaffProfilePage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
           {[
             { icon: "📅", label: "Days Present", value: `${staff.currentMonth.presentDays} / ${staff.currentMonth.totalDays}`, color: "#06b6d4" },
-            { icon: "📈", label: "Attendance", value: `${staff.currentMonth.attendancePercent}%`, color: "#8b5cf6" },
+            { icon: "💵", label: "Daily Wage", value: `₹${(staff.currentMonth.dailyWage ?? 0).toLocaleString("en-IN")}`, color: "#38bdf8" },
+            { icon: "💰", label: "Earned Till Now", value: `₹${(staff.currentMonth.earnedTillNow ?? 0).toLocaleString("en-IN")}`, color: "#10b981" },
             { icon: "💳", label: "Pending Advance", value: `₹${staff.currentMonth.pendingAdvance.toLocaleString("en-IN")}`, color: "#f59e0b" },
-            { icon: "💰", label: "Total Earned", value: `₹${totalEarned.toLocaleString("en-IN")}`, color: "#10b981" },
+            { icon: "🏆", label: "Past Disbursed", value: `₹${totalEarned.toLocaleString("en-IN")}`, color: "#a855f7" },
           ].map((stat, i) => (
             <div key={i} className="glass" style={{ padding: "1.25rem", borderRadius: "16px" }}>
               <div style={{ fontSize: "1.4rem", marginBottom: "0.5rem" }}>{stat.icon}</div>

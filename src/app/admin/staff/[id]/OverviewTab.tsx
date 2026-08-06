@@ -90,9 +90,10 @@ export default function OverviewTab({ staff, refresh }: { staff: any; refresh: (
   };
 
   const metrics = [
+    { label: "Earned Till Now", value: `₹${(staff.metrics?.earnedTillNow || 0).toLocaleString("en-IN")}`, color: "#10b981", icon: "💵" },
+    { label: "Deployment Days", value: `${staff.metrics?.totalDaysWorked || 0} days`, color: "var(--brand-accent)", icon: "📅" },
+    { label: "Daily Wage Rate", value: `₹${staff.metrics?.dailyWage || 0}`, color: "#38bdf8", icon: "🪙" },
     { label: "Attendance Reliability", value: `${staff.metrics?.attendanceRate || 0}%`, color: "var(--brand-primary-light)", icon: "📈" },
-    { label: "Deployment Days", value: staff.metrics?.totalDaysWorked || 0, color: "var(--brand-accent)", icon: "📅" },
-    { label: "Absence Record", value: staff.metrics?.totalLeaves?.total || 0, color: "var(--brand-secondary)", icon: "🚫" },
     { label: "Financial Exposure", value: `₹${staff.metrics?.totalAdvanceTaken || 0}`, color: "#f59e0b", icon: "💰" },
   ];
 

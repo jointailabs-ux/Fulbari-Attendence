@@ -293,6 +293,7 @@ export default function PayrollCalculationPage() {
               const totalDays = r.metrics.totalDaysInMonth || 30;
               const dailyWage = r.metrics.dailyWage || (r.monthlySalary / totalDays);
               const daysPresent = r.metrics.daysPresent;
+              const earnedTillNow = r.metrics?.earnedTillNow || parseFloat((dailyWage * daysPresent).toFixed(2));
               const leavesTaken = r.metrics.fullLeaves;
               const excessLeaves = r.metrics.unexcusedAbsences;
 
@@ -371,6 +372,12 @@ export default function PayrollCalculationPage() {
                     <div>
                       <span style={{ display: "block", fontSize: "0.6rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>Days Worked</span>
                       <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#10b981" }}>{daysPresent} days</span>
+                    </div>
+                    <div>
+                      <span style={{ display: "block", fontSize: "0.6rem", color: "var(--brand-primary-light)", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em" }}>Earned Till Now</span>
+                      <span style={{ fontSize: "0.9rem", fontWeight: 900, color: "#34d399" }}>
+                        ₹{earnedTillNow.toLocaleString("en-IN")}
+                      </span>
                     </div>
                     <div>
                       <span style={{ display: "block", fontSize: "0.6rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>Leaves Taken</span>

@@ -8,6 +8,7 @@ export interface PayrollDetails {
   monthYear: string;
   monthlySalary: number; // S_base
   dailyWage: number; // R_day
+  earnedTillNow: number; // R_day * D_present
   totalDaysInMonth: number; // D_total
   daysPresent: number; // D_present
   fullLeaves: number; // L_full
@@ -87,16 +88,18 @@ export function calculateSalaryMetrics(
   daysElapsed: number = totalDays
 ) {
   const R_day = baseSalary / totalDays;
+  const earnedTillNow = parseFloat((R_day * presentCount).toFixed(2));
   const leavesTaken = Math.max(0, daysElapsed - presentCount);
   const deductibleLeaves = Math.max(0, leavesTaken - 4);
-  const S_earned = Math.max(0, baseSalary - (deductibleLeaves * R_day));
+  const S_earned = earnedTillNow;
   
   const A_deducted = Math.min(pendingAdvancesAmt, S_earned);
   const S_net = S_earned - A_deducted;
 
   return {
     dailyWage: R_day,
-    paidDays: totalDays - deductibleLeaves,
+    earnedTillNow,
+    paidDays: presentCount,
     unexcusedAbsences: deductibleLeaves,
     penaltyAbsence: deductibleLeaves * R_day,
     leavesTaken,
@@ -290,6 +293,7 @@ export async function calculateStaffPayroll(
     monthYear,
     monthlySalary: S_base,
     dailyWage: parseFloat(metrics.dailyWage.toFixed(2)),
+    earnedTillNow: metrics.earnedTillNow,
     totalDaysInMonth: D_total,
     daysPresent: D_present,
     fullLeaves: metrics.leavesTaken,

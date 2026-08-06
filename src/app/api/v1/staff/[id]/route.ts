@@ -62,6 +62,8 @@ export async function GET(
     const fullLeaves = staff.leaves.filter(l => l.type === 'FULL').length;
     const halfLeaves = staff.leaves.filter(l => l.type === 'HALF').length;
     
+    const dailyWage = workingDays > 0 ? parseFloat((staff.monthlySalary / workingDays).toFixed(2)) : 0;
+    const earnedTillNow = parseFloat((dailyWage * presentDays).toFixed(2));
     const attendanceRate = workingDays > 0 ? ((presentDays / workingDays) * 100).toFixed(2) : "0";
     const totalAdvance = staff.advances.reduce((sum, adv) => sum + adv.amount, 0);
 
@@ -70,6 +72,8 @@ export async function GET(
       metrics: {
         attendanceRate: parseFloat(attendanceRate),
         totalDaysWorked: presentDays,
+        dailyWage,
+        earnedTillNow,
         totalLeaves: {
           full: fullLeaves,
           half: halfLeaves,
