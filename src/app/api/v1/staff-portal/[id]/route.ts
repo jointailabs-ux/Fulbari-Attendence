@@ -66,8 +66,7 @@ export async function GET(
     
     const activeAdvances = staff.advances.filter(a => a.status === 'PENDING').map(a => ({
       date: a.date,
-      amount: a.amount,
-      reason: a.reason
+      amount: a.amount
     }));
 
     // Return safe data without hashedPin

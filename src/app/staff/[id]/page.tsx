@@ -38,7 +38,7 @@ interface StaffData {
     pendingAdvance: number;
     advanceToRecover: number;
     netPayable: number;
-    activeAdvances: { date: string; amount: number; reason: string }[];
+    activeAdvances: { date: string; amount: number; reason?: string }[];
     todayStatus: string;
   };
 }
