@@ -63,7 +63,7 @@ export default function StaffProfilePage() {
 
   const [staff, setStaff] = useState<StaffData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"overview" | "documents" | "salary" | "leaves">("overview");
+  const [tab, setTab] = useState<"salary" | "leaves" | "overview" | "documents">("salary");
 
   // Leaves management states
   const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
@@ -251,7 +251,7 @@ export default function StaffProfilePage() {
 
       <main style={{ maxWidth: "900px", margin: "0 auto", padding: "1.5rem 1rem 4rem" }}>
 
-        {/* Hero Banner */}
+        {/* Hero Banner (SIMPLIFIED) */}
         <div className="glass animate-slide-up" style={{
           padding: "2rem", borderRadius: "20px", marginBottom: "1.5rem",
           background: "linear-gradient(135deg, rgba(139,92,246,0.08), rgba(6,182,212,0.06))",
@@ -259,40 +259,43 @@ export default function StaffProfilePage() {
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: "1.25rem", flexWrap: "wrap" }}>
             <div style={{
-              width: "72px", height: "72px", borderRadius: "20px", flexShrink: 0,
+              width: "80px", height: "80px", borderRadius: "24px", flexShrink: 0,
               background: "linear-gradient(135deg, rgba(139,92,246,0.3), rgba(6,182,212,0.3))",
               border: "2px solid rgba(139,92,246,0.4)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontWeight: 900, fontSize: "1.6rem", color: "var(--brand-primary-light)",
+              fontWeight: 900, fontSize: "2rem", color: "var(--brand-primary-light)",
               boxShadow: "0 0 30px rgba(139,92,246,0.2)"
             }}>
               {initials(staff.name)}
             </div>
+            
             <div style={{ flex: 1 }}>
-              <h1 style={{ fontSize: "1.75rem", fontWeight: 900, marginBottom: "0.2rem" }}>{staff.name}</h1>
-              <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "0.75rem" }}>
+              <h1 style={{ fontSize: "2rem", fontWeight: 900, marginBottom: "0.2rem" }}>{staff.name}</h1>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginBottom: "0.75rem" }}>
                 📍 {staff.slot?.outlet?.name} &nbsp;|&nbsp; 🏷️ {staff.slot?.name}
               </p>
               <div style={{
                 display: "inline-flex", alignItems: "center", gap: "0.5rem",
-                padding: "0.3rem 0.9rem", borderRadius: "50px",
+                padding: "0.4rem 1rem", borderRadius: "50px",
                 background: statusInfo.bg, border: `1px solid ${statusInfo.color}33`,
-                fontSize: "0.8rem", fontWeight: 700, color: statusInfo.color
+                fontSize: "0.85rem", fontWeight: 700, color: statusInfo.color
               }}>
                 {statusInfo.icon} Today: {statusInfo.label}
               </div>
             </div>
-            <div style={{ textAlign: "right", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-              <div>
-                <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>MONTHLY SALARY</p>
-                <p style={{ fontSize: "1.4rem", fontWeight: 900, color: "#fff" }}>₹{staff.monthlySalary.toLocaleString("en-IN")}</p>
+
+            {/* Simple Earned Box */}
+            <div style={{ textAlign: "right", display: "flex", flexDirection: "column", gap: "0.4rem", minWidth: "200px" }}>
+              <div style={{ marginBottom: "0.5rem" }}>
+                <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontWeight: 600 }}>MONTHLY SALARY</p>
+                <p style={{ fontSize: "1.6rem", fontWeight: 900, color: "#fff" }}>₹{staff.monthlySalary.toLocaleString("en-IN")}</p>
               </div>
-              <div style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", padding: "0.4rem 0.8rem", borderRadius: "12px" }}>
-                <p style={{ fontSize: "0.65rem", color: "var(--brand-primary-light)", fontWeight: 800, textTransform: "uppercase" }}>EARNED TILL NOW</p>
-                <p style={{ fontSize: "1.5rem", fontWeight: 900, color: "#10b981" }}>
+              <div style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", padding: "0.75rem 1rem", borderRadius: "12px" }}>
+                <p style={{ fontSize: "0.7rem", color: "var(--brand-primary-light)", fontWeight: 800, textTransform: "uppercase" }}>EARNED TILL NOW</p>
+                <p style={{ fontSize: "1.8rem", fontWeight: 900, color: "#10b981" }}>
                   ₹{(staff.currentMonth.earnedTillNow ?? 0).toLocaleString("en-IN")}
                 </p>
-                <p style={{ fontSize: "0.65rem", color: "var(--text-muted)" }}>
+                <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
                   ₹{(staff.currentMonth.dailyWage ?? 0).toLocaleString("en-IN")}/day × {staff.currentMonth.presentDays} days
                 </p>
               </div>
@@ -300,8 +303,8 @@ export default function StaffProfilePage() {
           </div>
         </div>
 
-        {/* This Month Stats */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+        {/* This Month Stats (SIMPLIFIED) */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
           {[
             { icon: "📅", label: "Days Present", value: `${staff.currentMonth.presentDays} / ${staff.currentMonth.totalDays}`, color: "#06b6d4" },
             { icon: "💵", label: "Daily Wage", value: `₹${(staff.currentMonth.dailyWage ?? 0).toLocaleString("en-IN")}`, color: "#38bdf8" },
@@ -309,30 +312,30 @@ export default function StaffProfilePage() {
             { icon: "💳", label: "Pending Advance", value: `₹${staff.currentMonth.pendingAdvance.toLocaleString("en-IN")}`, color: "#f59e0b" },
             { icon: "🏆", label: "Past Disbursed", value: `₹${totalEarned.toLocaleString("en-IN")}`, color: "#a855f7" },
           ].map((stat, i) => (
-            <div key={i} className="glass" style={{ padding: "1.25rem", borderRadius: "16px" }}>
-              <div style={{ fontSize: "1.4rem", marginBottom: "0.5rem" }}>{stat.icon}</div>
-              <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.3rem" }}>{stat.label}</p>
-              <p style={{ fontSize: "1.4rem", fontWeight: 900, color: stat.color }}>{stat.value}</p>
+            <div key={i} className="glass" style={{ padding: "1.5rem", borderRadius: "16px" }}>
+              <div style={{ fontSize: "1.8rem", marginBottom: "0.5rem" }}>{stat.icon}</div>
+              <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.3rem" }}>{stat.label}</p>
+              <p style={{ fontSize: "1.5rem", fontWeight: 900, color: stat.color }}>{stat.value}</p>
             </div>
           ))}
         </div>
 
         {/* Tab Nav */}
-        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", background: "rgba(255,255,255,0.02)", padding: "0.4rem", borderRadius: "14px", border: "1px solid var(--glass-border)", width: "fit-content" }}>
+        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
           {[
+            { id: "salary", label: "💸 Salary" },
+            { id: "leaves", label: "📝 Leaves" },
             { id: "overview", label: "👤 Profile" },
             { id: "documents", label: "📂 Documents" },
-            { id: "salary", label: "💸 Salary History" },
-            { id: "leaves", label: "📝 Leave Requests" },
           ].map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id as any)}
               style={{
-                padding: "0.5rem 1.25rem", borderRadius: "10px",
-                fontWeight: 700, fontSize: "0.85rem", cursor: "pointer",
-                background: tab === t.id ? "rgba(139,92,246,0.2)" : "transparent",
-                color: tab === t.id ? "var(--brand-primary-light)" : "var(--text-muted)",
+                padding: "0.75rem 1.5rem", borderRadius: "12px",
+                fontWeight: 800, fontSize: "0.95rem", cursor: "pointer",
+                background: tab === t.id ? "linear-gradient(135deg, rgba(139,92,246,0.2), rgba(6,182,212,0.2))" : "rgba(255,255,255,0.05)",
+                color: tab === t.id ? "white" : "var(--text-muted)",
                 border: tab === t.id ? "1px solid rgba(139,92,246,0.3)" : "1px solid transparent",
                 transition: "all 0.2s ease",
               }}
@@ -342,29 +345,180 @@ export default function StaffProfilePage() {
           ))}
         </div>
 
-        {/* Overview Tab */}
+        {/* Salary History Tab (DETAILED BREAKDOWN) */}
+        {tab === "salary" && (
+          <div className="animate-slide-up" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            {staff.payrolls.length === 0 ? (
+              <div className="glass" style={{ padding: "4rem", textAlign: "center", borderRadius: "20px" }}>
+                <div style={{ fontSize: "2.5rem", marginBottom: "1rem" }}>📭</div>
+                <p style={{ color: "var(--text-muted)", fontWeight: 600, fontSize: "1.1rem" }}>No salary records yet.</p>
+                <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginTop: "0.5rem" }}>Your salary history will appear here when the owner pays you.</p>
+              </div>
+            ) : (
+              staff.payrolls.map((rec) => {
+                const gross = rec.selectedMode === "STRICT" ? rec.strictSalary : rec.simpleSalary;
+                return (
+                  <div key={rec.id} className="glass" style={{
+                    padding: "1.5rem", borderRadius: "20px",
+                    border: "1px solid var(--glass-border)",
+                    display: "flex", flexDirection: "column", gap: "1rem"
+                  }}>
+                    {/* Header */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "1rem", flexWrap: "wrap", gap: "1rem" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                        <div style={{
+                          width: "56px", height: "56px", borderRadius: "14px",
+                          background: "linear-gradient(135deg, rgba(16,185,129,0.2), rgba(6,182,212,0.2))",
+                          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center"
+                        }}>
+                          <span style={{ fontSize: "1.2rem" }}>🗓️</span>
+                        </div>
+                        <div>
+                          <p style={{ fontWeight: 900, fontSize: "1.2rem", color: "#fff" }}>{formatMonth(rec.monthYear)}</p>
+                          <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                            Paid on {new Date(rec.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                          </p>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Amount Received</p>
+                        <p style={{ fontWeight: 900, fontSize: "1.8rem", color: "#10b981" }}>₹{rec.finalPayable.toLocaleString("en-IN")}</p>
+                      </div>
+                    </div>
+
+                    {/* Breakdown Steps */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", paddingTop: "0.5rem" }}>
+                      
+                      {/* Gross */}
+                      <div style={{ display: "flex", justifyContent: "space-between", padding: "0.75rem 1rem", background: "rgba(255,255,255,0.03)", borderRadius: "12px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                          <span style={{ fontSize: "1.2rem" }}>💰</span>
+                          <div>
+                            <p style={{ fontSize: "0.9rem", fontWeight: 700, color: "#fff" }}>Money for days worked</p>
+                            <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Total you earned by working this month</p>
+                          </div>
+                        </div>
+                        <p style={{ fontSize: "1.1rem", fontWeight: 800, color: "#34d399", alignSelf: "center" }}>₹{gross.toLocaleString("en-IN")}</p>
+                      </div>
+
+                      {/* Advance Deduction */}
+                      {rec.advancesDeducted > 0 && (
+                        <div style={{ display: "flex", justifyContent: "space-between", padding: "0.75rem 1rem", background: "rgba(244,63,94,0.05)", borderRadius: "12px", border: "1px solid rgba(244,63,94,0.15)" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                            <span style={{ fontSize: "1.2rem" }}>💳</span>
+                            <div>
+                              <p style={{ fontSize: "0.9rem", fontWeight: 700, color: "#fff" }}>Advance Repaid</p>
+                              <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Money you took early and are paying back</p>
+                            </div>
+                          </div>
+                          <p style={{ fontSize: "1.1rem", fontWeight: 800, color: "#fb7185", alignSelf: "center" }}>- ₹{rec.advancesDeducted.toLocaleString("en-IN")}</p>
+                        </div>
+                      )}
+
+                      {/* Final Net */}
+                      <div style={{ display: "flex", justifyContent: "space-between", padding: "0.75rem 1rem", background: "rgba(16,185,129,0.1)", borderRadius: "12px", border: "1px solid rgba(16,185,129,0.25)", marginTop: "0.5rem" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                          <span style={{ fontSize: "1.2rem" }}>✅</span>
+                          <div>
+                            <p style={{ fontSize: "1rem", fontWeight: 800, color: "#10b981" }}>Final Amount</p>
+                            <p style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>This is what you take home</p>
+                          </div>
+                        </div>
+                        <p style={{ fontSize: "1.4rem", fontWeight: 900, color: "#10b981", alignSelf: "center" }}>₹{rec.finalPayable.toLocaleString("en-IN")}</p>
+                      </div>
+
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {/* Leave Requests Tab */}
+        {tab === "leaves" && (
+          <div className="animate-slide-up" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <h2 style={{ fontSize: "1.25rem", fontWeight: 800 }}>My Leaves</h2>
+                <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>Check days you didn't work and your leave requests.</p>
+              </div>
+              <button 
+                onClick={() => setIsLeaveModalOpen(true)}
+                className="btn-modern btn-primary"
+                style={{ padding: "0.75rem 1.5rem", fontSize: "0.9rem", fontWeight: 800 }}
+              >
+                + Ask for Leave
+              </button>
+            </div>
+
+            {leaveRequests.length === 0 ? (
+              <div className="glass" style={{ padding: "4rem", textAlign: "center", borderRadius: "20px" }}>
+                <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>📝</div>
+                <p style={{ color: "var(--text-muted)", fontWeight: 600, fontSize: "1.1rem" }}>You haven't asked for any leaves.</p>
+                <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", marginTop: "0.3rem" }}>When you ask for a leave, it will show up here.</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                {leaveRequests.map((req) => {
+                  const statusColors = 
+                    req.status === "APPROVED" ? { text: "#10b981", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.2)", icon: "✅" } :
+                    req.status === "REJECTED" ? { text: "#f43f5e", bg: "rgba(244,63,94,0.08)", border: "rgba(244,63,94,0.15)", icon: "❌" } :
+                    { text: "#fb923c", bg: "rgba(251,146,60,0.1)", border: "rgba(251,146,60,0.2)", icon: "⏳" };
+
+                  const startStr = new Date(req.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+                  const endStr = new Date(req.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+
+                  return (
+                    <div key={req.id} className="glass" style={{ padding: "1.5rem", borderRadius: "16px", display: "flex", flexDirection: "column", gap: "1rem" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "0.5rem" }}>
+                        <div>
+                          <p style={{ fontWeight: 800, fontSize: "1.1rem" }}>
+                            {startStr} {startStr !== endStr ? `to ${endStr}` : ""}
+                          </p>
+                          <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
+                            For <strong style={{ color: "var(--brand-primary-light)" }}>{req.type === "FULL" ? "Full Day" : "Half Day"}</strong>
+                          </p>
+                        </div>
+                        <span style={{
+                          padding: "0.4rem 0.8rem", borderRadius: "8px",
+                          background: statusColors.bg, border: `1px solid ${statusColors.border}`,
+                          fontSize: "0.85rem", fontWeight: 800, color: statusColors.text, display: "flex", alignItems: "center", gap: "0.3rem"
+                        }}>
+                          {statusColors.icon} {req.status}
+                        </span>
+                      </div>
+                      
+                      <div style={{ background: "rgba(255,255,255,0.03)", padding: "0.85rem", borderRadius: "12px", border: "1px solid var(--glass-border)" }}>
+                        <span style={{ display: "block", fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.3rem" }}>Why</span>
+                        <p style={{ fontSize: "0.95rem", color: "#fff", margin: 0 }}>{req.reason}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Overview Tab (SIMPLIFIED) */}
         {tab === "overview" && (
           <div className="animate-slide-up glass" style={{ padding: "2rem", borderRadius: "20px" }}>
-            <h2 style={{ fontSize: "1.25rem", fontWeight: 800, marginBottom: "1.5rem" }}>My Information</h2>
+            <h2 style={{ fontSize: "1.25rem", fontWeight: 800, marginBottom: "1.5rem" }}>Personal Information</h2>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1.5rem" }}>
               {[
-                { label: "Full Name", value: staff.name, icon: "👤" },
                 { label: "Phone Number", value: staff.phone, icon: "📱" },
-                { label: "Work Location", value: staff.slot?.outlet?.name || "—", icon: "📍" },
-                { label: "Assigned Role", value: staff.slot?.name || "—", icon: "🏷️" },
-                { label: "Monthly Salary", value: `₹${staff.monthlySalary.toLocaleString("en-IN")}`, icon: "💰" },
+                { label: "Date of Birth", value: staff.dateOfBirth ? new Date(staff.dateOfBirth).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : "Not given", icon: "🎂" },
+                { label: "Blood Group", value: staff.bloodGroup || "Not given", icon: "🩸" },
+                { label: "Emergency Contact", value: staff.emergencyContact || "Not given", icon: "🚨" },
+                { label: "Home Address", value: staff.address || "Not given", icon: "🏠" },
                 { label: "Joining Date", value: joinDate, icon: "📆" },
-                { label: "Shift Hours", value: staff.slot?.outlet ? `${staff.slot.outlet.shiftStartTime} – ${staff.slot.outlet.shiftEndTime}` : "—", icon: "🕐" },
-                { label: "Date of Birth", value: staff.dateOfBirth ? new Date(staff.dateOfBirth).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : "Not provided", icon: "🎂" },
-                { label: "Blood Group", value: staff.bloodGroup || "Not provided", icon: "🩸" },
-                { label: "Emergency Contact", value: staff.emergencyContact || "Not provided", icon: "🚨" },
-                { label: "Address", value: staff.address || "Not provided", icon: "🏠" },
               ].map((item, i) => (
-                <div key={i} style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start" }}>
-                  <div style={{ fontSize: "1.2rem", marginTop: "0.1rem" }}>{item.icon}</div>
+                <div key={i} style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start", background: "rgba(255,255,255,0.02)", padding: "1rem", borderRadius: "12px", border: "1px solid var(--glass-border)" }}>
+                  <div style={{ fontSize: "1.5rem" }}>{item.icon}</div>
                   <div>
-                    <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>{item.label}</p>
-                    <p style={{ fontWeight: 600, fontSize: "0.95rem", marginTop: "0.15rem" }}>{item.value}</p>
+                    <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>{item.label}</p>
+                    <p style={{ fontWeight: 700, fontSize: "1rem", marginTop: "0.2rem", color: "#fff" }}>{item.value}</p>
                   </div>
                 </div>
               ))}
@@ -380,9 +534,9 @@ export default function StaffProfilePage() {
                   setIsEditModalOpen(true);
                 }}
                 className="btn-modern btn-primary"
-                style={{ padding: "0.6rem 1.5rem", fontSize: "0.85rem" }}
+                style={{ padding: "0.75rem 1.5rem", fontSize: "0.9rem", fontWeight: 800 }}
               >
-                ✏️ Edit Personal Details
+                ✏️ Change Details
               </button>
             </div>
           </div>
@@ -396,144 +550,6 @@ export default function StaffProfilePage() {
           </div>
         )}
 
-        {/* Salary History Tab */}
-        {tab === "salary" && (
-          <div className="animate-slide-up" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            {staff.payrolls.length === 0 ? (
-              <div className="glass" style={{ padding: "4rem", textAlign: "center", borderRadius: "20px" }}>
-                <div style={{ fontSize: "2.5rem", marginBottom: "1rem" }}>📭</div>
-                <p style={{ color: "var(--text-muted)", fontWeight: 600 }}>No salary records yet.</p>
-                <p style={{ color: "var(--text-muted)", fontSize: "0.8rem", marginTop: "0.5rem" }}>Your salary history will appear here once processed by the owner.</p>
-              </div>
-            ) : (
-              staff.payrolls.map((rec) => (
-                <div key={rec.id} className="glass" style={{
-                  padding: "1.5rem", borderRadius: "16px",
-                  border: "1px solid var(--glass-border)",
-                  display: "flex", flexWrap: "wrap", gap: "1rem", alignItems: "center"
-                }}>
-                  {/* Month Label */}
-                  <div style={{ flex: "0 0 auto" }}>
-                    <div style={{
-                      width: "56px", height: "56px", borderRadius: "14px",
-                      background: "linear-gradient(135deg, rgba(139,92,246,0.2), rgba(6,182,212,0.2))",
-                      border: "1px solid rgba(139,92,246,0.2)",
-                      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center"
-                    }}>
-                      <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--brand-primary-light)", textTransform: "uppercase" }}>
-                        {new Date(rec.monthYear + "-01").toLocaleString("en-IN", { month: "short" })}
-                      </span>
-                      <span style={{ fontSize: "0.75rem", fontWeight: 900, color: "var(--text-main)" }}>
-                        {rec.monthYear.split("-")[0]}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Details */}
-                  <div style={{ flex: 1, minWidth: "160px" }}>
-                    <p style={{ fontWeight: 800, fontSize: "1rem", marginBottom: "0.25rem" }}>{formatMonth(rec.monthYear)}</p>
-                    <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                      Released on {new Date(rec.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                    </p>
-                    <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem", flexWrap: "wrap" }}>
-                      <span style={{ padding: "0.15rem 0.6rem", background: "rgba(139,92,246,0.1)", color: "var(--brand-primary-light)", borderRadius: "6px", fontSize: "0.7rem", fontWeight: 700 }}>
-                        {rec.selectedMode} MODE
-                      </span>
-                      {rec.advancesDeducted > 0 && (
-                        <span style={{ padding: "0.15rem 0.6rem", background: "rgba(244,63,94,0.08)", color: "var(--brand-secondary)", borderRadius: "6px", fontSize: "0.7rem", fontWeight: 700 }}>
-                          -₹{rec.advancesDeducted.toLocaleString("en-IN")} advance
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Amounts */}
-                  <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
-                    <div style={{ textAlign: "center" }}>
-                      <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Gross</p>
-                      <p style={{ fontWeight: 700, fontSize: "0.95rem" }}>₹{(rec.selectedMode === "STRICT" ? rec.strictSalary : rec.simpleSalary).toLocaleString("en-IN")}</p>
-                    </div>
-                    <div style={{ textAlign: "center" }}>
-                      <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Deducted</p>
-                      <p style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--brand-secondary)" }}>-₹{rec.advancesDeducted.toLocaleString("en-IN")}</p>
-                    </div>
-                    <div style={{ textAlign: "center" }}>
-                      <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Net Pay</p>
-                      <p style={{ fontWeight: 900, fontSize: "1.3rem", color: "#10b981" }}>₹{rec.finalPayable.toLocaleString("en-IN")}</p>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {/* Leave Requests Tab */}
-        {tab === "leaves" && (
-          <div className="animate-slide-up" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <h2 style={{ fontSize: "1.25rem", fontWeight: 800 }}>My Leave Requests</h2>
-                <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>Submit and monitor your leave requests.</p>
-              </div>
-              <button 
-                onClick={() => setIsLeaveModalOpen(true)}
-                className="btn-modern btn-primary"
-                style={{ padding: "0.55rem 1.25rem", fontSize: "0.8rem" }}
-              >
-                + Request Leave
-              </button>
-            </div>
-
-            {leaveRequests.length === 0 ? (
-              <div className="glass" style={{ padding: "4rem", textAlign: "center", borderRadius: "20px" }}>
-                <div style={{ fontSize: "2rem", marginBottom: "0.75rem" }}>📝</div>
-                <p style={{ color: "var(--text-muted)", fontWeight: 600 }}>No leaves requested yet.</p>
-                <p style={{ color: "var(--text-muted)", fontSize: "0.78rem", marginTop: "0.3rem" }}>When you submit a leave request, it will appear here with its status.</p>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                {leaveRequests.map((req) => {
-                  const statusColors = 
-                    req.status === "APPROVED" ? { text: "#10b981", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.2)" } :
-                    req.status === "REJECTED" ? { text: "#f43f5e", bg: "rgba(244,63,94,0.08)", border: "rgba(244,63,94,0.15)" } :
-                    { text: "#fb923c", bg: "rgba(251,146,60,0.1)", border: "rgba(251,146,60,0.2)" };
-
-                  const startStr = new Date(req.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
-                  const endStr = new Date(req.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
-
-                  return (
-                    <div key={req.id} className="glass" style={{ padding: "1.2rem 1.25rem", borderRadius: "16px", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "0.5rem" }}>
-                        <div>
-                          <p style={{ fontWeight: 800, fontSize: "0.95rem" }}>
-                            {startStr} {startStr !== endStr ? `to ${endStr}` : ""}
-                          </p>
-                          <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "0.1rem" }}>
-                            Type: <strong style={{ color: "var(--brand-primary-light)" }}>{req.type === "FULL" ? "Full Day" : "Half Day"}</strong>
-                          </p>
-                        </div>
-                        <span style={{
-                          padding: "0.25rem 0.6rem", borderRadius: "6px",
-                          background: statusColors.bg, border: `1px solid ${statusColors.border}`,
-                          fontSize: "0.7rem", fontWeight: 800, color: statusColors.text
-                        }}>
-                          {req.status}
-                        </span>
-                      </div>
-                      
-                      <div style={{ background: "rgba(255,255,255,0.02)", padding: "0.6rem 0.75rem", borderRadius: "10px", border: "1px solid var(--glass-border)" }}>
-                        <span style={{ display: "block", fontSize: "0.6rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.2rem" }}>Reason</span>
-                        <p style={{ fontSize: "0.8rem", color: "var(--text-main)", margin: 0 }}>{req.reason}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
       </main>
 
       {/* ── Request Leave Modal ── */}
@@ -541,14 +557,14 @@ export default function StaffProfilePage() {
         <div className="modal-overlay" onClick={() => setIsLeaveModalOpen(false)}>
           <div className="glass modal-content animate-slide-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "450px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.75rem" }}>
-              <h2 className="text-gradient" style={{ fontSize: "1.5rem" }}>Request Leave</h2>
+              <h2 className="text-gradient" style={{ fontSize: "1.5rem" }}>Ask for Leave</h2>
               <button onClick={() => setIsLeaveModalOpen(false)} className="modal-close">&times;</button>
             </div>
             
             <form onSubmit={handleLeaveSubmit} style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                 <div>
-                  <FormLabel>Start Date</FormLabel>
+                  <FormLabel>First Day</FormLabel>
                   <input 
                     type="date" 
                     required 
@@ -558,7 +574,7 @@ export default function StaffProfilePage() {
                   />
                 </div>
                 <div>
-                  <FormLabel>End Date</FormLabel>
+                  <FormLabel>Last Day</FormLabel>
                   <input 
                     type="date" 
                     required 
@@ -570,24 +586,24 @@ export default function StaffProfilePage() {
               </div>
               
               <div>
-                <FormLabel>Leave Duration Type</FormLabel>
+                <FormLabel>Is it a Full Day or Half Day?</FormLabel>
                 <select 
                   className="input-modern" 
                   value={leaveForm.type} 
                   onChange={(e) => setLeaveForm({ ...leaveForm, type: e.target.value })}
                 >
-                  <option value="FULL">Full Day</option>
-                  <option value="HALF">Half Day</option>
+                  <option value="FULL">Full Day (Whole day off)</option>
+                  <option value="HALF">Half Day (Work for few hours)</option>
                 </select>
               </div>
 
               <div>
-                <FormLabel>Reason for Leave</FormLabel>
+                <FormLabel>Why do you need leave?</FormLabel>
                 <input 
                   type="text" 
                   required 
                   className="input-modern" 
-                  placeholder="e.g. Family medical emergency, festival..." 
+                  placeholder="E.g. Going to doctor, family work..." 
                   value={leaveForm.reason} 
                   onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })} 
                 />
@@ -596,10 +612,10 @@ export default function StaffProfilePage() {
               <button 
                 type="submit" 
                 className="btn-modern btn-primary" 
-                style={{ width: "100%", marginTop: "0.5rem" }}
+                style={{ width: "100%", marginTop: "0.5rem", padding: "1rem", fontSize: "1rem" }}
                 disabled={submittingLeave}
               >
-                {submittingLeave ? "Submitting..." : "Submit Request"}
+                {submittingLeave ? "Sending..." : "Send Request"}
               </button>
             </form>
           </div>
@@ -611,7 +627,7 @@ export default function StaffProfilePage() {
         <div className="modal-overlay" onClick={() => setIsEditModalOpen(false)}>
           <div className="glass modal-content animate-slide-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "450px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.75rem" }}>
-              <h2 className="text-gradient" style={{ fontSize: "1.5rem" }}>Edit Details</h2>
+              <h2 className="text-gradient" style={{ fontSize: "1.5rem" }}>Change Details</h2>
               <button onClick={() => setIsEditModalOpen(false)} className="modal-close">&times;</button>
             </div>
             
@@ -648,12 +664,12 @@ export default function StaffProfilePage() {
               </div>
 
               <div>
-                <FormLabel>Change Login PIN (6 digits)</FormLabel>
+                <FormLabel>Change Login PIN (6 numbers)</FormLabel>
                 <input 
                   type="text" 
                   maxLength={6}
                   className="input-modern" 
-                  placeholder="•••••• (Leave blank to keep existing)"
+                  placeholder="•••••• (Leave empty to keep same PIN)"
                   value={editForm.pin} 
                   onChange={(e) => setEditForm({ ...editForm, pin: e.target.value })} 
                 />
@@ -662,7 +678,7 @@ export default function StaffProfilePage() {
               <button 
                 type="submit" 
                 className="btn-modern btn-primary" 
-                style={{ width: "100%", marginTop: "0.5rem" }}
+                style={{ width: "100%", marginTop: "0.5rem", padding: "1rem", fontSize: "1rem" }}
                 disabled={submittingEdit}
               >
                 {submittingEdit ? "Saving..." : "Save Changes"}
