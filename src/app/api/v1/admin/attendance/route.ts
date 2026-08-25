@@ -150,6 +150,17 @@ export async function GET(req: Request) {
         ? `${(netWorkMs / 3600000).toFixed(2)} hrs` 
         : "--";
 
+      // Format break time as "Xh Ym" instead of raw minutes
+      const formatBreakTime = (ms: number) => {
+        if (ms <= 0) return "--";
+        const totalMins = Math.round(ms / 60000);
+        const hrs = Math.floor(totalMins / 60);
+        const mins = totalMins % 60;
+        if (hrs === 0) return `${mins}m`;
+        if (mins === 0) return `${hrs}h`;
+        return `${hrs}h ${mins}m`;
+      };
+
       return {
         id: staff.id,
         name: staff.name,
@@ -158,8 +169,13 @@ export async function GET(req: Request) {
         state: record?.state || "NOT_STARTED",
         startTime: record?.startTime ? new Date(record.startTime).toISOString() : null,
         endTime: record?.endTime ? new Date(record.endTime).toISOString() : null,
-        breakTimeStr,
-        workTimeStr
+        breakTimeStr: formatBreakTime(totalBreakMs),
+        workTimeStr,
+        breaks: record?.breaks.map(b => ({
+          id: b.id,
+          startTime: new Date(b.startTime).toISOString(),
+          endTime: b.endTime ? new Date(b.endTime).toISOString() : null,
+        })) || [],
       };
     });
 
