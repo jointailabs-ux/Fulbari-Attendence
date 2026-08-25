@@ -59,6 +59,10 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
       note: `${totalDays} total − ${daysPresent} worked`, color: "#94a3b8", sign: null,
     },
     {
+      icon: "📅", label: "Weekend Absences", value: `${r.weekendAbsences?.saturdays || 0} Sat, ${r.weekendAbsences?.sundays || 0} Sun`,
+      note: "Included in total absent days", color: "#fb923c", sign: null,
+    },
+    {
       icon: "🎁", label: "Free Leave Allowance", value: `${freeLeaves} days`,
       note: "Paid leaves included in package (no deduction)", color: "#34d399", sign: null,
     },
@@ -518,6 +522,9 @@ export default function PayrollCalculationPage() {
                       <div>
                         <span style={{ display: "block", fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>Absent Days</span>
                         <span style={{ fontSize: "0.9rem", fontWeight: 800, color: absentDays > freeLeaves ? "#fb923c" : "var(--text-muted)" }}>{absentDays} days</span>
+                        <div style={{ fontSize: "0.55rem", color: "#fb923c", marginTop: "0.15rem", fontWeight: 700 }}>
+                           ({r.weekendAbsences?.saturdays || 0} Sat, {r.weekendAbsences?.sundays || 0} Sun)
+                        </div>
                       </div>
                       <div>
                         <span style={{ display: "block", fontSize: "0.58rem", color: "#34d399", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em" }}>Gross Earned</span>

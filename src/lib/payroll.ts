@@ -23,6 +23,12 @@ export interface PayrollDetails {
   
   // Totals
   pendingAdvances: number; // A_pending
+
+  // Weekend absence tracking
+  weekendAbsences: {
+    saturdays: number; // absent Saturdays
+    sundays: number;   // absent Sundays
+  };
   
   simple: {
     earnedSalary: number; // S_earned
@@ -287,6 +293,22 @@ export async function calculateStaffPayroll(
     daysElapsed
   );
 
+  // Count absent Saturdays and Sundays
+  const attendedDates = new Set(
+    staff.attendances.map(a => a.shiftDate.toISOString().split('T')[0])
+  );
+  let absentSaturdays = 0;
+  let absentSundays = 0;
+  for (let day = 1; day <= D_total; day++) {
+    const d = new Date(Date.UTC(year, month - 1, day));
+    const dow = d.getUTCDay(); // 0=Sun, 6=Sat
+    const dateStr = d.toISOString().split('T')[0];
+    if (!attendedDates.has(dateStr)) {
+      if (dow === 6) absentSaturdays++;
+      if (dow === 0) absentSundays++;
+    }
+  }
+
   return {
     staffId: staff.id,
     name: staff.name,
@@ -304,6 +326,10 @@ export async function calculateStaffPayroll(
     penaltyEarly: parseFloat(penaltyEarly.toFixed(2)),
     penaltyAbsence: parseFloat(metrics.penaltyAbsence.toFixed(2)),
     pendingAdvances: A_pending,
+    weekendAbsences: {
+      saturdays: absentSaturdays,
+      sundays: absentSundays,
+    },
     simple: metrics.simple,
     strict: metrics.strict,
     lateDetails,

@@ -76,7 +76,8 @@ export async function GET(req: Request) {
               penaltyLate: payroll.penaltyLate,
               penaltyEarly: payroll.penaltyEarly,
               penaltyAbsence: payroll.penaltyAbsence
-            }
+            },
+            weekendAbsences: payroll.weekendAbsences
           };
         } catch (e: any) {
           console.error(`Error calculating payroll for staff ${profile.id}:`, e);
