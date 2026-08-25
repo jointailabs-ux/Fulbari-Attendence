@@ -133,9 +133,6 @@ export async function calculateStaffPayroll(
   const startDate = new Date(Date.UTC(year, month - 1, 1));
   const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59));
   let D_total = endDate.getDate();
-  if (month === 8) {
-    D_total = 30; // Override to 30 days for August as per rules
-  }
 
   const staff = await prisma.staffProfile.findUnique({
     where: { id: staffId },
