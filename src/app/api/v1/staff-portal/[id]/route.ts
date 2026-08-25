@@ -61,6 +61,14 @@ export async function GET(
 
     const dailyWage = totalDays > 0 ? parseFloat((staff.monthlySalary / totalDays).toFixed(2)) : 0;
     const earnedTillNow = parseFloat((dailyWage * presentDays).toFixed(2));
+    const advanceToRecover = Math.min(pendingAdvance, earnedTillNow);
+    const netPayable = Math.max(0, earnedTillNow - advanceToRecover);
+    
+    const activeAdvances = staff.advances.filter(a => a.status === 'PENDING').map(a => ({
+      date: a.date,
+      amount: a.amount,
+      reason: a.reason
+    }));
 
     // Return safe data without hashedPin
     const { hashedPin, ...safeStaff } = staff;
@@ -75,6 +83,9 @@ export async function GET(
         earnedTillNow,
         attendancePercent: totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0,
         pendingAdvance,
+        advanceToRecover,
+        netPayable,
+        activeAdvances,
         todayStatus: todayRecord?.state || 'NOT_STARTED'
       }
     });

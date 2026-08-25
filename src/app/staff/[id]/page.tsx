@@ -36,6 +36,9 @@ interface StaffData {
     earnedTillNow?: number;
     attendancePercent: number;
     pendingAdvance: number;
+    advanceToRecover: number;
+    netPayable: number;
+    activeAdvances: { date: string; amount: number; reason: string }[];
     todayStatus: string;
   };
 }
@@ -63,7 +66,7 @@ export default function StaffProfilePage() {
 
   const [staff, setStaff] = useState<StaffData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"salary" | "leaves" | "overview" | "documents">("salary");
+  const [tab, setTab] = useState<"audit" | "salary" | "leaves" | "overview" | "documents">("audit");
 
   // Leaves management states
   const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
@@ -293,10 +296,10 @@ export default function StaffProfilePage() {
               <div style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", padding: "0.75rem 1rem", borderRadius: "12px" }}>
                 <p style={{ fontSize: "0.7rem", color: "var(--brand-primary-light)", fontWeight: 800, textTransform: "uppercase" }}>EARNED TILL NOW</p>
                 <p style={{ fontSize: "1.8rem", fontWeight: 900, color: "#10b981" }}>
-                  ₹{(staff.currentMonth.earnedTillNow ?? 0).toLocaleString("en-IN")}
+                  ₹{(staff.currentMonth.netPayable ?? 0).toLocaleString("en-IN")}
                 </p>
                 <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
-                  ₹{(staff.currentMonth.dailyWage ?? 0).toLocaleString("en-IN")}/day × {staff.currentMonth.presentDays} days
+                  Earned (₹{(staff.currentMonth.earnedTillNow ?? 0).toLocaleString("en-IN")}) - Advance (₹{(staff.currentMonth.advanceToRecover ?? 0).toLocaleString("en-IN")})
                 </p>
               </div>
             </div>
@@ -323,7 +326,8 @@ export default function StaffProfilePage() {
         {/* Tab Nav */}
         <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
           {[
-            { id: "salary", label: "💸 Salary" },
+            { id: "audit", label: "📊 Current Month" },
+            { id: "salary", label: "💸 Past Salaries" },
             { id: "leaves", label: "📝 Leaves" },
             { id: "overview", label: "👤 Profile" },
             { id: "documents", label: "📂 Documents" },
@@ -344,6 +348,82 @@ export default function StaffProfilePage() {
             </button>
           ))}
         </div>
+
+        {/* Current Month Audit Tab */}
+        {tab === "audit" && (
+          <div className="animate-slide-up" style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+            <div className="glass" style={{ padding: "1.5rem", borderRadius: "20px", border: "1px solid var(--glass-border)", display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: "1rem" }}>
+                <div>
+                  <p style={{ fontWeight: 900, fontSize: "1.2rem", color: "#fff" }}>Live Finance Audit Trail</p>
+                  <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Your earnings and deductions for {new Date().toLocaleString('default', { month: 'long' })} so far</p>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", paddingTop: "0.5rem" }}>
+                
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "0.75rem 1rem", background: "rgba(255,255,255,0.03)", borderRadius: "12px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <span style={{ fontSize: "1.2rem" }}>💰</span>
+                    <div>
+                      <p style={{ fontSize: "0.9rem", fontWeight: 700, color: "#fff" }}>Gross Earned Till Now</p>
+                      <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>₹{staff.currentMonth.dailyWage} × {staff.currentMonth.presentDays} days worked</p>
+                    </div>
+                  </div>
+                  <p style={{ fontSize: "1.1rem", fontWeight: 800, color: "#34d399", alignSelf: "center" }}>₹{(staff.currentMonth.earnedTillNow ?? 0).toLocaleString("en-IN")}</p>
+                </div>
+
+                {staff.currentMonth.advanceToRecover > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "0.75rem 1rem", background: "rgba(244,63,94,0.05)", borderRadius: "12px", border: "1px solid rgba(244,63,94,0.15)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                      <span style={{ fontSize: "1.2rem" }}>💳</span>
+                      <div>
+                        <p style={{ fontSize: "0.9rem", fontWeight: 700, color: "#fff" }}>Advance to Recover</p>
+                        <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Money you took early</p>
+                      </div>
+                    </div>
+                    <p style={{ fontSize: "1.1rem", fontWeight: 800, color: "#fb7185", alignSelf: "center" }}>- ₹{(staff.currentMonth.advanceToRecover ?? 0).toLocaleString("en-IN")}</p>
+                  </div>
+                )}
+
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "0.75rem 1rem", background: "rgba(16,185,129,0.1)", borderRadius: "12px", border: "1px solid rgba(16,185,129,0.25)", marginTop: "0.5rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <span style={{ fontSize: "1.2rem" }}>✅</span>
+                    <div>
+                      <p style={{ fontSize: "1rem", fontWeight: 800, color: "#10b981" }}>Current Net Payable</p>
+                      <p style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>What you would get if paid today</p>
+                    </div>
+                  </div>
+                  <p style={{ fontSize: "1.4rem", fontWeight: 900, color: "#10b981", alignSelf: "center" }}>₹{(staff.currentMonth.netPayable ?? 0).toLocaleString("en-IN")}</p>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Active Advances List */}
+            {staff.currentMonth.activeAdvances && staff.currentMonth.activeAdvances.length > 0 && (
+              <div>
+                <h3 style={{ fontSize: "1rem", fontWeight: 800, marginBottom: "0.75rem" }}>Your Active Advances</h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  {staff.currentMonth.activeAdvances.map((adv, i) => (
+                    <div key={i} className="glass" style={{ padding: "1rem", borderRadius: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                        <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "rgba(245,158,11,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem" }}>
+                          💸
+                        </div>
+                        <div>
+                          <p style={{ fontWeight: 700, fontSize: "0.95rem" }}>{adv.reason || "Cash Advance"}</p>
+                          <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Taken on {new Date(adv.date).toLocaleDateString("en-IN")}</p>
+                        </div>
+                      </div>
+                      <p style={{ fontWeight: 800, fontSize: "1.1rem", color: "#f59e0b" }}>₹{adv.amount.toLocaleString("en-IN")}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Salary History Tab (DETAILED BREAKDOWN) */}
         {tab === "salary" && (
