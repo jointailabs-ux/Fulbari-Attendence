@@ -256,9 +256,10 @@ export default function StaffProfilePage() {
 
         {/* Hero Banner (SIMPLIFIED) */}
         <div className="glass animate-slide-up" style={{
-          padding: "2rem", borderRadius: "20px", marginBottom: "1.5rem",
-          background: "linear-gradient(135deg, rgba(139,92,246,0.08), rgba(6,182,212,0.06))",
-          border: "1px solid rgba(139,92,246,0.15)"
+          padding: "2.5rem 2rem", borderRadius: "24px", marginBottom: "2rem",
+          background: "linear-gradient(135deg, rgba(139,92,246,0.15), rgba(6,182,212,0.1))",
+          border: "1px solid rgba(139,92,246,0.3)",
+          boxShadow: "0 10px 40px -10px rgba(139,92,246,0.2)"
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: "1.25rem", flexWrap: "wrap" }}>
             <div style={{
@@ -293,8 +294,8 @@ export default function StaffProfilePage() {
                 <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontWeight: 600 }}>MONTHLY SALARY</p>
                 <p style={{ fontSize: "1.6rem", fontWeight: 900, color: "#fff" }}>₹{staff.monthlySalary.toLocaleString("en-IN")}</p>
               </div>
-              <div style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", padding: "0.75rem 1rem", borderRadius: "12px" }}>
-                <p style={{ fontSize: "0.7rem", color: "var(--brand-primary-light)", fontWeight: 800, textTransform: "uppercase" }}>EARNED TILL NOW</p>
+              <div style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05))", border: "1px solid rgba(16,185,129,0.4)", padding: "1rem 1.25rem", borderRadius: "16px", boxShadow: "0 0 20px rgba(16,185,129,0.15)" }}>
+                <p style={{ fontSize: "0.75rem", color: "var(--brand-primary-light)", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px" }}>CURRENT NET PAYABLE</p>
                 <p style={{ fontSize: "1.8rem", fontWeight: 900, color: "#10b981" }}>
                   ₹{(staff.currentMonth.netPayable ?? 0).toLocaleString("en-IN")}
                 </p>
@@ -315,10 +316,10 @@ export default function StaffProfilePage() {
             { icon: "💳", label: "Pending Advance", value: `₹${staff.currentMonth.pendingAdvance.toLocaleString("en-IN")}`, color: "#f59e0b" },
             { icon: "🏆", label: "Past Disbursed", value: `₹${totalEarned.toLocaleString("en-IN")}`, color: "#a855f7" },
           ].map((stat, i) => (
-            <div key={i} className="glass" style={{ padding: "1.5rem", borderRadius: "16px" }}>
-              <div style={{ fontSize: "1.8rem", marginBottom: "0.5rem" }}>{stat.icon}</div>
-              <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.3rem" }}>{stat.label}</p>
-              <p style={{ fontSize: "1.5rem", fontWeight: 900, color: stat.color }}>{stat.value}</p>
+            <div key={i} className="glass" style={{ padding: "1.75rem 1.5rem", borderRadius: "20px", transition: "transform 0.2s", cursor: "default", border: "1px solid rgba(255,255,255,0.05)", boxShadow: "0 4px 20px rgba(0,0,0,0.1)" }} onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-5px)"} onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}>
+              <div style={{ fontSize: "2rem", marginBottom: "0.75rem", textShadow: `0 0 15px ${stat.color}80` }}>{stat.icon}</div>
+              <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.4rem" }}>{stat.label}</p>
+              <p style={{ fontSize: "1.6rem", fontWeight: 900, color: stat.color, textShadow: `0 0 10px ${stat.color}40` }}>{stat.value}</p>
             </div>
           ))}
         </div>
@@ -363,10 +364,10 @@ export default function StaffProfilePage() {
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", paddingTop: "0.5rem" }}>
                 
                 <div style={{ display: "flex", justifyContent: "space-between", padding: "0.75rem 1rem", background: "rgba(255,255,255,0.03)", borderRadius: "12px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                    <span style={{ fontSize: "1.2rem" }}>💰</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                    <div style={{ background: "rgba(52,211,153,0.15)", borderRadius: "12px", width: "45px", height: "45px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.4rem" }}>💰</div>
                     <div>
-                      <p style={{ fontSize: "0.9rem", fontWeight: 700, color: "#fff" }}>Gross Earned Till Now</p>
+                      <p style={{ fontSize: "0.95rem", fontWeight: 700, color: "#fff" }}>Gross Earned Till Now</p>
                       <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>₹{staff.currentMonth.dailyWage} × {staff.currentMonth.presentDays} days worked</p>
                     </div>
                   </div>
@@ -374,11 +375,11 @@ export default function StaffProfilePage() {
                 </div>
 
                 {staff.currentMonth.advanceToRecover > 0 && (
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "0.75rem 1rem", background: "rgba(244,63,94,0.05)", borderRadius: "12px", border: "1px solid rgba(244,63,94,0.15)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                      <span style={{ fontSize: "1.2rem" }}>💳</span>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "1rem 1.25rem", background: "rgba(244,63,94,0.05)", borderRadius: "16px", border: "1px solid rgba(244,63,94,0.2)", marginTop: "0.5rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                      <div style={{ background: "rgba(251,113,133,0.15)", borderRadius: "12px", width: "45px", height: "45px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.4rem" }}>💳</div>
                       <div>
-                        <p style={{ fontSize: "0.9rem", fontWeight: 700, color: "#fff" }}>Advance to Recover</p>
+                        <p style={{ fontSize: "0.95rem", fontWeight: 700, color: "#fff" }}>Advance to Recover</p>
                         <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Money you took early</p>
                       </div>
                     </div>
@@ -386,15 +387,15 @@ export default function StaffProfilePage() {
                   </div>
                 )}
 
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "0.75rem 1rem", background: "rgba(16,185,129,0.1)", borderRadius: "12px", border: "1px solid rgba(16,185,129,0.25)", marginTop: "0.5rem" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                    <span style={{ fontSize: "1.2rem" }}>✅</span>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "1.25rem", background: "linear-gradient(135deg, rgba(16,185,129,0.15), rgba(6,182,212,0.1))", borderRadius: "16px", border: "1px solid rgba(16,185,129,0.4)", marginTop: "1rem", boxShadow: "0 0 30px rgba(16,185,129,0.15)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                    <div style={{ background: "rgba(16,185,129,0.2)", borderRadius: "12px", width: "50px", height: "50px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem", boxShadow: "0 0 15px rgba(16,185,129,0.2)" }}>✅</div>
                     <div>
-                      <p style={{ fontSize: "1rem", fontWeight: 800, color: "#10b981" }}>Current Net Payable</p>
-                      <p style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>What you would get if paid today</p>
+                      <p style={{ fontSize: "1.1rem", fontWeight: 800, color: "#10b981", textShadow: "0 0 10px rgba(16,185,129,0.3)" }}>Current Net Payable</p>
+                      <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>What you would get if paid today</p>
                     </div>
                   </div>
-                  <p style={{ fontSize: "1.4rem", fontWeight: 900, color: "#10b981", alignSelf: "center" }}>₹{(staff.currentMonth.netPayable ?? 0).toLocaleString("en-IN")}</p>
+                  <p style={{ fontSize: "1.6rem", fontWeight: 900, color: "#10b981", alignSelf: "center", textShadow: "0 0 20px rgba(16,185,129,0.4)" }}>₹{(staff.currentMonth.netPayable ?? 0).toLocaleString("en-IN")}</p>
                 </div>
 
               </div>
