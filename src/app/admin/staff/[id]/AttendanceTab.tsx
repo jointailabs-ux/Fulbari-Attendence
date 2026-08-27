@@ -2,27 +2,64 @@
 
 import React, { useState, useEffect } from "react";
 
+interface BreakItem {
+  id: string;
+  startTime: string;
+  endTime: string | null;
+}
+
+interface DayData {
+  status?: string;
+  startTime?: string | null;
+  endTime?: string | null;
+  workHours?: string;
+  breaks?: BreakItem[];
+  isOccasion?: boolean;
+  occasionName?: string;
+  multiplier?: number;
+}
+
+interface SelectedDateInfo {
+  day: number;
+  fullDate: string;
+  data?: DayData;
+  dow?: number;
+  isWeekend?: boolean;
+  isOccasion?: boolean;
+}
+
 export default function AttendanceTab({ staffId }: { staffId: string }) {
   const [currentMonth, setCurrentMonth] = useState(new Date().toISOString().slice(0, 7));
-  const [calendarData, setCalendarData] = useState<any>({});
-  const [selectedDate, setSelectedDate] = useState<any>(null);
+  const [calendarData, setCalendarData] = useState<Record<string, DayData>>({});
+  const [selectedDate, setSelectedDate] = useState<SelectedDateInfo | null>(null);
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
 
-  const fetchCalendar = async () => {
+  const reloadCalendar = async () => {
     try {
       const res = await fetch(`/api/v1/staff/${staffId}/attendance?month=${currentMonth}`);
       const data = await res.json();
-      setCalendarData(data);
+      setCalendarData(data || {});
     } catch (e) {
       console.error(e);
     }
   };
 
   useEffect(() => {
-    fetchCalendar();
-  }, [currentMonth]);
+    let isMounted = true;
+    fetch(`/api/v1/staff/${staffId}/attendance?month=${currentMonth}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (isMounted) setCalendarData(data || {});
+      })
+      .catch((e) => console.error(e));
+
+    return () => {
+      isMounted = false;
+    };
+  }, [staffId, currentMonth]);
 
   const handleMarkLeave = async (type: string) => {
+    if (!selectedDate) return;
     try {
       await fetch(`/api/v1/staff/${staffId}/leaves`, {
         method: "POST",
@@ -34,19 +71,20 @@ export default function AttendanceTab({ staffId }: { staffId: string }) {
         })
       });
       setIsLeaveModalOpen(false);
-      fetchCalendar();
+      reloadCalendar();
     } catch (e) {
       console.error(e);
     }
   };
 
   const handleDeleteLeave = async () => {
+    if (!selectedDate) return;
     try {
       await fetch(`/api/v1/staff/${staffId}/leaves?date=${selectedDate.fullDate}`, {
         method: "DELETE"
       });
       setIsLeaveModalOpen(false);
-      fetchCalendar();
+      reloadCalendar();
     } catch (e) {
       console.error(e);
     }
@@ -81,36 +119,90 @@ export default function AttendanceTab({ staffId }: { staffId: string }) {
   };
 
   return (
-    <section className="glass animate-slide-up" style={{ padding: '2.5rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1.5rem' }}>
+    <section className="glass animate-slide-up staff-attendance-section" style={{ padding: '2rem', borderRadius: '24px' }}>
+      <style>{`
+        .staff-attendance-section {
+          padding: 2rem;
+          border-radius: 24px;
+        }
+        .staff-attendance-weekdays {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 0.5rem;
+          margin-bottom: 0.5rem;
+        }
+        .staff-attendance-grid {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 0.5rem;
+        }
+        .staff-cal-cell {
+          aspect-ratio: 1;
+          border-radius: 14px;
+          padding: 0.5rem;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          font-size: 1rem;
+          font-weight: 800;
+          position: relative;
+        }
+        @media (max-width: 640px) {
+          .staff-attendance-section {
+            padding: 0.75rem 0.35rem !important;
+            border-radius: 16px !important;
+          }
+          .staff-attendance-weekdays {
+            gap: 2px !important;
+            margin-bottom: 4px !important;
+          }
+          .staff-attendance-grid {
+            gap: 2px !important;
+          }
+          .staff-cal-cell {
+            padding: 0.2rem 0.1rem !important;
+            border-radius: 8px !important;
+            font-size: 0.8rem !important;
+          }
+          .staff-weekday-header {
+            font-size: 0.6rem !important;
+            padding: 0.2rem 0 !important;
+          }
+        }
+      `}</style>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-           <h2 style={{ fontSize: '1.75rem' }} className="text-gradient">Timekeeping Calendar</h2>
-           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Historical deployment and absence audit.</p>
+           <h2 style={{ fontSize: '1.5rem' }} className="text-gradient">Timekeeping Calendar</h2>
+           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Historical deployment and absence audit.</p>
         </div>
         
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '0.4rem', borderRadius: '14px', border: '1px solid var(--glass-border)' }}>
-          <button className="btn-modern btn-secondary" style={{ padding: '0.4rem 0.8rem', minWidth: 'auto', borderRadius: '10px' }} onClick={() => {
+        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '0.35rem', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
+          <button className="btn-modern btn-secondary" style={{ padding: '0.35rem 0.7rem', minWidth: 'auto', borderRadius: '8px' }} onClick={() => {
             const d = new Date(year, month - 2);
             setCurrentMonth(d.toISOString().slice(0, 7));
           }}>←</button>
           <input 
             type="month" 
             className="input-modern" 
-            style={{ width: 'auto', padding: '0.4rem 0.8rem', border: 'none', background: 'transparent', fontWeight: '700' }} 
+            style={{ width: 'auto', padding: '0.35rem 0.6rem', border: 'none', background: 'transparent', fontWeight: '700', fontSize: '0.9rem' }} 
             value={currentMonth} 
             onChange={(e) => setCurrentMonth(e.target.value)} 
           />
-          <button className="btn-modern btn-secondary" style={{ padding: '0.4rem 0.8rem', minWidth: 'auto', borderRadius: '10px' }} onClick={() => {
+          <button className="btn-modern btn-secondary" style={{ padding: '0.35rem 0.7rem', minWidth: 'auto', borderRadius: '8px' }} onClick={() => {
             const d = new Date(year, month);
             setCurrentMonth(d.toISOString().slice(0, 7));
           }}>→</button>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.75rem' }}>
-        {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(d => (
-          <div key={d} style={{ textAlign: 'center', fontWeight: '800', fontSize: '0.7rem', color: 'var(--text-muted)', padding: '0.5rem', letterSpacing: '0.1em' }}>{d}</div>
+      <div className="staff-attendance-weekdays">
+        {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map((d, idx) => (
+          <div key={d} className="staff-weekday-header" style={{ textAlign: 'center', fontWeight: '800', fontSize: '0.7rem', color: (idx === 0 || idx === 6) ? '#fb7185' : 'var(--text-muted)', padding: '0.3rem', letterSpacing: '0.05em' }}>{d}</div>
         ))}
+      </div>
+
+      <div className="staff-attendance-grid">
         {days.map((day, i) => {
           const dow = i % 7;
           const isWeekend = dow === 0 || dow === 6;
@@ -139,7 +231,7 @@ export default function AttendanceTab({ staffId }: { staffId: string }) {
                 color: day?.data?.status ? 'var(--text-main)' : isOccasion ? '#fbbf24' : isWeekend ? '#fb7185' : 'var(--text-muted)',
                 opacity: day ? 1 : 0
               }}
-              className={day ? "glass-hover" : ""}
+              className={`staff-cal-cell ${day ? "glass-hover" : ""}`}
             >
               <span>{day?.day}</span>
               
@@ -210,7 +302,7 @@ export default function AttendanceTab({ staffId }: { staffId: string }) {
                     <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--glass-border)' }}>
                       <span style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem' }}>BREAK LOGS</span>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', paddingLeft: '0.5rem' }}>
-                        {selectedDate.data.breaks.map((b: any, idx: number) => {
+                        {selectedDate.data.breaks.map((b: BreakItem, idx: number) => {
                           const start = new Date(b.startTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
                           const end = b.endTime ? new Date(b.endTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : "Active";
                           return (

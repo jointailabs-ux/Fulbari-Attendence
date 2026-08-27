@@ -72,7 +72,7 @@ export default function OccasionsCalendarPage() {
   // Calendar Calculation
   const [year, month] = currentMonth.split("-").map(Number);
   const daysInMonth = new Date(year, month, 0).getDate();
-  const firstDayOfWeek = new Date(year, month - 1, 1).getDay(); // 0 = Sun
+  const firstDayOfWeek = new Date(year, month - 1, 1).getDay(); // 0 = Sun, 6 = Sat
 
   // Map of occasions by YYYY-MM-DD
   const occasionMap = useMemo(() => {
@@ -103,6 +103,8 @@ export default function OccasionsCalendarPage() {
         dateStr,
         dow,
         isWeekend,
+        isSaturday: dow === 6,
+        isSunday: dow === 0,
         occasion,
       });
     }
@@ -188,29 +190,166 @@ export default function OccasionsCalendarPage() {
   };
 
   return (
-    <div className="animate-slide-up" style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+    <div className="occasion-page-shell animate-slide-up">
+      {/* ── Scoped Responsive Styles ── */}
+      <style>{`
+        .occasion-page-shell {
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
+        }
+        .occasion-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          flex-wrap: wrap;
+          gap: 1rem;
+        }
+        .occasion-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+          gap: 1rem;
+        }
+        .occasion-calendar-card {
+          padding: 1.75rem;
+          border-radius: 24px;
+          width: 100%;
+          box-sizing: border-box;
+          overflow: hidden;
+        }
+        .occasion-weekdays-grid {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 6px;
+          margin-bottom: 6px;
+          width: 100%;
+        }
+        .occasion-days-grid {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 6px;
+          width: 100%;
+        }
+        .occasion-cell {
+          min-height: 85px;
+          border-radius: 14px;
+          padding: 0.55rem;
+          cursor: pointer;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+          box-sizing: border-box;
+          user-select: none;
+        }
+        .occasion-cell-day {
+          font-size: 1.05rem;
+          font-weight: 900;
+          line-height: 1;
+        }
+        .occasion-cell-badge {
+          font-size: 0.6rem;
+          font-weight: 900;
+          padding: 0.12rem 0.35rem;
+          border-radius: 6px;
+          white-space: nowrap;
+          line-height: 1.2;
+        }
+        .occasion-event-tag {
+          margin-top: 0.25rem;
+          background: rgba(0,0,0,0.5);
+          padding: 0.25rem 0.35rem;
+          border-radius: 6px;
+          border: 1px solid rgba(251,191,36,0.3);
+          font-size: 0.65rem;
+          font-weight: 800;
+          color: #fff;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .occasion-weekday-header {
+          text-align: center;
+          font-weight: 900;
+          font-size: 0.72rem;
+          padding: 0.4rem 0;
+          letter-spacing: 0.05em;
+        }
+
+        /* ── Mobile Phone Optimization (under 640px) ── */
+        @media (max-width: 640px) {
+          .occasion-page-shell {
+            gap: 1rem;
+          }
+          .occasion-header h1 {
+            font-size: 1.75rem !important;
+          }
+          .occasion-stats-grid {
+            grid-template-columns: 1fr !important;
+            gap: 0.6rem !important;
+          }
+          .occasion-calendar-card {
+            padding: 0.75rem 0.35rem !important;
+            border-radius: 16px !important;
+          }
+          .occasion-weekdays-grid {
+            gap: 2px !important;
+            margin-bottom: 4px !important;
+          }
+          .occasion-days-grid {
+            gap: 2px !important;
+          }
+          .occasion-cell {
+            min-height: 54px !important;
+            padding: 0.25rem 0.15rem !important;
+            border-radius: 8px !important;
+          }
+          .occasion-cell-day {
+            font-size: 0.82rem !important;
+          }
+          .occasion-cell-badge {
+            font-size: 0.5rem !important;
+            padding: 0.05rem 0.2rem !important;
+            border-radius: 4px !important;
+          }
+          .occasion-event-tag {
+            font-size: 0.52rem !important;
+            padding: 0.1rem 0.2rem !important;
+            margin-top: 0.15rem !important;
+          }
+          .occasion-weekday-header {
+            font-size: 0.6rem !important;
+            padding: 0.2rem 0 !important;
+          }
+        }
+      `}</style>
+
       {/* ── Page Header ── */}
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "1.5rem" }}>
+      <header className="occasion-header">
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.4rem" }}>
-            <span style={{ fontSize: "1.5rem" }}>🌟</span>
-            <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "#fbbf24", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-              High-Demand & Attendance Control
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
+            <span style={{ fontSize: "1.3rem" }}>🌟</span>
+            <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#fbbf24", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              Peak Attendance Policy
             </span>
           </div>
-          <h1 className="text-gradient" style={{ fontSize: "2.6rem", margin: 0, fontWeight: 900 }}>
-            Occasion Days & Weekend Rules
+          <h1 className="text-gradient" style={{ fontSize: "2.4rem", margin: 0, fontWeight: 900, letterSpacing: "-0.02em" }}>
+            Occasions & Weekend Rules
           </h1>
-          <p style={{ color: "var(--text-muted)", fontSize: "0.88rem", marginTop: "0.4rem", maxWidth: "700px", lineHeight: 1.5 }}>
-            Absences on <strong style={{ color: "#fb7185" }}>Saturdays, Sundays</strong>, and marked <strong style={{ color: "#fbbf24" }}>Occasion Days</strong> incur a <strong style={{ color: "#fff" }}>1.5x leave deduction</strong> instead of 1 day to encourage higher attendance during peak operations.
+          <p style={{ color: "var(--text-muted)", fontSize: "0.82rem", marginTop: "0.3rem", maxWidth: "650px", lineHeight: 1.45 }}>
+            Absences on <strong style={{ color: "#fb7185" }}>Saturdays, Sundays</strong>, and marked <strong style={{ color: "#fbbf24" }}>Occasion Days</strong> cut <strong style={{ color: "#fff" }}>1.5 days</strong> of leave instead of 1 day.
           </p>
         </div>
 
         {/* Month Selector */}
-        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", background: "rgba(255,255,255,0.03)", padding: "0.4rem", borderRadius: "14px", border: "1px solid var(--glass-border)" }}>
+        <div style={{ display: "flex", gap: "0.4rem", alignItems: "center", background: "rgba(255,255,255,0.03)", padding: "0.35rem", borderRadius: "12px", border: "1px solid var(--glass-border)" }}>
           <button
             className="btn-modern btn-secondary"
-            style={{ padding: "0.45rem 0.85rem", minWidth: "auto", borderRadius: "10px", fontWeight: 800 }}
+            style={{ padding: "0.4rem 0.75rem", minWidth: "auto", borderRadius: "8px", fontWeight: 800 }}
             onClick={() => {
               const d = new Date(year, month - 2);
               setCurrentMonth(d.toISOString().slice(0, 7));
@@ -221,13 +360,13 @@ export default function OccasionsCalendarPage() {
           <input
             type="month"
             className="input-modern"
-            style={{ width: "auto", padding: "0.45rem 0.85rem", border: "none", background: "transparent", fontWeight: "800", fontSize: "0.95rem", color: "var(--text-main)" }}
+            style={{ width: "auto", padding: "0.4rem 0.6rem", border: "none", background: "transparent", fontWeight: "800", fontSize: "0.9rem", color: "var(--text-main)" }}
             value={currentMonth}
             onChange={(e) => setCurrentMonth(e.target.value)}
           />
           <button
             className="btn-modern btn-secondary"
-            style={{ padding: "0.45rem 0.85rem", minWidth: "auto", borderRadius: "10px", fontWeight: 800 }}
+            style={{ padding: "0.4rem 0.75rem", minWidth: "auto", borderRadius: "8px", fontWeight: 800 }}
             onClick={() => {
               const d = new Date(year, month);
               setCurrentMonth(d.toISOString().slice(0, 7));
@@ -238,99 +377,104 @@ export default function OccasionsCalendarPage() {
         </div>
       </header>
 
-      {/* ── Policy Explainer & Stat Cards ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1rem" }}>
-        {/* Card 1: Occasion Days */}
-        <div className="glass" style={{ padding: "1.4rem", borderRadius: "18px", border: "1px solid rgba(251,191,36,0.25)", background: "rgba(251,191,36,0.04)" }}>
+      {/* ── Policy Summary Cards ── */}
+      <div className="occasion-stats-grid">
+        {/* Card 1: Saturday & Sunday Rule */}
+        <div className="glass" style={{ padding: "1.2rem", borderRadius: "16px", border: "1px solid rgba(244,63,94,0.25)", background: "rgba(244,63,94,0.04)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              Occasion Days This Month
+            <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#fb7185", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              🏖️ Weekend Rule (Sat & Sun)
             </span>
-            <span style={{ fontSize: "1.3rem" }}>⭐</span>
+            <span style={{ padding: "0.15rem 0.4rem", borderRadius: "6px", background: "rgba(244,63,94,0.15)", color: "#fb7185", fontWeight: 900, fontSize: "0.68rem" }}>
+              1.5x CUT
+            </span>
           </div>
-          <p style={{ fontSize: "2rem", fontWeight: 900, color: "#fff", margin: "0.3rem 0 0 0" }}>
-            {totalOccasionsThisMonth} <span style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 600 }}>marked dates</span>
+          <p style={{ fontSize: "1.6rem", fontWeight: 900, color: "#fff", margin: "0.3rem 0 0 0" }}>
+            {totalWeekendDaysThisMonth} <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontWeight: 600 }}>Sat & Sun days</span>
           </p>
-          <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: "0.4rem 0 0 0" }}>
-            Penalty weight: <strong>1.5 Days leave cut</strong> per absence.
+          <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", margin: "0.3rem 0 0 0" }}>
+            Absence on any <strong style={{ color: "#fb7185" }}>Saturday or Sunday</strong> cuts <strong>1.5 days leave</strong>.
           </p>
         </div>
 
-        {/* Card 2: Weekend Days */}
-        <div className="glass" style={{ padding: "1.4rem", borderRadius: "18px", border: "1px solid rgba(244,63,94,0.25)", background: "rgba(244,63,94,0.04)" }}>
+        {/* Card 2: Custom Occasions */}
+        <div className="glass" style={{ padding: "1.2rem", borderRadius: "16px", border: "1px solid rgba(251,191,36,0.25)", background: "rgba(251,191,36,0.04)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "#fb7185", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              Weekend Days (Sat & Sun)
+            <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#fbbf24", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              ⭐ Marked Occasion Days
             </span>
-            <span style={{ fontSize: "1.3rem" }}>🏖️</span>
+            <span style={{ padding: "0.15rem 0.4rem", borderRadius: "6px", background: "rgba(251,191,36,0.15)", color: "#fbbf24", fontWeight: 900, fontSize: "0.68rem" }}>
+              1.5x CUT
+            </span>
           </div>
-          <p style={{ fontSize: "2rem", fontWeight: 900, color: "#fff", margin: "0.3rem 0 0 0" }}>
-            {totalWeekendDaysThisMonth} <span style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 600 }}>Saturdays & Sundays</span>
+          <p style={{ fontSize: "1.6rem", fontWeight: 900, color: "#fff", margin: "0.3rem 0 0 0" }}>
+            {totalOccasionsThisMonth} <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontWeight: 600 }}>special events</span>
           </p>
-          <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: "0.4rem 0 0 0" }}>
-            Auto-penalized: <strong>1.5 Days leave cut</strong> for weekend absence.
+          <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", margin: "0.3rem 0 0 0" }}>
+            Festival/rush dates marked by the owner cut <strong>1.5 days leave</strong>.
           </p>
         </div>
 
-        {/* Card 3: Free Leave Policy */}
-        <div className="glass" style={{ padding: "1.4rem", borderRadius: "18px", border: "1px solid rgba(16,185,129,0.25)", background: "rgba(16,185,129,0.04)" }}>
+        {/* Card 3: Free Leave Allowance */}
+        <div className="glass" style={{ padding: "1.2rem", borderRadius: "16px", border: "1px solid rgba(16,185,129,0.25)", background: "rgba(16,185,129,0.04)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "#10b981", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              Staff Free Leave Allowance
+            <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#10b981", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              🎁 Monthly Leave Allowance
             </span>
-            <span style={{ fontSize: "1.3rem" }}>🎁</span>
+            <span style={{ padding: "0.15rem 0.4rem", borderRadius: "6px", background: "rgba(16,185,129,0.15)", color: "#10b981", fontWeight: 900, fontSize: "0.68rem" }}>
+              4.0 FREE
+            </span>
           </div>
-          <p style={{ fontSize: "2rem", fontWeight: 900, color: "#fff", margin: "0.3rem 0 0 0" }}>
-            4.0 <span style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 600 }}>Free Paid Leaves / Month</span>
+          <p style={{ fontSize: "1.6rem", fontWeight: 900, color: "#fff", margin: "0.3rem 0 0 0" }}>
+            4.0 <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontWeight: 600 }}>Paid Leaves / Staff</span>
           </p>
-          <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: "0.4rem 0 0 0" }}>
-            Deduction only applies when total weighted leaves exceed 4 days.
+          <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", margin: "0.3rem 0 0 0" }}>
+            Salary deduction occurs only if weighted leaves exceed 4 days.
           </p>
         </div>
       </div>
 
-      {/* ── Interactive Calendar Grid ── */}
-      <section className="glass" style={{ padding: "2rem", borderRadius: "24px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
+      {/* ── Interactive 7-Day Calendar Grid ── */}
+      <section className="glass occasion-calendar-card">
+        {/* Calendar Header Row */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
           <div>
-            <h2 style={{ fontSize: "1.4rem", fontWeight: 800 }}>
-              {new Date(year, month - 1, 1).toLocaleDateString("en-IN", { month: "long", year: "numeric" })} Calendar
+            <h2 style={{ fontSize: "1.25rem", fontWeight: 800, margin: 0 }}>
+              {new Date(year, month - 1, 1).toLocaleDateString("en-IN", { month: "long", year: "numeric" })}
             </h2>
-            <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "0.15rem" }}>
-              Click any date to mark/unmark as an Occasion Day.
+            <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: "0.15rem 0 0 0" }}>
+              Tap any date to mark as an Occasion Day.
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: "1rem", alignItems: "center", flexWrap: "wrap", fontSize: "0.75rem", fontWeight: 700 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-              <div style={{ width: "12px", height: "12px", borderRadius: "4px", background: "rgba(251,191,36,0.3)", border: "1px solid #fbbf24" }} />
-              <span style={{ color: "#fbbf24" }}>⭐ Occasion Day (1.5x)</span>
+          <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap", fontSize: "0.7rem", fontWeight: 700 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+              <div style={{ width: "10px", height: "10px", borderRadius: "3px", background: "rgba(244,63,94,0.25)", border: "1px solid #fb7185" }} />
+              <span style={{ color: "#fb7185" }}>Sat & Sun (1.5x)</span>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-              <div style={{ width: "12px", height: "12px", borderRadius: "4px", background: "rgba(244,63,94,0.15)", border: "1px solid rgba(244,63,94,0.4)" }} />
-              <span style={{ color: "#fb7185" }}>🏖️ Sat / Sun (1.5x)</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+              <div style={{ width: "10px", height: "10px", borderRadius: "3px", background: "rgba(251,191,36,0.3)", border: "1px solid #fbbf24" }} />
+              <span style={{ color: "#fbbf24" }}>⭐ Occasion (1.5x)</span>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-              <div style={{ width: "12px", height: "12px", borderRadius: "4px", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+              <div style={{ width: "10px", height: "10px", borderRadius: "3px", background: "rgba(255,255,255,0.03)", border: "1px solid var(--glass-border)" }} />
               <span style={{ color: "var(--text-muted)" }}>Weekday (1.0x)</span>
             </div>
           </div>
         </div>
 
-        {/* Days of Week Header */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "0.5rem", marginBottom: "0.5rem" }}>
+        {/* Days of Week Header (SUN to SAT) */}
+        <div className="occasion-weekdays-grid">
           {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((d, idx) => {
             const isWeekendHeader = idx === 0 || idx === 6;
             return (
               <div
                 key={d}
+                className="occasion-weekday-header"
                 style={{
-                  textAlign: "center",
-                  fontWeight: 800,
-                  fontSize: "0.72rem",
                   color: isWeekendHeader ? "#fb7185" : "var(--text-muted)",
-                  padding: "0.5rem",
-                  letterSpacing: "0.08em",
+                  background: isWeekendHeader ? "rgba(244,63,94,0.06)" : "transparent",
+                  borderRadius: "6px",
                 }}
               >
                 {d}
@@ -339,49 +483,43 @@ export default function OccasionsCalendarPage() {
           })}
         </div>
 
-        {/* Grid of Days */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "0.6rem" }}>
+        {/* Days Grid */}
+        <div className="occasion-days-grid">
           {calendarDays.map((cell, idx) => {
             if (!cell) {
-              return <div key={`empty-${idx}`} style={{ opacity: 0, minHeight: "95px" }} />;
+              return <div key={`empty-${idx}`} style={{ opacity: 0 }} />;
             }
 
-            const { day, dateStr, isWeekend, occasion } = cell;
+            const { day, dateStr, isWeekend, isSaturday, isSunday, occasion } = cell;
 
             return (
               <div
                 key={dateStr}
                 onClick={() => handleOpenDate(dateStr)}
+                className="occasion-cell glass-hover"
                 style={{
-                  minHeight: "95px",
-                  borderRadius: "16px",
-                  padding: "0.65rem",
-                  cursor: "pointer",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "space-between",
-                  transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-                  position: "relative",
                   background: occasion
-                    ? "linear-gradient(135deg, rgba(251,191,36,0.15), rgba(245,158,11,0.05))"
+                    ? "linear-gradient(135deg, rgba(251,191,36,0.18), rgba(245,158,11,0.06))"
                     : isWeekend
-                    ? "rgba(244,63,94,0.04)"
+                    ? "rgba(244,63,94,0.06)"
                     : "rgba(255,255,255,0.015)",
                   border: occasion
                     ? "1.5px solid #fbbf24"
                     : isWeekend
-                    ? "1px solid rgba(244,63,94,0.25)"
+                    ? "1px solid rgba(244,63,94,0.35)"
                     : "1px solid var(--glass-border)",
-                  boxShadow: occasion ? "0 4px 15px rgba(251,191,36,0.15)" : "none",
+                  boxShadow: occasion
+                    ? "0 4px 12px rgba(251,191,36,0.15)"
+                    : isWeekend
+                    ? "0 2px 8px rgba(244,63,94,0.08)"
+                    : "none",
                 }}
-                className="glass-hover"
               >
-                {/* Header row in cell */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                {/* Header row in cell: Day number + Badge */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", width: "100%" }}>
                   <span
+                    className="occasion-cell-day"
                     style={{
-                      fontSize: "1.05rem",
-                      fontWeight: 900,
                       color: occasion ? "#fbbf24" : isWeekend ? "#fb7185" : "var(--text-main)",
                     }}
                   >
@@ -390,61 +528,54 @@ export default function OccasionsCalendarPage() {
 
                   {occasion ? (
                     <span
+                      className="occasion-cell-badge"
                       style={{
-                        padding: "0.15rem 0.4rem",
-                        borderRadius: "6px",
-                        background: "rgba(251,191,36,0.2)",
-                        border: "1px solid rgba(251,191,36,0.4)",
-                        fontSize: "0.62rem",
-                        fontWeight: 900,
+                        background: "rgba(251,191,36,0.25)",
+                        border: "1px solid rgba(251,191,36,0.45)",
                         color: "#fbbf24",
                       }}
                     >
                       ⭐ 1.5x
                     </span>
-                  ) : isWeekend ? (
+                  ) : isSaturday ? (
                     <span
+                      className="occasion-cell-badge"
                       style={{
-                        padding: "0.15rem 0.35rem",
-                        borderRadius: "6px",
-                        background: "rgba(244,63,94,0.1)",
-                        border: "1px solid rgba(244,63,94,0.2)",
-                        fontSize: "0.58rem",
-                        fontWeight: 800,
+                        background: "rgba(244,63,94,0.18)",
+                        border: "1px solid rgba(244,63,94,0.4)",
                         color: "#fb7185",
                       }}
                     >
-                      Weekend
+                      Sat 1.5x
+                    </span>
+                  ) : isSunday ? (
+                    <span
+                      className="occasion-cell-badge"
+                      style={{
+                        background: "rgba(244,63,94,0.18)",
+                        border: "1px solid rgba(244,63,94,0.4)",
+                        color: "#fb7185",
+                      }}
+                    >
+                      Sun 1.5x
                     </span>
                   ) : (
-                    <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", opacity: 0.5 }}>1x</span>
+                    <span
+                      className="occasion-cell-badge"
+                      style={{
+                        color: "var(--text-muted)",
+                        opacity: 0.4,
+                      }}
+                    >
+                      1x
+                    </span>
                   )}
                 </div>
 
-                {/* Event Name Tag */}
+                {/* Event Name Tag for marked occasions */}
                 {occasion && (
-                  <div
-                    style={{
-                      marginTop: "0.3rem",
-                      background: "rgba(0,0,0,0.4)",
-                      padding: "0.3rem 0.45rem",
-                      borderRadius: "8px",
-                      border: "1px solid rgba(251,191,36,0.3)",
-                    }}
-                  >
-                    <p
-                      style={{
-                        fontSize: "0.7rem",
-                        fontWeight: 800,
-                        color: "#fff",
-                        margin: 0,
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      {occasion.name}
-                    </p>
+                  <div className="occasion-event-tag" title={occasion.name}>
+                    {occasion.name}
                   </div>
                 )}
               </div>
@@ -453,29 +584,29 @@ export default function OccasionsCalendarPage() {
         </div>
       </section>
 
-      {/* ── Occasion Days List Table ── */}
-      <section className="glass" style={{ padding: "2rem", borderRadius: "24px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem", flexWrap: "wrap", gap: "1rem" }}>
+      {/* ── Occasions List Table ── */}
+      <section className="glass" style={{ padding: "1.5rem", borderRadius: "20px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
           <div>
-            <h2 style={{ fontSize: "1.25rem", fontWeight: 800 }}>Configured Occasions ({occasions.length})</h2>
-            <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "0.15rem" }}>
-              All custom high-demand event dates configured for this cycle.
+            <h2 style={{ fontSize: "1.15rem", fontWeight: 800, margin: 0 }}>Configured Occasions ({occasions.length})</h2>
+            <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: "0.1rem 0 0 0" }}>
+              High-demand dates configured for this cycle.
             </p>
           </div>
         </div>
 
         {occasions.length === 0 ? (
-          <div style={{ padding: "3rem 1rem", textAlign: "center", border: "1px dashed var(--glass-border)", borderRadius: "16px" }}>
-            <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>🗓️</div>
-            <p style={{ color: "var(--text-muted)", fontWeight: 600, fontSize: "0.9rem" }}>
+          <div style={{ padding: "2.5rem 1rem", textAlign: "center", border: "1px dashed var(--glass-border)", borderRadius: "14px" }}>
+            <div style={{ fontSize: "1.8rem", marginBottom: "0.3rem" }}>🗓️</div>
+            <p style={{ color: "var(--text-muted)", fontWeight: 600, fontSize: "0.85rem", margin: 0 }}>
               No custom occasion days marked for this month.
             </p>
-            <p style={{ color: "var(--text-muted)", fontSize: "0.78rem", marginTop: "0.2rem" }}>
-              Click on any date above in the calendar to mark it as an Occasion Day.
+            <p style={{ color: "var(--text-muted)", fontSize: "0.75rem", marginTop: "0.2rem" }}>
+              Click any date above in the calendar to mark an occasion.
             </p>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "0.75rem" }}>
             {occasions.map((occ) => {
               const dStr = occ.date.split("T")[0];
               const formattedDate = new Date(occ.date).toLocaleDateString("en-IN", {
@@ -489,49 +620,48 @@ export default function OccasionsCalendarPage() {
                 <div
                   key={occ.id}
                   style={{
-                    padding: "1.1rem 1.25rem",
-                    borderRadius: "16px",
+                    padding: "1rem 1.15rem",
+                    borderRadius: "14px",
                     background: "rgba(251,191,36,0.03)",
                     border: "1px solid rgba(251,191,36,0.25)",
                     display: "flex",
                     flexDirection: "column",
-                    gap: "0.5rem",
-                    position: "relative",
+                    gap: "0.4rem",
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div>
-                      <span style={{ fontSize: "0.72rem", color: "#fbbf24", fontWeight: 800, textTransform: "uppercase" }}>
+                      <span style={{ fontSize: "0.7rem", color: "#fbbf24", fontWeight: 800, textTransform: "uppercase" }}>
                         📅 {formattedDate}
                       </span>
-                      <h3 style={{ fontSize: "1.05rem", fontWeight: 900, color: "#fff", margin: "0.2rem 0 0 0" }}>
+                      <h3 style={{ fontSize: "1rem", fontWeight: 900, color: "#fff", margin: "0.15rem 0 0 0" }}>
                         {occ.name}
                       </h3>
                     </div>
                     <span
                       style={{
-                        padding: "0.2rem 0.5rem",
-                        borderRadius: "8px",
+                        padding: "0.15rem 0.45rem",
+                        borderRadius: "6px",
                         background: "rgba(251,191,36,0.15)",
                         border: "1px solid rgba(251,191,36,0.3)",
-                        fontSize: "0.7rem",
+                        fontSize: "0.68rem",
                         fontWeight: 900,
                         color: "#fbbf24",
                       }}
                     >
-                      {occ.multiplier || 1.5}x Leave Cut
+                      {occ.multiplier || 1.5}x Cut
                     </span>
                   </div>
 
                   {occ.description && (
-                    <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", margin: 0 }}>{occ.description}</p>
+                    <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: 0 }}>{occ.description}</p>
                   )}
 
-                  <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.4rem" }}>
+                  <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.3rem" }}>
                     <button
                       onClick={() => handleOpenDate(dStr)}
                       className="btn-modern btn-secondary"
-                      style={{ flex: 1, padding: "0.4rem", fontSize: "0.75rem", borderRadius: "8px" }}
+                      style={{ flex: 1, padding: "0.35rem", fontSize: "0.72rem", borderRadius: "8px" }}
                     >
                       Edit
                     </button>
@@ -539,13 +669,13 @@ export default function OccasionsCalendarPage() {
                       onClick={() => handleDeleteOccasion(occ.id, dStr)}
                       style={{
                         flex: 1,
-                        padding: "0.4rem",
+                        padding: "0.35rem",
                         borderRadius: "8px",
                         border: "1px solid rgba(244,63,94,0.3)",
                         background: "rgba(244,63,94,0.06)",
                         color: "#f43f5e",
                         fontWeight: 800,
-                        fontSize: "0.75rem",
+                        fontSize: "0.72rem",
                         cursor: "pointer",
                       }}
                     >
@@ -581,21 +711,21 @@ export default function OccasionsCalendarPage() {
             onClick={(e) => e.stopPropagation()}
             style={{
               width: "100%",
-              maxWidth: "460px",
-              padding: "2rem",
-              borderRadius: "24px",
+              maxWidth: "440px",
+              padding: "1.75rem",
+              borderRadius: "22px",
               border: "1px solid rgba(251,191,36,0.3)",
               background: "rgba(12,12,18,0.98)",
               boxShadow: "0 25px 60px rgba(0,0,0,0.8)",
             }}
           >
             {/* Header */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.25rem" }}>
               <div>
-                <span style={{ fontSize: "0.72rem", color: "#fbbf24", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                <span style={{ fontSize: "0.7rem", color: "#fbbf24", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em" }}>
                   🌟 Occasion Day Setting
                 </span>
-                <h2 style={{ fontSize: "1.4rem", fontWeight: 900, margin: "0.2rem 0 0 0" }}>
+                <h2 style={{ fontSize: "1.3rem", fontWeight: 900, margin: "0.2rem 0 0 0" }}>
                   {new Date(selectedDate).toLocaleDateString("en-IN", {
                     weekday: "long",
                     day: "numeric",
@@ -611,10 +741,10 @@ export default function OccasionsCalendarPage() {
                   border: "none",
                   color: "var(--text-muted)",
                   cursor: "pointer",
-                  width: "32px",
-                  height: "32px",
+                  width: "30px",
+                  height: "30px",
                   borderRadius: "8px",
-                  fontSize: "1rem",
+                  fontSize: "0.9rem",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -624,25 +754,25 @@ export default function OccasionsCalendarPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveOccasion} style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
-              {/* Preset Event Buttons */}
+            <form onSubmit={handleSaveOccasion} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              {/* Presets */}
               <div>
-                <label style={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", display: "block", marginBottom: "0.5rem" }}>
+                <label style={{ fontSize: "0.72rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", display: "block", marginBottom: "0.4rem" }}>
                   Quick Presets
                 </label>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem" }}>
                   {PRESET_EVENTS.map((preset) => (
                     <button
                       key={preset}
                       type="button"
                       onClick={() => setFormName(preset)}
                       style={{
-                        padding: "0.3rem 0.6rem",
+                        padding: "0.25rem 0.55rem",
                         borderRadius: "8px",
                         border: "1px solid var(--glass-border)",
                         background: formName === preset ? "rgba(251,191,36,0.2)" : "rgba(255,255,255,0.02)",
                         color: formName === preset ? "#fbbf24" : "var(--text-main)",
-                        fontSize: "0.72rem",
+                        fontSize: "0.7rem",
                         fontWeight: 700,
                         cursor: "pointer",
                         transition: "all 0.15s",
@@ -656,7 +786,7 @@ export default function OccasionsCalendarPage() {
 
               {/* Event Name Input */}
               <div>
-                <label style={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", display: "block", marginBottom: "0.4rem" }}>
+                <label style={{ fontSize: "0.72rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", display: "block", marginBottom: "0.35rem" }}>
                   Occasion / Event Title *
                 </label>
                 <input
@@ -666,16 +796,16 @@ export default function OccasionsCalendarPage() {
                   className="input-modern"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  style={{ width: "100%", padding: "0.75rem", borderRadius: "12px", fontSize: "0.9rem" }}
+                  style={{ width: "100%", padding: "0.65rem", borderRadius: "10px", fontSize: "0.88rem" }}
                 />
               </div>
 
               {/* Multiplier setting */}
               <div>
-                <label style={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", display: "block", marginBottom: "0.4rem" }}>
+                <label style={{ fontSize: "0.72rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", display: "block", marginBottom: "0.35rem" }}>
                   Leave Deduction Multiplier
                 </label>
-                <div style={{ display: "flex", gap: "0.5rem" }}>
+                <div style={{ display: "flex", gap: "0.4rem" }}>
                   {[1.5, 2.0].map((mult) => (
                     <button
                       key={mult}
@@ -683,13 +813,13 @@ export default function OccasionsCalendarPage() {
                       onClick={() => setFormMultiplier(mult)}
                       style={{
                         flex: 1,
-                        padding: "0.6rem",
-                        borderRadius: "10px",
+                        padding: "0.55rem",
+                        borderRadius: "8px",
                         border: `1px solid ${formMultiplier === mult ? "#fbbf24" : "var(--glass-border)"}`,
                         background: formMultiplier === mult ? "rgba(251,191,36,0.15)" : "rgba(255,255,255,0.02)",
                         color: formMultiplier === mult ? "#fbbf24" : "var(--text-muted)",
                         fontWeight: 800,
-                        fontSize: "0.85rem",
+                        fontSize: "0.82rem",
                         cursor: "pointer",
                       }}
                     >
@@ -697,14 +827,11 @@ export default function OccasionsCalendarPage() {
                     </button>
                   ))}
                 </div>
-                <p style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginTop: "0.3rem" }}>
-                  Staff absent on this day will have {formMultiplier} days of leave deducted.
-                </p>
               </div>
 
               {/* Optional Notes */}
               <div>
-                <label style={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", display: "block", marginBottom: "0.4rem" }}>
+                <label style={{ fontSize: "0.72rem", fontWeight: 800, color: "var(--text-muted)", textTransform: "uppercase", display: "block", marginBottom: "0.35rem" }}>
                   Notes / Description (Optional)
                 </label>
                 <input
@@ -713,24 +840,24 @@ export default function OccasionsCalendarPage() {
                   className="input-modern"
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
-                  style={{ width: "100%", padding: "0.7rem", borderRadius: "12px", fontSize: "0.85rem" }}
+                  style={{ width: "100%", padding: "0.65rem", borderRadius: "10px", fontSize: "0.82rem" }}
                 />
               </div>
 
               {/* Action Buttons */}
-              <div style={{ display: "flex", gap: "0.6rem", marginTop: "0.5rem" }}>
+              <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.4rem" }}>
                 {existingOccasionId && (
                   <button
                     type="button"
                     onClick={() => handleDeleteOccasion(existingOccasionId, selectedDate)}
                     style={{
-                      padding: "0.8rem 1rem",
-                      borderRadius: "12px",
+                      padding: "0.7rem 0.9rem",
+                      borderRadius: "10px",
                       border: "1px solid rgba(244,63,94,0.3)",
                       background: "rgba(244,63,94,0.08)",
                       color: "#f43f5e",
                       fontWeight: 800,
-                      fontSize: "0.85rem",
+                      fontSize: "0.82rem",
                       cursor: "pointer",
                     }}
                   >
@@ -742,7 +869,7 @@ export default function OccasionsCalendarPage() {
                   type="button"
                   onClick={() => setModalOpen(false)}
                   className="btn-modern btn-secondary"
-                  style={{ flex: 1, padding: "0.8rem", borderRadius: "12px", fontSize: "0.85rem" }}
+                  style={{ flex: 1, padding: "0.7rem", borderRadius: "10px", fontSize: "0.82rem" }}
                 >
                   Cancel
                 </button>
@@ -751,14 +878,14 @@ export default function OccasionsCalendarPage() {
                   type="submit"
                   disabled={saving}
                   style={{
-                    flex: 1.5,
-                    padding: "0.8rem",
-                    borderRadius: "12px",
+                    flex: 1.4,
+                    padding: "0.7rem",
+                    borderRadius: "10px",
                     border: "none",
                     background: "linear-gradient(135deg, #fbbf24, #f59e0b)",
                     color: "#000",
                     fontWeight: 900,
-                    fontSize: "0.85rem",
+                    fontSize: "0.82rem",
                     cursor: "pointer",
                     boxShadow: "0 4px 15px rgba(251,191,36,0.3)",
                   }}
