@@ -111,51 +111,68 @@ export default function AttendanceTab({ staffId }: { staffId: string }) {
         {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(d => (
           <div key={d} style={{ textAlign: 'center', fontWeight: '800', fontSize: '0.7rem', color: 'var(--text-muted)', padding: '0.5rem', letterSpacing: '0.1em' }}>{d}</div>
         ))}
-        {days.map((day, i) => (
-          <div 
-            key={i} 
-            onClick={() => { if(day) { setSelectedDate(day); setIsLeaveModalOpen(true); } }}
-            style={{ 
-              aspectRatio: '1', 
-              border: '1px solid var(--glass-border)', 
-              borderRadius: '16px', 
-              padding: '0.75rem',
-              cursor: day ? 'pointer' : 'default',
-              background: day?.data ? `${getStatusColor(day.data.status)}10` : 'rgba(255,255,255,0.01)',
-              borderColor: day?.data ? getStatusColor(day.data.status) : 'var(--glass-border)',
-              position: 'relative',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.1rem',
-              fontWeight: '700',
-              color: day?.data ? 'var(--text-main)' : 'var(--text-muted)',
-              opacity: day ? 1 : 0
-            }}
-            className={day ? "glass-hover" : ""}
-          >
-            {day?.day}
-            {day?.data && (
-              <div style={{ 
-                position: 'absolute', 
-                bottom: '0.5rem', 
-                width: '6px', 
-                height: '6px', 
-                borderRadius: '50%', 
-                background: getStatusColor(day.data.status),
-                boxShadow: `0 0 10px ${getStatusColor(day.data.status)}`
-              }} />
-            )}
-          </div>
-        ))}
+        {days.map((day, i) => {
+          const dow = i % 7;
+          const isWeekend = dow === 0 || dow === 6;
+          const isOccasion = day?.data?.isOccasion;
+
+          return (
+            <div 
+              key={i} 
+              onClick={() => { if(day) { setSelectedDate({ ...day, dow, isWeekend, isOccasion }); setIsLeaveModalOpen(true); } }}
+              style={{ 
+                aspectRatio: '1', 
+                border: isOccasion ? '1.5px solid #fbbf24' : isWeekend ? '1px solid rgba(244,63,94,0.25)' : '1px solid var(--glass-border)', 
+                borderRadius: '16px', 
+                padding: '0.65rem',
+                cursor: day ? 'pointer' : 'default',
+                background: day?.data?.status ? `${getStatusColor(day.data.status)}10` : isOccasion ? 'rgba(251,191,36,0.06)' : isWeekend ? 'rgba(244,63,94,0.02)' : 'rgba(255,255,255,0.01)',
+                borderColor: day?.data?.status ? getStatusColor(day.data.status) : isOccasion ? '#fbbf24' : isWeekend ? 'rgba(244,63,94,0.25)' : 'var(--glass-border)',
+                position: 'relative',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1rem',
+                fontWeight: '800',
+                color: day?.data?.status ? 'var(--text-main)' : isOccasion ? '#fbbf24' : isWeekend ? '#fb7185' : 'var(--text-muted)',
+                opacity: day ? 1 : 0
+              }}
+              className={day ? "glass-hover" : ""}
+            >
+              <span>{day?.day}</span>
+              
+              {isOccasion && (
+                <span style={{ fontSize: '0.55rem', fontWeight: 900, color: '#fbbf24', marginTop: '0.1rem' }}>⭐ 1.5x</span>
+              )}
+              {!isOccasion && isWeekend && day && (
+                <span style={{ fontSize: '0.5rem', fontWeight: 800, color: '#fb7185', marginTop: '0.1rem' }}>1.5x</span>
+              )}
+
+              {day?.data?.status && (
+                <div style={{ 
+                  position: 'absolute', 
+                  bottom: '0.4rem', 
+                  width: '6px', 
+                  height: '6px', 
+                  borderRadius: '50%', 
+                  background: getStatusColor(day.data.status),
+                  boxShadow: `0 0 8px ${getStatusColor(day.data.status)}`
+                }} />
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      <div style={{ marginTop: '2.5rem', display: 'flex', gap: '2rem', fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', justifyContent: 'center', flexWrap: 'wrap' }}>
+      <div style={{ marginTop: '2.5rem', display: 'flex', gap: '1.5rem', fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', justifyContent: 'center', flexWrap: 'wrap' }}>
         <LegendItem color="var(--brand-accent)" label="DEPLOYED" />
         <LegendItem color="#f59e0b" label="PARTIAL LEAVE" />
         <LegendItem color="var(--brand-secondary)" label="ABSENT" />
         <LegendItem color="var(--brand-primary-light)" label="IN PROGRESS" />
+        <LegendItem color="#fbbf24" label="⭐ OCCASION DAY (1.5x)" />
+        <LegendItem color="#fb7185" label="🏖️ WEEKEND (1.5x)" />
       </div>
 
       {/* Date Detail / Leave Modal */}

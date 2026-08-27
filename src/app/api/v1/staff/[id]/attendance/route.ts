@@ -13,6 +13,17 @@ export async function GET(
     const startDate = new Date(`${month}-01`);
     const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0, 23, 59, 59);
 
+    let occasions: any[] = [];
+    try {
+      occasions = await prisma.occasionDay.findMany({
+        where: {
+          date: { gte: startDate, lte: endDate }
+        }
+      });
+    } catch {
+      occasions = [];
+    }
+
     const [attendances, leaves] = await Promise.all([
       prisma.attendanceRecord.findMany({
         where: {
@@ -31,6 +42,16 @@ export async function GET(
 
     // Aggregate data by date
     const calendarData: Record<string, any> = {};
+
+    // Fill occasion days first
+    occasions.forEach(occ => {
+      const dateStr = occ.date.toISOString().split('T')[0];
+      calendarData[dateStr] = {
+        isOccasion: true,
+        occasionName: occ.name,
+        multiplier: occ.multiplier || 1.5
+      };
+    });
 
     // Fill with attendance
     attendances.forEach(att => {

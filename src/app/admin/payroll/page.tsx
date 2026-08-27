@@ -30,17 +30,31 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
   const dailyWage = parseFloat(r.metrics.dailyWage.toFixed(2));
   const daysPresent = r.metrics.daysPresent;
   const freeLeaves = r.metrics.freeLeaves ?? 4;
-  const paidDays = r.metrics.paidDays ?? (isMonthCompleted ? (daysPresent > 0 ? daysPresent + freeLeaves : 0) : daysPresent);
-  const absentDays = Math.max(0, daysElapsed - daysPresent);
+  const paidDays = r.metrics.paidDays ?? (isMonthCompleted ? (daysPresent > 0 ? Math.max(0, totalDays - (r.metrics.unexcusedAbsences || 0)) : 0) : daysPresent);
+  const rawAbsentDays = r.metrics.fullLeaves ?? Math.max(0, daysElapsed - daysPresent);
+  const weightedLeaves = r.metrics.weightedLeavesTaken ?? rawAbsentDays;
+  const normalAbsences = r.metrics.normalAbsences ?? Math.max(0, rawAbsentDays - (r.weekendAbsences?.total || 0) - (r.occasionAbsences?.count || 0));
   const unpaidAbsences = r.metrics.unexcusedAbsences !== undefined
     ? r.metrics.unexcusedAbsences
-    : Math.max(0, absentDays - freeLeaves);
+    : Math.max(0, weightedLeaves - freeLeaves);
   const earnedGross = parseFloat(r.simpleRaw ?? (dailyWage * paidDays).toFixed(2));
   const advanceDebt = parseFloat(r.totalAdvance);
   const advanceDeducted = parseFloat(r.simpleAdvanceDeducted);
   const remainingAdvance = parseFloat((advanceDebt - advanceDeducted).toFixed(2));
   const pf = pfEnabled ? parseFloat(r.simplePf) : 0;
   const netPayable = parseFloat(r.simpleFinal);
+
+  const satCount = r.weekendAbsences?.saturdays || 0;
+  const sunCount = r.weekendAbsences?.sundays || 0;
+  const occCount = r.occasionAbsences?.count || 0;
+
+  const formulaParts = [];
+  if (normalAbsences > 0) formulaParts.push(`${normalAbsences} normal (${(normalAbsences * 1.0).toFixed(1)}d)`);
+  if (satCount > 0) formulaParts.push(`${satCount} Sat (${(satCount * 1.5).toFixed(1)}d)`);
+  if (sunCount > 0) formulaParts.push(`${sunCount} Sun (${(sunCount * 1.5).toFixed(1)}d)`);
+  if (occCount > 0) formulaParts.push(`${occCount} Occasion (${(occCount * 1.5).toFixed(1)}d)`);
+
+  const formulaString = formulaParts.length > 0 ? formulaParts.join(" + ") + ` = ${weightedLeaves} weighted leave days` : "0 leave days taken";
 
   const auditSteps = [
     {
@@ -62,33 +76,34 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
       note: "Number of shifts clocked in so far", color: "#10b981", sign: "+",
     },
     {
-      icon: "🏖️", label: "Absent Days", value: `${absentDays} days`,
-      note: daysElapsed < totalDays ? `${daysElapsed} elapsed − ${daysPresent} worked` : `${totalDays} total − ${daysPresent} worked`,
+      icon: "🏖️", label: "Raw Calendar Absences", value: `${rawAbsentDays} calendar days`,
+      note: `${daysElapsed} elapsed − ${daysPresent} worked = ${rawAbsentDays} days not present`,
       color: "#94a3b8", sign: null,
     },
     {
-      icon: "📅", label: "Weekend Absences", value: `${r.weekendAbsences?.saturdays || 0} Sat, ${r.weekendAbsences?.sundays || 0} Sun`,
-      note: "Included in total absent days so far", color: "#fb923c", sign: null,
+      icon: "⚖️", label: "Weighted Leaves Taken (1.5x Rule)", value: `${weightedLeaves} days`,
+      note: formulaString,
+      color: "#fbbf24", sign: null,
     },
     {
       icon: "🎁", label: "Free Leave Allowance", value: `${freeLeaves} days`,
-      note: `${freeLeaves} paid leaves allowed per month (${absentDays} leaves used so far)`, color: "#34d399", sign: null,
+      note: `${freeLeaves} paid leaves allowed per month (${weightedLeaves} weighted leaves used)`, color: "#34d399", sign: null,
     },
     {
-      icon: "🚨", label: "Unpaid Absences", value: `${unpaidAbsences} day${unpaidAbsences !== 1 ? "s" : ""}`,
-      note: unpaidAbsences > 0 ? `${absentDays} absent − ${freeLeaves} free = ${unpaidAbsences} unpaid` : "Within free leave limit — no deduction penalty",
+      icon: "🚨", label: "Unpaid / Deductible Absences", value: `${unpaidAbsences} day${unpaidAbsences !== 1 ? "s" : ""}`,
+      note: unpaidAbsences > 0 ? `${weightedLeaves} weighted − ${freeLeaves} free = ${unpaidAbsences} deductible days (−₹${(unpaidAbsences * dailyWage).toFixed(2)})` : "Within 4 free leaves limit — zero salary penalty",
       color: unpaidAbsences > 0 ? "#fb7185" : "#94a3b8", sign: unpaidAbsences > 0 ? "−" : null,
     },
     ...(isMonthCompleted ? [{
       icon: "📊", label: "Total Paid Days (Month-End)", value: `${paidDays} days`,
-      note: `${daysPresent} worked + ${freeLeaves} paid leave bonus = ${paidDays} paid days`,
+      note: `${totalDays} total − ${unpaidAbsences} unpaid = ${paidDays} paid days`,
       color: "#38bdf8", sign: "=",
     }] : []),
     {
       icon: "💰", label: "Gross Earned Salary", value: `₹${earnedGross.toLocaleString("en-IN")}`,
       note: isMonthCompleted
-        ? `₹${dailyWage} × ${paidDays} paid days (including leave bonus)`
-        : `₹${dailyWage} × ${daysPresent} days worked to date`,
+        ? `₹${dailyWage} × ${paidDays} paid days`
+        : `₹${dailyWage} × ${paidDays} effective days worked to date`,
       color: "#34d399", sign: "=",
     },
     ...(pf > 0 ? [{
@@ -491,15 +506,20 @@ export default function PayrollCalculationPage() {
                 const dailyWage = parseFloat(r.metrics.dailyWage.toFixed(2));
                 const daysPresent = r.metrics.daysPresent;
                 const freeLeaves = r.metrics.freeLeaves ?? 4;
-                const paidDays = r.metrics.paidDays ?? (isMonthCompleted ? (daysPresent > 0 ? daysPresent + freeLeaves : 0) : daysPresent);
-                const absentDays = Math.max(0, daysElapsed - daysPresent);
+                const rawAbsentDays = r.metrics.fullLeaves ?? Math.max(0, daysElapsed - daysPresent);
+                const weightedLeaves = r.metrics.weightedLeavesTaken ?? rawAbsentDays;
                 const unpaidAbsences = r.metrics.unexcusedAbsences !== undefined
                   ? r.metrics.unexcusedAbsences
-                  : Math.max(0, absentDays - freeLeaves);
+                  : Math.max(0, weightedLeaves - freeLeaves);
+                const paidDays = r.metrics.paidDays ?? (isMonthCompleted ? (daysPresent > 0 ? Math.max(0, totalDays - unpaidAbsences) : 0) : daysPresent);
                 const earnedGross = parseFloat(r.simpleRaw ?? (dailyWage * paidDays).toFixed(2));
                 const advanceDebt = parseFloat(r.totalAdvance);
                 const advanceDeducted = parseFloat(r.simpleAdvanceDeducted);
                 const netToPay = parseFloat(r.simpleFinal);
+
+                const satCount = r.weekendAbsences?.saturdays || 0;
+                const sunCount = r.weekendAbsences?.sundays || 0;
+                const occCount = r.occasionAbsences?.count || 0;
 
                 return (
                   <div key={r.staffId}
@@ -541,10 +561,10 @@ export default function PayrollCalculationPage() {
                         <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#10b981" }}>{daysPresent} / {totalDays}</span>
                       </div>
                       <div>
-                        <span style={{ display: "block", fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>Absent Days</span>
-                        <span style={{ fontSize: "0.9rem", fontWeight: 800, color: absentDays > freeLeaves ? "#fb923c" : "var(--text-muted)" }}>{absentDays} days</span>
-                        <div style={{ fontSize: "0.55rem", color: "#fb923c", marginTop: "0.15rem", fontWeight: 700 }}>
-                           ({r.weekendAbsences?.saturdays || 0} Sat, {r.weekendAbsences?.sundays || 0} Sun)
+                        <span style={{ display: "block", fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>Leaves (1.5x)</span>
+                        <span style={{ fontSize: "0.9rem", fontWeight: 800, color: weightedLeaves > freeLeaves ? "#fb923c" : "var(--text-muted)" }}>{weightedLeaves} days</span>
+                        <div style={{ fontSize: "0.55rem", color: "#fbbf24", marginTop: "0.15rem", fontWeight: 700 }}>
+                           ({satCount} Sat, {sunCount} Sun{occCount > 0 ? `, ${occCount} Occ` : ""})
                         </div>
                       </div>
                       <div>

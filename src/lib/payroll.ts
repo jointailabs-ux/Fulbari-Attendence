@@ -2,6 +2,15 @@
 
 import prisma from './prisma';
 
+export interface AbsentDayDetail {
+  date: string; // "YYYY-MM-DD"
+  dayOfWeek: number; // 0=Sun, 6=Sat
+  dayName: string; // "Saturday", "Sunday", "Monday", etc.
+  weight: number; // 1.5 for Sat/Sun/Occasion, 1.0 for normal
+  reason: 'SATURDAY' | 'SUNDAY' | 'OCCASION' | 'NORMAL';
+  occasionName?: string;
+}
+
 export interface PayrollDetails {
   staffId: string;
   name: string;
@@ -14,10 +23,11 @@ export interface PayrollDetails {
   isMonthCompleted: boolean; // True if full calendar month cycle has concluded
   daysPresent: number; // D_present
   freeLeaves: number; // Free paid leave allowance (e.g. 4)
-  fullLeaves: number; // L_full
+  fullLeaves: number; // Raw count of absent days
   halfLeaves: number; // L_half
-  unexcusedAbsences: number; // L_unexcused
-  paidDays: number; // D_paid (present + 4 free paid leaves)
+  weightedLeavesTaken: number; // Weighted absent days (Normal: 1.0, Sat/Sun/Occasion: 1.5)
+  unexcusedAbsences: number; // Deductible leave days exceeding 4 free leaves
+  paidDays: number; // Effective paid days
   
   // Penalties
   penaltyLate: number; // Penalty_late
@@ -27,11 +37,18 @@ export interface PayrollDetails {
   // Totals
   pendingAdvances: number; // A_pending
 
-  // Weekend absence tracking
+  // Absence category tracking
+  normalAbsences: number;
   weekendAbsences: {
     saturdays: number; // absent Saturdays
     sundays: number;   // absent Sundays
+    total: number;
   };
+  occasionAbsences: {
+    count: number;
+    dates: Array<{ date: string; name: string }>;
+  };
+  absentBreakdown: AbsentDayDetail[];
   
   simple: {
     earnedSalary: number; // S_earned
@@ -82,15 +99,16 @@ export function formatISTTime(date: Date): string {
   return `${displayHours}:${minutes} ${ampm}`;
 }
 
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
 /**
- * Pure calculation logic for salary metrics
+ * Pure calculation logic for salary metrics with 1.5x penalty support
  */
 export function calculateSalaryMetrics(
   baseSalary: number,
   totalDays: number,
   presentCount: number,
-  fullLeavesCount: number,
-  halfLeavesCount: number,
+  weightedLeavesTaken: number,
   pendingAdvancesAmt: number,
   latePenaltiesTotal: number,
   earlyPenaltiesTotal: number,
@@ -100,25 +118,31 @@ export function calculateSalaryMetrics(
   const FREE_LEAVES = 4;
   const isMonthCompleted = daysElapsed >= totalDays;
   
-  // During an ongoing month (mid-month), earnings are strictly for shifts worked to date (no future leave encashment in advance)
-  // At month-end (completed cycle), staff receive the full 4 paid leaves allowance / unused leave encashment
-  const paidDays = isMonthCompleted
-    ? (presentCount > 0 ? presentCount + FREE_LEAVES : 0)
-    : presentCount;
+  // Deductible leaves beyond the 4 free leave allowance
+  const unexcusedAbsences = Math.max(0, parseFloat((weightedLeavesTaken - FREE_LEAVES).toFixed(2)));
+  const penaltyAbsence = parseFloat((unexcusedAbsences * R_day).toFixed(2));
+  
+  // Paid Days Calculation:
+  // - Completed Month: Total calendar days minus deductible absences (if staff worked at least 1 day)
+  // - Ongoing Month (mid-month): Earned for shifts worked so far, minus any unexcused absence penalty
+  let paidDays = 0;
+  if (isMonthCompleted) {
+    paidDays = presentCount > 0 ? Math.max(0, parseFloat((totalDays - unexcusedAbsences).toFixed(2))) : 0;
+  } else {
+    // During ongoing cycle, staff earns daily wage for present days, adjusting for excess absence penalty
+    paidDays = Math.max(0, parseFloat((presentCount - unexcusedAbsences).toFixed(2)));
+  }
     
   const earnedGross = parseFloat((R_day * paidDays).toFixed(2));
   
-  const leavesTaken = Math.max(0, daysElapsed - presentCount);
-  const deductibleLeaves = Math.max(0, leavesTaken - FREE_LEAVES);
-  
   const S_earned_simple = earnedGross;
   const A_deducted_simple = Math.min(pendingAdvancesAmt, S_earned_simple);
-  const S_net_simple = Math.max(0, S_earned_simple - A_deducted_simple);
+  const S_net_simple = Math.max(0, parseFloat((S_earned_simple - A_deducted_simple).toFixed(2)));
 
   const totalPenalties = latePenaltiesTotal + earlyPenaltiesTotal;
-  const S_earned_strict = Math.max(0, earnedGross - totalPenalties);
+  const S_earned_strict = Math.max(0, parseFloat((earnedGross - totalPenalties).toFixed(2)));
   const A_deducted_strict = Math.min(pendingAdvancesAmt, S_earned_strict);
-  const S_net_strict = Math.max(0, S_earned_strict - A_deducted_strict);
+  const S_net_strict = Math.max(0, parseFloat((S_earned_strict - A_deducted_strict).toFixed(2)));
 
   return {
     dailyWage: R_day,
@@ -126,9 +150,9 @@ export function calculateSalaryMetrics(
     paidDays,
     freeLeaves: FREE_LEAVES,
     isMonthCompleted,
-    unexcusedAbsences: deductibleLeaves,
-    penaltyAbsence: deductibleLeaves * R_day,
-    leavesTaken,
+    unexcusedAbsences,
+    penaltyAbsence,
+    weightedLeavesTaken,
     simple: {
       earnedSalary: parseFloat(S_earned_simple.toFixed(2)),
       advancesDeducted: parseFloat(A_deducted_simple.toFixed(2)),
@@ -143,7 +167,8 @@ export function calculateSalaryMetrics(
 }
 
 /**
- * Calculates complete Simple vs Strict monthly payroll metrics for a staff member.
+ * Calculates complete Simple vs Strict monthly payroll metrics for a staff member,
+ * applying the 1.5x leave deduction rule on Saturdays, Sundays, and marked Occasion Days.
  */
 export async function calculateStaffPayroll(
   staffId: string,
@@ -151,8 +176,28 @@ export async function calculateStaffPayroll(
 ): Promise<PayrollDetails> {
   const [year, month] = monthYear.split('-').map(Number);
   const startDate = new Date(Date.UTC(year, month - 1, 1));
-  const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59));
-  let D_total = endDate.getDate();
+  const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+  const D_total = new Date(year, month, 0).getDate();
+
+  // Fetch Occasion Days for this month safely
+  let occasionDays: Array<{ date: Date; name: string; multiplier: number }> = [];
+  try {
+    occasionDays = await prisma.occasionDay.findMany({
+      where: {
+        date: { gte: startDate, lte: endDate }
+      }
+    });
+  } catch {
+    // If table doesn't exist yet or query fails, default to empty list
+    occasionDays = [];
+  }
+
+  // Create a map of occasion date strings (YYYY-MM-DD -> { name, multiplier })
+  const occasionMap = new Map<string, { name: string; multiplier: number }>();
+  occasionDays.forEach(occ => {
+    const dStr = occ.date.toISOString().split('T')[0];
+    occasionMap.set(dStr, { name: occ.name, multiplier: occ.multiplier || 1.5 });
+  });
 
   const staff = await prisma.staffProfile.findUnique({
     where: { id: staffId },
@@ -194,13 +239,6 @@ export async function calculateStaffPayroll(
   // Present count capped at D_total
   const D_present = Math.min(staff.attendances.length, D_total);
 
-  // Leave tallies capped to ensure presence + leaves <= D_total
-  const L_full_raw = staff.leaves.filter(l => l.type === 'FULL').length;
-  const L_half_raw = staff.leaves.filter(l => l.type === 'HALF').length;
-  
-  const L_full = D_total - D_present;
-  const L_half = 0;
-
   // Expected shift times (e.g. "09:00", "17:00")
   const shiftStartTime = staff.slot?.outlet?.shiftStartTime || '09:00';
   const shiftEndTime = staff.slot?.outlet?.shiftEndTime || '17:00';
@@ -225,7 +263,6 @@ export async function calculateStaffPayroll(
 
     // Handle Missed Clock-out
     if (!att.endTime) {
-      // Apply a flat 0.5 R_day penalty for missing clock-out
       penaltyEarly += 0.50 * R_day;
       earlyDetails.push({
         date: dateLabel,
@@ -233,7 +270,6 @@ export async function calculateStaffPayroll(
         earlyMins: 0,
         penalty: parseFloat((0.50 * R_day).toFixed(2))
       });
-      // We still count them as present for the day (base pay applies, but strict mode deducts 0.5 days worth of pay)
     }
 
     // 1. Late Arrival Calculation
@@ -298,33 +334,83 @@ export async function calculateStaffPayroll(
     daysElapsed = 0;
   }
 
+  // Set of dates on which staff was present (clocked in)
+  const attendedDates = new Set(
+    staff.attendances.map(a => a.shiftDate.toISOString().split('T')[0])
+  );
+
+  // ─── Day-by-Day Absence & 1.5x Weight Analysis ─────────────────────────────
+  let rawAbsentDays = 0;
+  let weightedLeavesTaken = 0;
+  let absentSaturdays = 0;
+  let absentSundays = 0;
+  let normalAbsences = 0;
+  const occasionAbsencesList: Array<{ date: string; name: string }> = [];
+  const absentBreakdown: AbsentDayDetail[] = [];
+
+  for (let day = 1; day <= daysElapsed; day++) {
+    const d = new Date(Date.UTC(year, month - 1, day));
+    const dow = d.getUTCDay(); // 0=Sun, 6=Sat
+    const dateStr = d.toISOString().split('T')[0];
+
+    if (!attendedDates.has(dateStr)) {
+      rawAbsentDays++;
+      const isOccasion = occasionMap.has(dateStr);
+      const occasionInfo = occasionMap.get(dateStr);
+
+      let weight = 1.0;
+      let reason: AbsentDayDetail['reason'] = 'NORMAL';
+
+      if (dow === 6) {
+        // Saturday -> 1.5x
+        weight = 1.5;
+        reason = 'SATURDAY';
+        absentSaturdays++;
+      } else if (dow === 0) {
+        // Sunday -> 1.5x
+        weight = 1.5;
+        reason = 'SUNDAY';
+        absentSundays++;
+      } else if (isOccasion) {
+        // Occasion Day -> 1.5x
+        weight = occasionInfo?.multiplier || 1.5;
+        reason = 'OCCASION';
+        occasionAbsencesList.push({ date: dateStr, name: occasionInfo?.name || 'Occasion Day' });
+      } else {
+        // Normal Weekday -> 1.0x
+        weight = 1.0;
+        reason = 'NORMAL';
+        normalAbsences++;
+      }
+
+      // If weekend ALSO happened to be marked as occasion, list it under occasion absences as well for clarity
+      if ((dow === 6 || dow === 0) && isOccasion) {
+        occasionAbsencesList.push({ date: dateStr, name: `${DAY_NAMES[dow]} + ${occasionInfo?.name}` });
+      }
+
+      weightedLeavesTaken += weight;
+
+      absentBreakdown.push({
+        date: dateStr,
+        dayOfWeek: dow,
+        dayName: DAY_NAMES[dow],
+        weight,
+        reason,
+        occasionName: occasionInfo?.name
+      });
+    }
+  }
+
   const metrics = calculateSalaryMetrics(
     S_base,
     D_total,
     D_present,
-    L_full,
-    L_half,
+    weightedLeavesTaken,
     A_pending,
     penaltyLate,
     penaltyEarly,
     daysElapsed
   );
-
-  // Count absent Saturdays and Sundays
-  const attendedDates = new Set(
-    staff.attendances.map(a => a.shiftDate.toISOString().split('T')[0])
-  );
-  let absentSaturdays = 0;
-  let absentSundays = 0;
-  for (let day = 1; day <= daysElapsed; day++) {
-    const d = new Date(Date.UTC(year, month - 1, day));
-    const dow = d.getUTCDay(); // 0=Sun, 6=Sat
-    const dateStr = d.toISOString().split('T')[0];
-    if (!attendedDates.has(dateStr)) {
-      if (dow === 6) absentSaturdays++;
-      if (dow === 0) absentSundays++;
-    }
-  }
 
   return {
     staffId: staff.id,
@@ -338,18 +424,26 @@ export async function calculateStaffPayroll(
     isMonthCompleted: metrics.isMonthCompleted,
     daysPresent: D_present,
     freeLeaves: metrics.freeLeaves,
-    fullLeaves: metrics.leavesTaken,
-    halfLeaves: L_half,
+    fullLeaves: rawAbsentDays,
+    halfLeaves: 0,
+    weightedLeavesTaken: parseFloat(weightedLeavesTaken.toFixed(2)),
     unexcusedAbsences: metrics.unexcusedAbsences,
     paidDays: metrics.paidDays,
     penaltyLate: parseFloat(penaltyLate.toFixed(2)),
     penaltyEarly: parseFloat(penaltyEarly.toFixed(2)),
-    penaltyAbsence: parseFloat(metrics.penaltyAbsence.toFixed(2)),
+    penaltyAbsence: metrics.penaltyAbsence,
     pendingAdvances: A_pending,
+    normalAbsences,
     weekendAbsences: {
       saturdays: absentSaturdays,
       sundays: absentSundays,
+      total: absentSaturdays + absentSundays
     },
+    occasionAbsences: {
+      count: occasionAbsencesList.length,
+      dates: occasionAbsencesList
+    },
+    absentBreakdown,
     simple: metrics.simple,
     strict: metrics.strict,
     lateDetails,

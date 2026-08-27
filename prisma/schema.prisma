@@ -171,3 +171,13 @@ model LeaveRequest {
   staff       StaffProfile @relation(fields: [staffId], references: [id], onDelete: Cascade)
 }
 
+model OccasionDay {
+  id          String   @id @default(uuid())
+  date        DateTime @unique // Stored as midnight UTC date for the occasion
+  name        String   // e.g. "Diwali Peak", "Durga Puja", "Festival Surge"
+  multiplier  Float    @default(1.5) // Leave deduction multiplier, default 1.5
+  description String?  // Optional description / notes
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+

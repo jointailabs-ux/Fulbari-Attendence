@@ -76,12 +76,16 @@ export async function GET(req: Request) {
               freeLeaves: payroll.freeLeaves,
               fullLeaves: payroll.fullLeaves,
               halfLeaves: payroll.halfLeaves,
+              weightedLeavesTaken: payroll.weightedLeavesTaken,
+              normalAbsences: payroll.normalAbsences,
               unexcusedAbsences: payroll.unexcusedAbsences,
               penaltyLate: payroll.penaltyLate,
               penaltyEarly: payroll.penaltyEarly,
               penaltyAbsence: payroll.penaltyAbsence
             },
-            weekendAbsences: payroll.weekendAbsences
+            weekendAbsences: payroll.weekendAbsences,
+            occasionAbsences: payroll.occasionAbsences,
+            absentBreakdown: payroll.absentBreakdown
           };
         } catch (e: any) {
           console.error(`Error calculating payroll for staff ${profile.id}:`, e);
