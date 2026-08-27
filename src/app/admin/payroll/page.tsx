@@ -28,12 +28,13 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
   const daysElapsed = r.metrics.daysElapsed ?? totalDays;
   const dailyWage = parseFloat(r.metrics.dailyWage.toFixed(2));
   const daysPresent = r.metrics.daysPresent;
+  const freeLeaves = r.metrics.freeLeaves ?? 4;
+  const paidDays = r.metrics.paidDays ?? (daysPresent > 0 ? daysPresent + freeLeaves : 0);
   const absentDays = Math.max(0, daysElapsed - daysPresent);
-  const freeLeaves = 4;
   const unpaidAbsences = r.metrics.unexcusedAbsences !== undefined
     ? r.metrics.unexcusedAbsences
     : Math.max(0, absentDays - freeLeaves);
-  const earnedGross = parseFloat((dailyWage * daysPresent).toFixed(2));
+  const earnedGross = parseFloat(r.simpleRaw ?? (dailyWage * paidDays).toFixed(2));
   const advanceDebt = parseFloat(r.totalAdvance);
   const advanceDeducted = parseFloat(r.simpleAdvanceDeducted);
   const remainingAdvance = parseFloat((advanceDebt - advanceDeducted).toFixed(2));
@@ -43,7 +44,7 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
   const auditSteps = [
     {
       icon: "💼", label: "Monthly Base Salary", value: `₹${r.monthlySalary.toLocaleString("en-IN")}`,
-      note: "Fixed monthly package", color: "#10b981", sign: null,
+      note: `Fixed package for ${totalDays - freeLeaves} working shifts + ${freeLeaves} paid leaves`, color: "#10b981", sign: null,
     },
     {
       icon: "📅", label: daysElapsed < totalDays ? "Days Elapsed (Cycle)" : "Total Days in Month",
@@ -60,6 +61,15 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
       note: "Number of shifts clocked in this month", color: "#10b981", sign: "+",
     },
     {
+      icon: "🎁", label: "Paid Leave Allowance", value: `+${freeLeaves} days`,
+      note: `${freeLeaves} paid leaves credited to all active staff`, color: "#34d399", sign: "+",
+    },
+    {
+      icon: "📊", label: "Total Paid Days", value: `${paidDays} days`,
+      note: `${daysPresent} worked + ${freeLeaves} paid leave allowance = ${paidDays} paid days`,
+      color: "#38bdf8", sign: "=",
+    },
+    {
       icon: "🏖️", label: "Absent Days", value: `${absentDays} days`,
       note: daysElapsed < totalDays ? `${daysElapsed} elapsed − ${daysPresent} worked` : `${totalDays} total − ${daysPresent} worked`,
       color: "#94a3b8", sign: null,
@@ -69,17 +79,13 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
       note: "Included in total absent days so far", color: "#fb923c", sign: null,
     },
     {
-      icon: "🎁", label: "Free Leave Allowance", value: `${freeLeaves} days`,
-      note: "Paid leaves included in package (no deduction)", color: "#34d399", sign: null,
-    },
-    {
       icon: "🚨", label: "Unpaid Absences", value: `${unpaidAbsences} day${unpaidAbsences !== 1 ? "s" : ""}`,
-      note: unpaidAbsences > 0 ? `${absentDays} absent − ${freeLeaves} free = ${unpaidAbsences} unpaid` : "Within free leave limit — no penalty",
+      note: unpaidAbsences > 0 ? `${absentDays} absent − ${freeLeaves} free = ${unpaidAbsences} unpaid` : "Within free leave limit — no deduction penalty",
       color: unpaidAbsences > 0 ? "#fb7185" : "#94a3b8", sign: unpaidAbsences > 0 ? "−" : null,
     },
     {
       icon: "💰", label: "Gross Earned Salary", value: `₹${earnedGross.toLocaleString("en-IN")}`,
-      note: `₹${dailyWage} × ${daysPresent} days worked`, color: "#34d399", sign: "=",
+      note: `₹${dailyWage} × ${paidDays} paid days`, color: "#34d399", sign: "=",
     },
     ...(pf > 0 ? [{
       icon: "🏛️", label: "PF Deduction (12%)", value: `-₹${pf.toFixed(2)}`,
@@ -479,12 +485,13 @@ export default function PayrollCalculationPage() {
                 const daysElapsed = r.metrics.daysElapsed ?? totalDays;
                 const dailyWage = parseFloat(r.metrics.dailyWage.toFixed(2));
                 const daysPresent = r.metrics.daysPresent;
+                const freeLeaves = r.metrics.freeLeaves ?? 4;
+                const paidDays = r.metrics.paidDays ?? (daysPresent > 0 ? daysPresent + freeLeaves : 0);
                 const absentDays = Math.max(0, daysElapsed - daysPresent);
-                const freeLeaves = 4;
                 const unpaidAbsences = r.metrics.unexcusedAbsences !== undefined
                   ? r.metrics.unexcusedAbsences
                   : Math.max(0, absentDays - freeLeaves);
-                const earnedGross = parseFloat((dailyWage * daysPresent).toFixed(2));
+                const earnedGross = parseFloat(r.simpleRaw ?? (dailyWage * paidDays).toFixed(2));
                 const advanceDebt = parseFloat(r.totalAdvance);
                 const advanceDeducted = parseFloat(r.simpleAdvanceDeducted);
                 const netToPay = parseFloat(r.simpleFinal);
@@ -527,6 +534,13 @@ export default function PayrollCalculationPage() {
                       <div>
                         <span style={{ display: "block", fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>Days Worked</span>
                         <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#10b981" }}>{daysPresent} / {totalDays}</span>
+                      </div>
+                      <div>
+                        <span style={{ display: "block", fontSize: "0.58rem", color: "#38bdf8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>Paid Days</span>
+                        <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#38bdf8" }}>{paidDays} days</span>
+                        <div style={{ fontSize: "0.55rem", color: "#34d399", marginTop: "0.15rem", fontWeight: 700 }}>
+                           ({daysPresent} wrk + {freeLeaves} paid)
+                        </div>
                       </div>
                       <div>
                         <span style={{ display: "block", fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>Absent Days</span>

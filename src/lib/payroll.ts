@@ -8,14 +8,15 @@ export interface PayrollDetails {
   monthYear: string;
   monthlySalary: number; // S_base
   dailyWage: number; // R_day
-  earnedTillNow: number; // R_day * D_present
+  earnedTillNow: number; // R_day * paidDays
   totalDaysInMonth: number; // D_total
   daysElapsed: number; // Days passed in current cycle
   daysPresent: number; // D_present
+  freeLeaves: number; // Free paid leave allowance (e.g. 4)
   fullLeaves: number; // L_full
   halfLeaves: number; // L_half
   unexcusedAbsences: number; // L_unexcused
-  paidDays: number; // D_paid
+  paidDays: number; // D_paid (present + 4 free paid leaves)
   
   // Penalties
   penaltyLate: number; // Penalty_late
@@ -95,30 +96,41 @@ export function calculateSalaryMetrics(
   daysElapsed: number = totalDays
 ) {
   const R_day = baseSalary / totalDays;
-  const earnedTillNow = parseFloat((R_day * presentCount).toFixed(2));
-  const leavesTaken = Math.max(0, daysElapsed - presentCount);
-  const deductibleLeaves = Math.max(0, leavesTaken - 4);
-  const S_earned = earnedTillNow;
+  const FREE_LEAVES = 4;
   
-  const A_deducted = Math.min(pendingAdvancesAmt, S_earned);
-  const S_net = S_earned - A_deducted;
+  // Paid days = present shifts + 4 free paid leaves allowance (if staff worked any shifts)
+  const paidDays = presentCount > 0 ? presentCount + FREE_LEAVES : 0;
+  const earnedGross = parseFloat((R_day * paidDays).toFixed(2));
+  
+  const leavesTaken = Math.max(0, daysElapsed - presentCount);
+  const deductibleLeaves = Math.max(0, leavesTaken - FREE_LEAVES);
+  
+  const S_earned_simple = earnedGross;
+  const A_deducted_simple = Math.min(pendingAdvancesAmt, S_earned_simple);
+  const S_net_simple = Math.max(0, S_earned_simple - A_deducted_simple);
+
+  const totalPenalties = latePenaltiesTotal + earlyPenaltiesTotal;
+  const S_earned_strict = Math.max(0, earnedGross - totalPenalties);
+  const A_deducted_strict = Math.min(pendingAdvancesAmt, S_earned_strict);
+  const S_net_strict = Math.max(0, S_earned_strict - A_deducted_strict);
 
   return {
     dailyWage: R_day,
-    earnedTillNow,
-    paidDays: presentCount,
+    earnedTillNow: earnedGross,
+    paidDays,
+    freeLeaves: FREE_LEAVES,
     unexcusedAbsences: deductibleLeaves,
     penaltyAbsence: deductibleLeaves * R_day,
     leavesTaken,
     simple: {
-      earnedSalary: parseFloat(S_earned.toFixed(2)),
-      advancesDeducted: parseFloat(A_deducted.toFixed(2)),
-      netPayable: parseFloat(S_net.toFixed(2))
+      earnedSalary: parseFloat(S_earned_simple.toFixed(2)),
+      advancesDeducted: parseFloat(A_deducted_simple.toFixed(2)),
+      netPayable: parseFloat(S_net_simple.toFixed(2))
     },
     strict: {
-      earnedSalary: parseFloat(S_earned.toFixed(2)),
-      advancesDeducted: parseFloat(A_deducted.toFixed(2)),
-      netPayable: parseFloat(S_net.toFixed(2))
+      earnedSalary: parseFloat(S_earned_strict.toFixed(2)),
+      advancesDeducted: parseFloat(A_deducted_strict.toFixed(2)),
+      netPayable: parseFloat(S_net_strict.toFixed(2))
     }
   };
 }
@@ -317,6 +329,7 @@ export async function calculateStaffPayroll(
     totalDaysInMonth: D_total,
     daysElapsed,
     daysPresent: D_present,
+    freeLeaves: metrics.freeLeaves,
     fullLeaves: metrics.leavesTaken,
     halfLeaves: L_half,
     unexcusedAbsences: metrics.unexcusedAbsences,

@@ -59,8 +59,10 @@ export async function GET(
       new Date(a.shiftDate).toISOString().slice(0, 10) === todayStr
     );
 
+    const freeLeaves = 4;
+    const paidDays = presentDays > 0 ? presentDays + freeLeaves : 0;
     const dailyWage = totalDays > 0 ? parseFloat((staff.monthlySalary / totalDays).toFixed(2)) : 0;
-    const earnedTillNow = parseFloat((dailyWage * presentDays).toFixed(2));
+    const earnedTillNow = parseFloat((dailyWage * paidDays).toFixed(2));
     const advanceToRecover = Math.min(pendingAdvance, earnedTillNow);
     const netPayable = Math.max(0, earnedTillNow - advanceToRecover);
     
@@ -77,6 +79,8 @@ export async function GET(
       currentMonth: {
         month: currentMonth,
         presentDays,
+        paidDays,
+        freeLeaves,
         totalDays,
         dailyWage,
         earnedTillNow,

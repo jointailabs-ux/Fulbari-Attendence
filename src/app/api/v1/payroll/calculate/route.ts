@@ -71,6 +71,8 @@ export async function GET(req: Request) {
               dailyWage: payroll.dailyWage,
               earnedTillNow: payroll.earnedTillNow,
               daysPresent: payroll.daysPresent,
+              paidDays: payroll.paidDays,
+              freeLeaves: payroll.freeLeaves,
               fullLeaves: payroll.fullLeaves,
               halfLeaves: payroll.halfLeaves,
               unexcusedAbsences: payroll.unexcusedAbsences,
