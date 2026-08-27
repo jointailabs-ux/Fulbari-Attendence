@@ -22,7 +22,13 @@ export interface PayrollDetails {
   daysElapsed: number; // Days passed in current cycle
   isMonthCompleted: boolean; // True if full calendar month cycle has concluded
   daysPresent: number; // D_present
+  workedGross: number; // D_present * R_day
   freeLeaves: number; // Free paid leave allowance (e.g. 4)
+  freeLeavesUsed: number;
+  freeLeaveAmount: number;
+  extraWeekendPenaltyDays: number;
+  weekendPenaltyAmount: number;
+  rawAbsences: number;
   fullLeaves: number; // Raw count of absent days
   halfLeaves: number; // L_half
   weightedLeavesTaken: number; // Weighted absent days (Normal: 1.0, Sat/Sun/Occasion: 1.5)
@@ -114,26 +120,40 @@ export function calculateSalaryMetrics(
   earlyPenaltiesTotal: number,
   daysElapsed: number = totalDays
 ) {
-  const R_day = baseSalary / totalDays;
+  const R_day = totalDays > 0 ? baseSalary / totalDays : 0;
   const FREE_LEAVES = 4;
   const isMonthCompleted = daysElapsed >= totalDays;
   
-  // Deductible leaves beyond the 4 free leave allowance
+  const rawAbsences = Math.max(0, (isMonthCompleted ? totalDays : daysElapsed) - presentCount);
+  const extraWeekendPenaltyDays = Math.max(0, parseFloat((weightedLeavesTaken - rawAbsences).toFixed(2)));
+  const weekendPenaltyAmount = parseFloat((extraWeekendPenaltyDays * R_day).toFixed(2));
+  
+  // Deductible leaves beyond the 4 free leave allowance for the cycle
   const unexcusedAbsences = Math.max(0, parseFloat((weightedLeavesTaken - FREE_LEAVES).toFixed(2)));
   const penaltyAbsence = parseFloat((unexcusedAbsences * R_day).toFixed(2));
   
-  // Paid Days Calculation:
-  // - Completed Month: Total calendar days minus deductible absences (if staff worked at least 1 day)
-  // - Ongoing Month (mid-month): Earned for shifts worked so far, minus any unexcused absence penalty
+  const workedGross = parseFloat((presentCount * R_day).toFixed(2));
+  const freeLeavesUsed = Math.min(FREE_LEAVES, rawAbsences);
+  const freeLeaveAmount = parseFloat((freeLeavesUsed * R_day).toFixed(2));
+  
+  // Paid Days & Gross Earned Calculation:
   let paidDays = 0;
-  if (isMonthCompleted) {
-    paidDays = presentCount > 0 ? Math.max(0, parseFloat((totalDays - unexcusedAbsences).toFixed(2))) : 0;
+  let earnedGross = 0;
+
+  if (presentCount === 0) {
+    paidDays = 0;
+    earnedGross = 0;
+  } else if (isMonthCompleted) {
+    // Month is finished: Paid days = Total days minus unexcused absences (capped at totalDays)
+    paidDays = Math.max(0, parseFloat((totalDays - unexcusedAbsences).toFixed(2)));
+    earnedGross = parseFloat((paidDays * R_day).toFixed(2));
   } else {
-    // During ongoing cycle, staff earns daily wage for present days, adjusting for excess absence penalty
-    paidDays = Math.max(0, parseFloat((presentCount - unexcusedAbsences).toFixed(2)));
+    // Ongoing month (mid-cycle):
+    // Staff earns for days worked + free leaves allowance (up to 4) - extra weekend penalty (1.5x)
+    const effectiveDays = Math.max(0, parseFloat((presentCount + freeLeavesUsed - extraWeekendPenaltyDays).toFixed(2)));
+    paidDays = Math.min(effectiveDays, daysElapsed);
+    earnedGross = parseFloat((paidDays * R_day).toFixed(2));
   }
-    
-  const earnedGross = parseFloat((R_day * paidDays).toFixed(2));
   
   const S_earned_simple = earnedGross;
   const A_deducted_simple = Math.min(pendingAdvancesAmt, S_earned_simple);
@@ -146,6 +166,12 @@ export function calculateSalaryMetrics(
 
   return {
     dailyWage: R_day,
+    workedGross,
+    freeLeavesUsed,
+    freeLeaveAmount,
+    extraWeekendPenaltyDays,
+    weekendPenaltyAmount,
+    rawAbsences,
     earnedTillNow: earnedGross,
     paidDays,
     freeLeaves: FREE_LEAVES,
@@ -423,7 +449,13 @@ export async function calculateStaffPayroll(
     daysElapsed,
     isMonthCompleted: metrics.isMonthCompleted,
     daysPresent: D_present,
+    workedGross: metrics.workedGross,
     freeLeaves: metrics.freeLeaves,
+    freeLeavesUsed: metrics.freeLeavesUsed,
+    freeLeaveAmount: metrics.freeLeaveAmount,
+    extraWeekendPenaltyDays: metrics.extraWeekendPenaltyDays,
+    weekendPenaltyAmount: metrics.weekendPenaltyAmount,
+    rawAbsences: metrics.rawAbsences,
     fullLeaves: rawAbsentDays,
     halfLeaves: 0,
     weightedLeavesTaken: parseFloat(weightedLeavesTaken.toFixed(2)),

@@ -29,18 +29,26 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
   const isMonthCompleted = r.metrics.isMonthCompleted ?? (daysElapsed >= totalDays);
   const dailyWage = parseFloat(r.metrics.dailyWage.toFixed(2));
   const daysPresent = r.metrics.daysPresent;
+  const workedGross = parseFloat((r.metrics.workedGross ?? (daysPresent * dailyWage)).toFixed(2));
   const freeLeaves = r.metrics.freeLeaves ?? 4;
-  const paidDays = r.metrics.paidDays ?? (isMonthCompleted ? (daysPresent > 0 ? Math.max(0, totalDays - (r.metrics.unexcusedAbsences || 0)) : 0) : daysPresent);
-  const rawAbsentDays = r.metrics.fullLeaves ?? Math.max(0, daysElapsed - daysPresent);
+  const freeLeavesUsed = r.metrics.freeLeavesUsed ?? Math.min(freeLeaves, r.metrics.rawAbsences ?? Math.max(0, daysElapsed - daysPresent));
+  const freeLeaveAmount = parseFloat((r.metrics.freeLeaveAmount ?? (freeLeavesUsed * dailyWage)).toFixed(2));
+  
+  const rawAbsentDays = r.metrics.rawAbsences ?? (r.metrics.fullLeaves ?? Math.max(0, daysElapsed - daysPresent));
   const weightedLeaves = r.metrics.weightedLeavesTaken ?? rawAbsentDays;
+  const extraWeekendPenaltyDays = r.metrics.extraWeekendPenaltyDays ?? Math.max(0, parseFloat((weightedLeaves - rawAbsentDays).toFixed(2)));
+  const weekendPenaltyAmount = parseFloat((r.metrics.weekendPenaltyAmount ?? (extraWeekendPenaltyDays * dailyWage)).toFixed(2));
+
   const normalAbsences = r.metrics.normalAbsences ?? Math.max(0, rawAbsentDays - (r.weekendAbsences?.total || 0) - (r.occasionAbsences?.count || 0));
   const unpaidAbsences = r.metrics.unexcusedAbsences !== undefined
     ? r.metrics.unexcusedAbsences
     : Math.max(0, weightedLeaves - freeLeaves);
+  
+  const paidDays = r.metrics.paidDays ?? (isMonthCompleted ? Math.max(0, totalDays - unpaidAbsences) : Math.max(0, daysPresent + freeLeavesUsed - extraWeekendPenaltyDays));
   const earnedGross = parseFloat(r.simpleRaw ?? (dailyWage * paidDays).toFixed(2));
   const advanceDebt = parseFloat(r.totalAdvance);
   const advanceDeducted = parseFloat(r.simpleAdvanceDeducted);
-  const remainingAdvance = parseFloat((advanceDebt - advanceDeducted).toFixed(2));
+  const remainingAdvance = parseFloat(Math.max(0, advanceDebt - advanceDeducted).toFixed(2));
   const pf = pfEnabled ? parseFloat(r.simplePf) : 0;
   const netPayable = parseFloat(r.simpleFinal);
 
@@ -48,160 +56,176 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
   const sunCount = r.weekendAbsences?.sundays || 0;
   const occCount = r.occasionAbsences?.count || 0;
 
-  const formulaParts = [];
-  if (normalAbsences > 0) formulaParts.push(`${normalAbsences} normal (${(normalAbsences * 1.0).toFixed(1)}d)`);
-  if (satCount > 0) formulaParts.push(`${satCount} Sat (${(satCount * 1.5).toFixed(1)}d)`);
-  if (sunCount > 0) formulaParts.push(`${sunCount} Sun (${(sunCount * 1.5).toFixed(1)}d)`);
-  if (occCount > 0) formulaParts.push(`${occCount} Occasion (${(occCount * 1.5).toFixed(1)}d)`);
-
-  const formulaString = formulaParts.length > 0 ? formulaParts.join(" + ") + ` = ${weightedLeaves} weighted leave days` : "0 leave days taken";
-
-  const auditSteps = [
-    {
-      icon: "💼", label: "Monthly Base Salary", value: `₹${r.monthlySalary.toLocaleString("en-IN")}`,
-      note: `Fixed package (${totalDays} calendar days)`, color: "#10b981", sign: null,
-    },
-    {
-      icon: "📅", label: daysElapsed < totalDays ? "Days Elapsed (Cycle)" : "Total Days in Month",
-      value: daysElapsed < totalDays ? `${daysElapsed} / ${totalDays} days` : `${totalDays} days`,
-      note: daysElapsed < totalDays ? `Current progress as of day ${daysElapsed} of ${totalDays}` : "Calendar days for this cycle",
-      color: "#06b6d4", sign: null,
-    },
-    {
-      icon: "⚡", label: "Daily Wage Rate", value: `₹${dailyWage}`,
-      note: `₹${r.monthlySalary} ÷ ${totalDays} days`, color: "#a78bfa", sign: null,
-    },
-    {
-      icon: "✅", label: "Days Worked (Present)", value: `${daysPresent} days`,
-      note: "Number of shifts clocked in so far", color: "#10b981", sign: "+",
-    },
-    {
-      icon: "🏖️", label: "Raw Calendar Absences", value: `${rawAbsentDays} calendar days`,
-      note: `${daysElapsed} elapsed − ${daysPresent} worked = ${rawAbsentDays} days not present`,
-      color: "#94a3b8", sign: null,
-    },
-    {
-      icon: "⚖️", label: "Weighted Leaves Taken (1.5x Rule)", value: `${weightedLeaves} days`,
-      note: formulaString,
-      color: "#fbbf24", sign: null,
-    },
-    {
-      icon: "🎁", label: "Free Leave Allowance", value: `${freeLeaves} days`,
-      note: `${freeLeaves} paid leaves allowed per month (${weightedLeaves} weighted leaves used)`, color: "#34d399", sign: null,
-    },
-    {
-      icon: "🚨", label: "Unpaid / Deductible Absences", value: `${unpaidAbsences} day${unpaidAbsences !== 1 ? "s" : ""}`,
-      note: unpaidAbsences > 0 ? `${weightedLeaves} weighted − ${freeLeaves} free = ${unpaidAbsences} deductible days (−₹${(unpaidAbsences * dailyWage).toFixed(2)})` : "Within 4 free leaves limit — zero salary penalty",
-      color: unpaidAbsences > 0 ? "#fb7185" : "#94a3b8", sign: unpaidAbsences > 0 ? "−" : null,
-    },
-    ...(isMonthCompleted ? [{
-      icon: "📊", label: "Total Paid Days (Month-End)", value: `${paidDays} days`,
-      note: `${totalDays} total − ${unpaidAbsences} unpaid = ${paidDays} paid days`,
-      color: "#38bdf8", sign: "=",
-    }] : []),
-    {
-      icon: "💰", label: "Gross Earned Salary", value: `₹${earnedGross.toLocaleString("en-IN")}`,
-      note: isMonthCompleted
-        ? `₹${dailyWage} × ${paidDays} paid days`
-        : `₹${dailyWage} × ${paidDays} effective days worked to date`,
-      color: "#34d399", sign: "=",
-    },
-    ...(pf > 0 ? [{
-      icon: "🏛️", label: "PF Deduction (12%)", value: `-₹${pf.toFixed(2)}`,
-      note: "Employee Provident Fund contribution", color: "#fb923c", sign: "−",
-    }] : []),
-    ...(advanceDebt > 0 ? [
-      {
-        icon: "📋", label: "Outstanding Advance Debt", value: `₹${advanceDebt.toLocaleString("en-IN")}`,
-        note: "Total salary advances taken (pending repayment)", color: "#fb923c", sign: null,
-      },
-      {
-        icon: "💳", label: "Advance Recovered This Month", value: `-₹${advanceDeducted.toLocaleString("en-IN")}`,
-        note: advanceDeducted >= advanceDebt
-          ? "Full advance recovered ✓"
-          : `₹${remainingAdvance.toLocaleString("en-IN")} will carry forward to next month`,
-        color: "#fb7185", sign: "−",
-      },
-    ] : []),
-    {
-      icon: "🎯", label: "Net Salary Payable", value: `₹${netPayable.toLocaleString("en-IN")}`,
-      note: "Final amount to be disbursed to staff", color: "#10b981", sign: "=",
-    },
-  ];
-
   return (
     <div
       style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        style={{ background: "rgba(9,9,18,0.98)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "24px", width: "100%", maxWidth: "480px", maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 40px 100px rgba(0,0,0,0.8)", animation: "popIn 0.28s cubic-bezier(0.34,1.56,0.64,1)", overflow: "hidden" }}
+        style={{ background: "rgba(10,10,20,0.98)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "24px", width: "100%", maxWidth: "520px", maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 40px 100px rgba(0,0,0,0.85)", animation: "popIn 0.28s cubic-bezier(0.34,1.56,0.64,1)", overflow: "hidden" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div style={{ padding: "1.4rem 1.5rem 1rem", borderBottom: "1px solid rgba(255,255,255,0.05)", flexShrink: 0 }}>
+        <div style={{ padding: "1.25rem 1.4rem 1rem", borderBottom: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.02)", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-              <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "linear-gradient(135deg, #10b981, #06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.3rem" }}>🧾</div>
+              <div style={{ width: "42px", height: "42px", borderRadius: "12px", background: "linear-gradient(135deg, #10b981, #06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.25rem", boxShadow: "0 4px 14px rgba(16,185,129,0.3)" }}>🧾</div>
               <div>
-                <p style={{ fontSize: "0.62rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", margin: 0 }}>Salary Audit Trail</p>
-                <h3 style={{ fontSize: "1rem", fontWeight: 900, margin: 0 }}>{r.name}</h3>
+                <p style={{ fontSize: "0.62rem", color: "#34d399", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>Salary Audit & Calculation</p>
+                <h3 style={{ fontSize: "1.05rem", fontWeight: 900, margin: 0, color: "#fff" }}>{r.name}</h3>
               </div>
             </div>
-            <button onClick={onClose} style={{ background: "rgba(255,255,255,0.07)", border: "none", color: "var(--text-muted)", cursor: "pointer", width: "28px", height: "28px", borderRadius: "7px", fontSize: "0.85rem", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+            <button onClick={onClose} style={{ background: "rgba(255,255,255,0.08)", border: "none", color: "var(--text-muted)", cursor: "pointer", width: "28px", height: "28px", borderRadius: "8px", fontSize: "0.85rem", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
           </div>
-          <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", margin: "0.6rem 0 0 0" }}>
-            📅 Step-by-step calculation for {r.month}
-          </p>
+
+          {/* Quick Summary Pill Bar */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.5rem", marginTop: "0.9rem", padding: "0.6rem 0.8rem", background: "rgba(0,0,0,0.3)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.04)" }}>
+            <div style={{ textAlign: "center" }}>
+              <span style={{ fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", display: "block" }}>Days Worked</span>
+              <span style={{ fontSize: "0.88rem", fontWeight: 900, color: "#10b981" }}>{daysPresent} days</span>
+            </div>
+            <div style={{ textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.08)", borderRight: "1px solid rgba(255,255,255,0.08)" }}>
+              <span style={{ fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", display: "block" }}>Gross Earned</span>
+              <span style={{ fontSize: "0.88rem", fontWeight: 900, color: "#38bdf8" }}>₹{earnedGross.toLocaleString("en-IN")}</span>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <span style={{ fontSize: "0.58rem", color: "#fb923c", fontWeight: 800, textTransform: "uppercase", display: "block" }}>Owner to Pay</span>
+              <span style={{ fontSize: "0.88rem", fontWeight: 900, color: "#34d399" }}>₹{netPayable.toLocaleString("en-IN")}</span>
+            </div>
+          </div>
         </div>
 
-        {/* Steps */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "1rem 1.5rem 0.5rem" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem" }}>
-            {auditSteps.map((step, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "0.75rem", padding: "0.7rem 0.9rem", background: "rgba(255,255,255,0.02)", border: `1px solid ${step.color}18`, borderRadius: "12px", position: "relative" }}>
-                {/* Sign badge */}
-                {step.sign && (
-                  <div style={{ position: "absolute", left: "-10px", top: "50%", transform: "translateY(-50%)", width: "20px", height: "20px", borderRadius: "50%", background: step.sign === "+" ? "rgba(16,185,129,0.9)" : step.sign === "−" ? "rgba(244,63,94,0.9)" : "rgba(6,182,212,0.9)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: 900, color: "#fff", flexShrink: 0, zIndex: 1 }}>
-                    {step.sign}
-                  </div>
-                )}
-                <span style={{ fontSize: "1.1rem", flexShrink: 0, marginTop: "0.05rem" }}>{step.icon}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-                    <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "rgba(255,255,255,0.75)" }}>{step.label}</span>
-                    <span style={{ fontSize: "0.9rem", fontWeight: 900, color: step.color, fontFamily: "monospace", whiteSpace: "nowrap" }}>{step.value}</span>
-                  </div>
-                  <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", margin: "0.15rem 0 0 0" }}>{step.note}</p>
-                </div>
+        {/* Steps Body */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "1rem 1.25rem", display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+          
+          {/* STAGE 1: Daily Wage Rate */}
+          <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "14px", padding: "0.85rem 1rem" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.4rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span style={{ width: "22px", height: "22px", borderRadius: "50%", background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.4)", color: "#c084fc", fontSize: "0.7rem", fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>1</span>
+                <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#fff" }}>Daily Wage Calculation</span>
               </div>
-            ))}
+              <span style={{ fontSize: "0.95rem", fontWeight: 900, color: "#a78bfa", fontFamily: "monospace" }}>₹{dailyWage} / day</span>
+            </div>
+            <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", margin: 0, lineHeight: 1.4 }}>
+              Monthly Base Salary <strong style={{ color: "#fff" }}>₹{r.monthlySalary.toLocaleString("en-IN")}</strong> ÷ <strong style={{ color: "#fff" }}>{totalDays} days</strong> in month = <strong style={{ color: "#a78bfa" }}>₹{dailyWage}</strong> per working day.
+              {daysElapsed < totalDays && <span style={{ color: "#38bdf8", marginLeft: "0.3rem" }}>({daysElapsed} of {totalDays} days elapsed so far)</span>}
+            </p>
           </div>
 
-          {/* Advance warning callout */}
-          {advanceDebt > 0 && remainingAdvance > 0 && (
-            <div style={{ margin: "0.75rem 0", padding: "0.85rem 1rem", background: "rgba(251,146,60,0.08)", border: "1px solid rgba(251,146,60,0.25)", borderRadius: "12px" }}>
-              <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "#fb923c", margin: "0 0 0.25rem 0" }}>⚠️ Advance Carry-Forward Notice</p>
-              <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", margin: 0, lineHeight: 1.5 }}>
-                This month's earned salary (<strong style={{ color: "#fff" }}>₹{earnedGross.toLocaleString("en-IN")}</strong>) fully covers the advance repayment of <strong style={{ color: "#fb923c" }}>₹{advanceDeducted.toLocaleString("en-IN")}</strong>. The remaining debt of <strong style={{ color: "#fb7185" }}>₹{remainingAdvance.toLocaleString("en-IN")}</strong> will be recovered from next month's salary.
-              </p>
+          {/* STAGE 2: Work Done & Base Earnings */}
+          <div style={{ background: "rgba(16,185,129,0.04)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: "14px", padding: "0.85rem 1rem" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.4rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span style={{ width: "22px", height: "22px", borderRadius: "50%", background: "rgba(16,185,129,0.2)", border: "1px solid rgba(16,185,129,0.4)", color: "#10b981", fontSize: "0.7rem", fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>2</span>
+                <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#fff" }}>Days Worked Earnings (Base)</span>
+              </div>
+              <span style={{ fontSize: "1rem", fontWeight: 900, color: "#10b981", fontFamily: "monospace" }}>+ ₹{workedGross.toLocaleString("en-IN")}</span>
             </div>
-          )}
+            <div style={{ padding: "0.45rem 0.7rem", background: "rgba(0,0,0,0.25)", borderRadius: "8px", border: "1px solid rgba(16,185,129,0.15)", fontSize: "0.75rem", fontWeight: 700, color: "#34d399", fontFamily: "monospace", display: "flex", justifyContent: "space-between" }}>
+              <span>{daysPresent} Days Worked × ₹{dailyWage} Rate</span>
+              <span>= ₹{workedGross.toLocaleString("en-IN")}</span>
+            </div>
+            <p style={{ fontSize: "0.68rem", color: "var(--text-muted)", margin: "0.35rem 0 0", lineHeight: 1.4 }}>
+              Employee clocked in and completed shifts on {daysPresent} separate calendar days.
+            </p>
+          </div>
 
-          {advanceDebt > 0 && remainingAdvance <= 0 && (
-            <div style={{ margin: "0.75rem 0", padding: "0.85rem 1rem", background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: "12px" }}>
-              <p style={{ fontSize: "0.75rem", fontWeight: 700, color: "#10b981", margin: 0 }}>✅ Advance fully recovered this month — no carry-forward.</p>
+          {/* STAGE 3: Leaves & Weekend Adjustments */}
+          <div style={{ background: "rgba(6,182,212,0.03)", border: "1px solid rgba(6,182,212,0.15)", borderRadius: "14px", padding: "0.85rem 1rem" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.4rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span style={{ width: "22px", height: "22px", borderRadius: "50%", background: "rgba(6,182,212,0.2)", border: "1px solid rgba(6,182,212,0.4)", color: "#06b6d4", fontSize: "0.7rem", fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>3</span>
+                <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#fff" }}>Leave & Weekend Adjustments</span>
+              </div>
+              <span style={{ fontSize: "0.95rem", fontWeight: 900, color: "#38bdf8", fontFamily: "monospace" }}>
+                {paidDays} Paid Days
+              </span>
             </div>
-          )}
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", margin: "0.4rem 0" }}>
+              {/* Free leaves credit */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.7rem", padding: "0.3rem 0.5rem", background: "rgba(52,211,153,0.08)", borderRadius: "6px", color: "#34d399" }}>
+                <span>🎁 Paid Free Leaves ({freeLeavesUsed} of {freeLeaves} allowed)</span>
+                <span style={{ fontWeight: 800, fontFamily: "monospace" }}>+ ₹{freeLeaveAmount.toLocaleString("en-IN")}</span>
+              </div>
+
+              {/* Weekend 1.5x penalty if any */}
+              {extraWeekendPenaltyDays > 0 ? (
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.7rem", padding: "0.3rem 0.5rem", background: "rgba(244,63,94,0.08)", borderRadius: "6px", color: "#fb7185" }}>
+                  <span>⚖️ Weekend Absence Penalty ({satCount} Sat, {sunCount} Sun @ 1.5x = {extraWeekendPenaltyDays}d extra)</span>
+                  <span style={{ fontWeight: 800, fontFamily: "monospace" }}>− ₹{weekendPenaltyAmount.toLocaleString("en-IN")}</span>
+                </div>
+              ) : (
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.7rem", padding: "0.3rem 0.5rem", background: "rgba(255,255,255,0.03)", borderRadius: "6px", color: "var(--text-muted)" }}>
+                  <span>⚖️ Weekend 1.5x Penalty</span>
+                  <span>None (0 weekend absences)</span>
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "0.4rem", borderTop: "1px dashed rgba(255,255,255,0.08)", fontSize: "0.75rem" }}>
+              <span style={{ fontWeight: 700, color: "rgba(255,255,255,0.8)" }}>👉 Total Gross Salary Earned:</span>
+              <span style={{ fontWeight: 900, color: "#34d399", fontSize: "0.95rem", fontFamily: "monospace" }}>₹{earnedGross.toLocaleString("en-IN")}</span>
+            </div>
+          </div>
+
+          {/* STAGE 4: Deductions & Net Payout */}
+          <div style={{ background: "rgba(251,146,60,0.04)", border: "1px solid rgba(251,146,60,0.2)", borderRadius: "14px", padding: "0.85rem 1rem" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.4rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span style={{ width: "22px", height: "22px", borderRadius: "50%", background: "rgba(251,146,60,0.2)", border: "1px solid rgba(251,146,60,0.4)", color: "#fb923c", fontSize: "0.7rem", fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>4</span>
+                <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#fff" }}>Deductions & What Owner Pays</span>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", margin: "0.4rem 0" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.72rem", color: "var(--text-muted)" }}>
+                <span>Gross Earned Salary</span>
+                <span style={{ fontWeight: 800, color: "#fff", fontFamily: "monospace" }}>₹{earnedGross.toLocaleString("en-IN")}</span>
+              </div>
+
+              {advanceDebt > 0 && (
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.72rem", color: "#fb7185" }}>
+                  <span>💳 Advance Repayment (Total Debt: ₹{advanceDebt})</span>
+                  <span style={{ fontWeight: 800, fontFamily: "monospace" }}>− ₹{advanceDeducted.toLocaleString("en-IN")}</span>
+                </div>
+              )}
+
+              {pf > 0 && (
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.72rem", color: "#fb7185" }}>
+                  <span>🏛️ PF Deduction (12%)</span>
+                  <span style={{ fontWeight: 800, fontFamily: "monospace" }}>− ₹{pf.toFixed(2)}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Advance status notice */}
+            {advanceDebt > 0 && remainingAdvance > 0 && (
+              <p style={{ fontSize: "0.66rem", color: "#fb923c", margin: "0.3rem 0 0", background: "rgba(251,146,60,0.08)", padding: "0.3rem 0.5rem", borderRadius: "6px" }}>
+                ⚠️ Remaining advance debt of ₹{remainingAdvance.toLocaleString("en-IN")} will carry forward to next month.
+              </p>
+            )}
+
+            {/* Final Highlight Box */}
+            <div style={{ marginTop: "0.6rem", padding: "0.75rem 0.9rem", background: "linear-gradient(135deg, rgba(16,185,129,0.15), rgba(6,182,212,0.15))", border: "1px solid rgba(16,185,129,0.4)", borderRadius: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <span style={{ display: "block", fontSize: "0.62rem", color: "#10b981", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em" }}>Final Amount to Pay Staff</span>
+                <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>Gross earned minus all deductions</span>
+              </div>
+              <span style={{ fontSize: "1.35rem", fontWeight: 900, color: "#10b981", fontFamily: "monospace" }}>₹{netPayable.toLocaleString("en-IN")}</span>
+            </div>
+          </div>
+
         </div>
 
         {/* Footer */}
-        <div style={{ padding: "0.85rem 1.5rem", borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", gap: "0.6rem", flexShrink: 0 }}>
+        <div style={{ padding: "0.85rem 1.4rem", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", gap: "0.6rem", flexShrink: 0 }}>
           <Link href={`/admin/staff/${r.staffId}`} style={{ flex: 1, textAlign: "center", padding: "0.65rem", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", color: "var(--text-muted)", fontSize: "0.78rem", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.3rem", transition: "all 0.2s" }}>
             👤 Full Profile →
           </Link>
-          <button onClick={onClose} style={{ flex: 1, padding: "0.65rem", background: "linear-gradient(135deg, #10b981, #06b6d4)", border: "none", borderRadius: "12px", color: "white", cursor: "pointer", fontWeight: 700, fontSize: "0.78rem" }}>
-            Close
+          <button onClick={onClose} style={{ flex: 1, padding: "0.65rem", background: "linear-gradient(135deg, #10b981, #06b6d4)", border: "none", borderRadius: "12px", color: "white", cursor: "pointer", fontWeight: 800, fontSize: "0.8rem" }}>
+            Done
           </button>
         </div>
       </div>
@@ -505,16 +529,24 @@ export default function PayrollCalculationPage() {
                 const isMonthCompleted = r.metrics.isMonthCompleted ?? (daysElapsed >= totalDays);
                 const dailyWage = parseFloat(r.metrics.dailyWage.toFixed(2));
                 const daysPresent = r.metrics.daysPresent;
+                const workedGross = parseFloat((r.metrics.workedGross ?? (daysPresent * dailyWage)).toFixed(2));
                 const freeLeaves = r.metrics.freeLeaves ?? 4;
-                const rawAbsentDays = r.metrics.fullLeaves ?? Math.max(0, daysElapsed - daysPresent);
+                const freeLeavesUsed = r.metrics.freeLeavesUsed ?? Math.min(freeLeaves, r.metrics.rawAbsences ?? Math.max(0, daysElapsed - daysPresent));
+                const freeLeaveAmount = parseFloat((r.metrics.freeLeaveAmount ?? (freeLeavesUsed * dailyWage)).toFixed(2));
+                
+                const rawAbsentDays = r.metrics.rawAbsences ?? (r.metrics.fullLeaves ?? Math.max(0, daysElapsed - daysPresent));
                 const weightedLeaves = r.metrics.weightedLeavesTaken ?? rawAbsentDays;
+                const extraWeekendPenaltyDays = r.metrics.extraWeekendPenaltyDays ?? Math.max(0, parseFloat((weightedLeaves - rawAbsentDays).toFixed(2)));
+                const weekendPenaltyAmount = parseFloat((r.metrics.weekendPenaltyAmount ?? (extraWeekendPenaltyDays * dailyWage)).toFixed(2));
+
                 const unpaidAbsences = r.metrics.unexcusedAbsences !== undefined
                   ? r.metrics.unexcusedAbsences
                   : Math.max(0, weightedLeaves - freeLeaves);
-                const paidDays = r.metrics.paidDays ?? (isMonthCompleted ? (daysPresent > 0 ? Math.max(0, totalDays - unpaidAbsences) : 0) : daysPresent);
+                const paidDays = r.metrics.paidDays ?? (isMonthCompleted ? Math.max(0, totalDays - unpaidAbsences) : Math.max(0, daysPresent + freeLeavesUsed - extraWeekendPenaltyDays));
                 const earnedGross = parseFloat(r.simpleRaw ?? (dailyWage * paidDays).toFixed(2));
                 const advanceDebt = parseFloat(r.totalAdvance);
                 const advanceDeducted = parseFloat(r.simpleAdvanceDeducted);
+                const remainingAdvance = parseFloat(Math.max(0, advanceDebt - advanceDeducted).toFixed(2));
                 const netToPay = parseFloat(r.simpleFinal);
 
                 const satCount = r.weekendAbsences?.saturdays || 0;
@@ -523,8 +555,8 @@ export default function PayrollCalculationPage() {
 
                 return (
                   <div key={r.staffId}
-                    style={{ borderRadius: "18px", overflow: "hidden", background: "rgba(12,12,18,0.75)", border: "1px solid rgba(255,255,255,0.07)", backdropFilter: "blur(20px)", padding: "1.25rem 1.4rem", display: "flex", flexDirection: "column", gap: "1rem", position: "relative", transition: "transform 0.2s, box-shadow 0.2s" }}
-                    onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 10px 25px ${c1}12, 0 4px 15px rgba(0,0,0,0.4)`; }}
+                    style={{ borderRadius: "20px", overflow: "hidden", background: "rgba(12,12,22,0.85)", border: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(20px)", padding: "1.35rem 1.5rem", display: "flex", flexDirection: "column", gap: "1rem", position: "relative", transition: "transform 0.2s, box-shadow 0.2s" }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 12px 30px ${c1}15, 0 4px 18px rgba(0,0,0,0.5)`; }}
                     onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}
                   >
                     <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "3px", background: `linear-gradient(90deg, ${c1}, ${c2})` }} />
@@ -534,9 +566,9 @@ export default function PayrollCalculationPage() {
                       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                         <Avatar name={r.name} index={idx} />
                         <div>
-                          <p style={{ fontWeight: 800, fontSize: "1rem" }}>{r.name}</p>
-                          <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                            {r.slotName || "Standard Slot"} &nbsp;•&nbsp; ₹{r.monthlySalary.toLocaleString("en-IN")}/mo
+                          <p style={{ fontWeight: 900, fontSize: "1.05rem", margin: 0, color: "#fff" }}>{r.name}</p>
+                          <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: "0.15rem 0 0 0" }}>
+                            {r.slotName || "Standard Slot"} &nbsp;•&nbsp; Monthly Base: <strong style={{ color: "#fff" }}>₹{r.monthlySalary.toLocaleString("en-IN")}</strong>
                           </p>
                         </div>
                       </div>
@@ -546,65 +578,80 @@ export default function PayrollCalculationPage() {
                       </div>
                     </div>
 
-                    {/* Salary Breakdown Grid */}
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "0.6rem", background: "rgba(0,0,0,0.15)", padding: "1rem", borderRadius: "14px", border: "1px solid rgba(255,255,255,0.03)" }}>
-                      <div>
-                        <span style={{ display: "block", fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>Base Salary</span>
-                        <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#fff" }}>₹{r.monthlySalary.toLocaleString("en-IN")}</span>
-                      </div>
-                      <div>
-                        <span style={{ display: "block", fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>Daily Wage</span>
-                        <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#fff" }}>₹{dailyWage}</span>
-                      </div>
-                      <div>
-                        <span style={{ display: "block", fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>Days Worked</span>
-                        <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#10b981" }}>{daysPresent} / {totalDays}</span>
-                      </div>
-                      <div>
-                        <span style={{ display: "block", fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>Leaves (1.5x)</span>
-                        <span style={{ fontSize: "0.9rem", fontWeight: 800, color: weightedLeaves > freeLeaves ? "#fb923c" : "var(--text-muted)" }}>{weightedLeaves} days</span>
-                        <div style={{ fontSize: "0.55rem", color: "#fbbf24", marginTop: "0.15rem", fontWeight: 700 }}>
-                           ({satCount} Sat, {sunCount} Sun{occCount > 0 ? `, ${occCount} Occ` : ""})
+                    {/* Step-by-Step Salary Calculation Formula Box */}
+                    <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: "14px", border: "1px solid rgba(255,255,255,0.05)", padding: "0.9rem 1.1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                      
+                      {/* Top Formula Strip: Days Worked x Daily Wage = Base Worked Earnings */}
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.75rem", padding: "0.65rem 0.85rem", background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: "10px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <span style={{ fontSize: "1.1rem" }}>⚡</span>
+                          <div>
+                            <span style={{ fontSize: "0.62rem", color: "#34d399", fontWeight: 800, textTransform: "uppercase", display: "block" }}>
+                              Work Earnings Formula
+                            </span>
+                            <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#fff", fontFamily: "monospace" }}>
+                              {daysPresent} Days Worked × ₹{dailyWage} Daily Wage
+                            </span>
+                          </div>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", display: "block" }}>Shift Base Earned</span>
+                          <span style={{ fontSize: "1.1rem", fontWeight: 900, color: "#10b981", fontFamily: "monospace" }}>
+                            ₹{workedGross.toLocaleString("en-IN")}
+                          </span>
                         </div>
                       </div>
-                      <div>
-                        <span style={{ display: "block", fontSize: "0.58rem", color: "#34d399", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em" }}>Gross Earned</span>
-                        <span style={{ fontSize: "0.9rem", fontWeight: 900, color: "#34d399" }}>₹{earnedGross.toLocaleString("en-IN")}</span>
-                      </div>
-                      <div>
-                        <span style={{ display: "block", fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                          Unpaid Absences
-                          <span style={{ color: "#10b981", marginLeft: "0.3rem" }}>({freeLeaves} free)</span>
-                        </span>
-                        <span style={{ fontSize: "0.9rem", fontWeight: 800, color: unpaidAbsences > 0 ? "#fb7185" : "var(--text-muted)" }}>
-                          {unpaidAbsences} day{unpaidAbsences !== 1 ? "s" : ""}
-                        </span>
+
+                      {/* Detail Metrics Grid */}
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: "0.5rem", fontSize: "0.75rem" }}>
+                        <div style={{ padding: "0.4rem 0.6rem", background: "rgba(255,255,255,0.02)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.03)" }}>
+                          <span style={{ display: "block", fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Daily Wage</span>
+                          <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#fff" }}>₹{dailyWage}</span>
+                        </div>
+                        <div style={{ padding: "0.4rem 0.6rem", background: "rgba(255,255,255,0.02)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.03)" }}>
+                          <span style={{ display: "block", fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Days Worked</span>
+                          <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#10b981" }}>{daysPresent} / {totalDays}</span>
+                        </div>
+                        <div style={{ padding: "0.4rem 0.6rem", background: "rgba(52,211,153,0.05)", borderRadius: "8px", border: "1px solid rgba(52,211,153,0.15)" }}>
+                          <span style={{ display: "block", fontSize: "0.58rem", color: "#34d399", fontWeight: 700, textTransform: "uppercase" }}>Paid Leaves</span>
+                          <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#34d399" }}>+{freeLeavesUsed}d (+₹{freeLeaveAmount})</span>
+                        </div>
+                        <div style={{ padding: "0.4rem 0.6rem", background: extraWeekendPenaltyDays > 0 ? "rgba(244,63,94,0.05)" : "rgba(255,255,255,0.02)", borderRadius: "8px", border: `1px solid ${extraWeekendPenaltyDays > 0 ? "rgba(244,63,94,0.15)" : "rgba(255,255,255,0.03)"}` }}>
+                          <span style={{ display: "block", fontSize: "0.58rem", color: extraWeekendPenaltyDays > 0 ? "#fb7185" : "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Weekend 1.5x</span>
+                          <span style={{ fontSize: "0.85rem", fontWeight: 800, color: extraWeekendPenaltyDays > 0 ? "#fb7185" : "var(--text-muted)" }}>
+                            {extraWeekendPenaltyDays > 0 ? `−${extraWeekendPenaltyDays}d (−₹${weekendPenaltyAmount})` : "0 penalty"}
+                          </span>
+                        </div>
+                        <div style={{ padding: "0.4rem 0.6rem", background: "rgba(56,189,248,0.06)", borderRadius: "8px", border: "1px solid rgba(56,189,248,0.2)" }}>
+                          <span style={{ display: "block", fontSize: "0.58rem", color: "#38bdf8", fontWeight: 800, textTransform: "uppercase" }}>Total Gross Earned</span>
+                          <span style={{ fontSize: "0.95rem", fontWeight: 900, color: "#38bdf8", fontFamily: "monospace" }}>₹{earnedGross.toLocaleString("en-IN")}</span>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Advance / Net Row */}
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap", padding: "0.65rem 0.85rem", background: "rgba(0,0,0,0.12)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.03)" }}>
+                    {/* Advance / Deductions & What Owner Pays Bar */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", flexWrap: "wrap", padding: "0.75rem 1rem", background: "rgba(0,0,0,0.2)", borderRadius: "14px", border: "1px solid rgba(255,255,255,0.04)" }}>
                       {/* Advance info */}
                       {advanceDebt > 0 ? (
-                        <div style={{ display: "flex", gap: "1.25rem", flex: 1, flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", gap: "1.1rem", flex: 1, flexWrap: "wrap" }}>
                           <div>
-                            <span style={{ display: "block", fontSize: "0.6rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Advance Debt</span>
-                            <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#fb923c" }}>₹{advanceDebt.toLocaleString("en-IN")}</span>
+                            <span style={{ display: "block", fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Advance Debt</span>
+                            <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#fb923c" }}>₹{advanceDebt.toLocaleString("en-IN")}</span>
                           </div>
                           <div>
-                            <span style={{ display: "block", fontSize: "0.6rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Recovered Now</span>
-                            <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#fb7185" }}>−₹{advanceDeducted.toLocaleString("en-IN")}</span>
+                            <span style={{ display: "block", fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Deducted Now</span>
+                            <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#fb7185" }}>−₹{advanceDeducted.toLocaleString("en-IN")}</span>
                           </div>
-                          {advanceDebt > advanceDeducted && (
+                          {remainingAdvance > 0 && (
                             <div>
-                              <span style={{ display: "block", fontSize: "0.6rem", color: "#f59e0b", fontWeight: 700, textTransform: "uppercase" }}>Carry-Forward</span>
-                              <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#f59e0b" }}>₹{(advanceDebt - advanceDeducted).toFixed(2)}</span>
+                              <span style={{ display: "block", fontSize: "0.58rem", color: "#f59e0b", fontWeight: 700, textTransform: "uppercase" }}>Carry Forward</span>
+                              <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#f59e0b" }}>₹{remainingAdvance.toLocaleString("en-IN")}</span>
                             </div>
                           )}
                           {pfEnabled && (
                             <div>
-                              <span style={{ display: "block", fontSize: "0.6rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>PF (12%)</span>
-                              <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#fb7185" }}>−₹{r.simplePf}</span>
+                              <span style={{ display: "block", fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>PF (12%)</span>
+                              <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#fb7185" }}>−₹{r.simplePf}</span>
                             </div>
                           )}
                         </div>
@@ -613,18 +660,18 @@ export default function PayrollCalculationPage() {
                           {pfEnabled && (
                             <div style={{ display: "inline-flex", gap: "0.5rem", alignItems: "center" }}>
                               <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>PF (12%)</span>
-                              <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#fb7185" }}>−₹{r.simplePf}</span>
+                              <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#fb7185" }}>−₹{r.simplePf}</span>
                             </div>
                           )}
-                          {!pfEnabled && <span style={{ fontSize: "0.75rem", color: "rgba(16,185,129,0.6)", fontWeight: 600 }}>✓ No advance debt</span>}
+                          {!pfEnabled && <span style={{ fontSize: "0.75rem", color: "rgba(16,185,129,0.7)", fontWeight: 700 }}>✓ Zero advance debt</span>}
                         </div>
                       )}
 
-                      {/* Net + actions */}
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginLeft: "auto" }}>
-                        <div style={{ textAlign: "right" }}>
-                          <span style={{ display: "block", fontSize: "0.6rem", color: "var(--text-muted)", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em" }}>Net Payable</span>
-                          <span style={{ fontSize: "1.5rem", fontWeight: 900, color: netToPay > 0 ? "#10b981" : "#fb7185", fontFamily: "monospace" }}>₹{netToPay.toLocaleString("en-IN")}</span>
+                      {/* Net Payable by Owner + Release Action */}
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.85rem", marginLeft: "auto" }}>
+                        <div style={{ textAlign: "right", padding: "0.35rem 0.75rem", background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: "10px" }}>
+                          <span style={{ display: "block", fontSize: "0.58rem", color: "#10b981", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em" }}>Owner Has to Pay</span>
+                          <span style={{ fontSize: "1.45rem", fontWeight: 900, color: netToPay > 0 ? "#10b981" : "#fb7185", fontFamily: "monospace" }}>₹{netToPay.toLocaleString("en-IN")}</span>
                         </div>
                         <button className="btn-modern btn-primary" onClick={() => handleRelease(r)} style={{ padding: "0.65rem 1.4rem", fontSize: "0.82rem", fontWeight: 800, whiteSpace: "nowrap" }}>
                           Release →
@@ -638,23 +685,23 @@ export default function PayrollCalculationPage() {
                       <button
                         type="button"
                         onClick={() => setAuditModal(r)}
-                        style={{ flex: 1, padding: "0.5rem 0.6rem", background: "linear-gradient(135deg, rgba(16,185,129,0.15), rgba(6,182,212,0.15))", border: "1px solid rgba(16,185,129,0.25)", borderRadius: "10px", cursor: "pointer", fontSize: "0.72rem", fontWeight: 700, color: "#34d399", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.35rem", transition: "all 0.2s" }}
-                        onMouseEnter={e => { e.currentTarget.style.background = "linear-gradient(135deg, rgba(16,185,129,0.28), rgba(6,182,212,0.28))"; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = "linear-gradient(135deg, rgba(16,185,129,0.15), rgba(6,182,212,0.15))"; }}
+                        style={{ flex: 1, padding: "0.55rem 0.6rem", background: "linear-gradient(135deg, rgba(16,185,129,0.12), rgba(6,182,212,0.12))", border: "1px solid rgba(16,185,129,0.25)", borderRadius: "10px", cursor: "pointer", fontSize: "0.74rem", fontWeight: 800, color: "#34d399", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.35rem", transition: "all 0.2s" }}
+                        onMouseEnter={e => { e.currentTarget.style.background = "linear-gradient(135deg, rgba(16,185,129,0.25), rgba(6,182,212,0.25))"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = "linear-gradient(135deg, rgba(16,185,129,0.12), rgba(6,182,212,0.12))"; }}
                       >🧾 Salary Audit Trail</button>
 
                       {/* Activity */}
                       <button
                         type="button"
                         onClick={() => setActivityModal({ id: r.staffId, name: r.name })}
-                        style={{ flex: 1, padding: "0.5rem 0.6rem", background: "linear-gradient(135deg, rgba(6,182,212,0.15), rgba(59,130,246,0.15))", border: "1px solid rgba(6,182,212,0.25)", borderRadius: "10px", cursor: "pointer", fontSize: "0.72rem", fontWeight: 700, color: "#67e8f9", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.35rem", transition: "all 0.2s" }}
-                        onMouseEnter={e => { e.currentTarget.style.background = "linear-gradient(135deg, rgba(6,182,212,0.28), rgba(59,130,246,0.28))"; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = "linear-gradient(135deg, rgba(6,182,212,0.15), rgba(59,130,246,0.15))"; }}
+                        style={{ flex: 1, padding: "0.55rem 0.6rem", background: "linear-gradient(135deg, rgba(6,182,212,0.12), rgba(59,130,246,0.12))", border: "1px solid rgba(6,182,212,0.25)", borderRadius: "10px", cursor: "pointer", fontSize: "0.74rem", fontWeight: 800, color: "#67e8f9", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.35rem", transition: "all 0.2s" }}
+                        onMouseEnter={e => { e.currentTarget.style.background = "linear-gradient(135deg, rgba(6,182,212,0.25), rgba(59,130,246,0.25))"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = "linear-gradient(135deg, rgba(6,182,212,0.12), rgba(59,130,246,0.12))"; }}
                       >📋 Monthly Activity</button>
 
                       {/* Profile */}
                       <Link href={`/admin/staff/${r.staffId}`}
-                        style={{ flex: 1, padding: "0.5rem 0.6rem", background: `linear-gradient(135deg, ${c1}15, ${c2}15)`, border: `1px solid ${c1}22`, borderRadius: "10px", fontSize: "0.72rem", fontWeight: 700, color: c1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.35rem", transition: "all 0.2s" }}
+                        style={{ flex: 1, padding: "0.55rem 0.6rem", background: `linear-gradient(135deg, ${c1}15, ${c2}15)`, border: `1px solid ${c1}25`, borderRadius: "10px", fontSize: "0.74rem", fontWeight: 800, color: c1, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.35rem", transition: "all 0.2s" }}
                         onMouseEnter={e => { e.currentTarget.style.background = `linear-gradient(135deg, ${c1}28, ${c2}28)`; }}
                         onMouseLeave={e => { e.currentTarget.style.background = `linear-gradient(135deg, ${c1}15, ${c2}15)`; }}
                       >👤 Profile</Link>

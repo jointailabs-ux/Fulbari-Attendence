@@ -284,7 +284,7 @@ export default function AttendanceTab({ staffId }: { staffId: string }) {
                 <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)', marginBottom: '2rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
                     <span style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)' }}>STATUS</span>
-                    <span style={{ fontWeight: '800', color: getStatusColor(selectedDate.data.status) }}>{selectedDate.data.status}</span>
+                    <span style={{ fontWeight: '800', color: getStatusColor(selectedDate.data.status || '') }}>{selectedDate.data.status}</span>
                   </div>
                   {selectedDate.data.startTime && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
@@ -334,7 +334,7 @@ export default function AttendanceTab({ staffId }: { staffId: string }) {
                   <button className="btn-modern" style={{ background: 'rgba(244, 63, 94, 0.1)', color: 'var(--brand-secondary)', border: '1px solid rgba(244, 63, 94, 0.2)' }} onClick={() => handleMarkLeave('FULL')}>Full Absence</button>
                   <button className="btn-modern" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.2)' }} onClick={() => handleMarkLeave('HALF')}>Partial Leave</button>
                 </div>
-                {selectedDate.data?.status.includes('LEAVE') && (
+                {selectedDate.data?.status?.includes('LEAVE') && (
                    <button className="btn-modern btn-secondary" style={{ width: '100%' }} onClick={handleDeleteLeave}>Purge Leave Override</button>
                 )}
               </div>
