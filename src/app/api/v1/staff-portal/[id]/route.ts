@@ -60,7 +60,8 @@ export async function GET(
     );
 
     const freeLeaves = 4;
-    const paidDays = presentDays > 0 ? presentDays + freeLeaves : 0;
+    const isMonthCompleted = istTime.getUTCDate() >= totalDays;
+    const paidDays = isMonthCompleted ? (presentDays > 0 ? presentDays + freeLeaves : 0) : presentDays;
     const dailyWage = totalDays > 0 ? parseFloat((staff.monthlySalary / totalDays).toFixed(2)) : 0;
     const earnedTillNow = parseFloat((dailyWage * paidDays).toFixed(2));
     const advanceToRecover = Math.min(pendingAdvance, earnedTillNow);

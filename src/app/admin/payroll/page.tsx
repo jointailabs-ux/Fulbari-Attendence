@@ -26,10 +26,11 @@ function Avatar({ name, index }: { name: string; index: number }) {
 function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onClose: () => void }) {
   const totalDays = r.metrics.totalDaysInMonth;
   const daysElapsed = r.metrics.daysElapsed ?? totalDays;
+  const isMonthCompleted = r.metrics.isMonthCompleted ?? (daysElapsed >= totalDays);
   const dailyWage = parseFloat(r.metrics.dailyWage.toFixed(2));
   const daysPresent = r.metrics.daysPresent;
   const freeLeaves = r.metrics.freeLeaves ?? 4;
-  const paidDays = r.metrics.paidDays ?? (daysPresent > 0 ? daysPresent + freeLeaves : 0);
+  const paidDays = r.metrics.paidDays ?? (isMonthCompleted ? (daysPresent > 0 ? daysPresent + freeLeaves : 0) : daysPresent);
   const absentDays = Math.max(0, daysElapsed - daysPresent);
   const unpaidAbsences = r.metrics.unexcusedAbsences !== undefined
     ? r.metrics.unexcusedAbsences
@@ -44,7 +45,7 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
   const auditSteps = [
     {
       icon: "💼", label: "Monthly Base Salary", value: `₹${r.monthlySalary.toLocaleString("en-IN")}`,
-      note: `Fixed package for ${totalDays - freeLeaves} working shifts + ${freeLeaves} paid leaves`, color: "#10b981", sign: null,
+      note: `Fixed package (${totalDays} calendar days)`, color: "#10b981", sign: null,
     },
     {
       icon: "📅", label: daysElapsed < totalDays ? "Days Elapsed (Cycle)" : "Total Days in Month",
@@ -58,16 +59,7 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
     },
     {
       icon: "✅", label: "Days Worked (Present)", value: `${daysPresent} days`,
-      note: "Number of shifts clocked in this month", color: "#10b981", sign: "+",
-    },
-    {
-      icon: "🎁", label: "Paid Leave Allowance", value: `+${freeLeaves} days`,
-      note: `${freeLeaves} paid leaves credited to all active staff`, color: "#34d399", sign: "+",
-    },
-    {
-      icon: "📊", label: "Total Paid Days", value: `${paidDays} days`,
-      note: `${daysPresent} worked + ${freeLeaves} paid leave allowance = ${paidDays} paid days`,
-      color: "#38bdf8", sign: "=",
+      note: "Number of shifts clocked in so far", color: "#10b981", sign: "+",
     },
     {
       icon: "🏖️", label: "Absent Days", value: `${absentDays} days`,
@@ -79,13 +71,25 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
       note: "Included in total absent days so far", color: "#fb923c", sign: null,
     },
     {
+      icon: "🎁", label: "Free Leave Allowance", value: `${freeLeaves} days`,
+      note: `${freeLeaves} paid leaves allowed per month (${absentDays} leaves used so far)`, color: "#34d399", sign: null,
+    },
+    {
       icon: "🚨", label: "Unpaid Absences", value: `${unpaidAbsences} day${unpaidAbsences !== 1 ? "s" : ""}`,
       note: unpaidAbsences > 0 ? `${absentDays} absent − ${freeLeaves} free = ${unpaidAbsences} unpaid` : "Within free leave limit — no deduction penalty",
       color: unpaidAbsences > 0 ? "#fb7185" : "#94a3b8", sign: unpaidAbsences > 0 ? "−" : null,
     },
+    ...(isMonthCompleted ? [{
+      icon: "📊", label: "Total Paid Days (Month-End)", value: `${paidDays} days`,
+      note: `${daysPresent} worked + ${freeLeaves} paid leave bonus = ${paidDays} paid days`,
+      color: "#38bdf8", sign: "=",
+    }] : []),
     {
       icon: "💰", label: "Gross Earned Salary", value: `₹${earnedGross.toLocaleString("en-IN")}`,
-      note: `₹${dailyWage} × ${paidDays} paid days`, color: "#34d399", sign: "=",
+      note: isMonthCompleted
+        ? `₹${dailyWage} × ${paidDays} paid days (including leave bonus)`
+        : `₹${dailyWage} × ${daysPresent} days worked to date`,
+      color: "#34d399", sign: "=",
     },
     ...(pf > 0 ? [{
       icon: "🏛️", label: "PF Deduction (12%)", value: `-₹${pf.toFixed(2)}`,
@@ -483,10 +487,11 @@ export default function PayrollCalculationPage() {
                 const [c1, c2] = GRAD_PALETTES[idx % GRAD_PALETTES.length];
                 const totalDays = r.metrics.totalDaysInMonth;
                 const daysElapsed = r.metrics.daysElapsed ?? totalDays;
+                const isMonthCompleted = r.metrics.isMonthCompleted ?? (daysElapsed >= totalDays);
                 const dailyWage = parseFloat(r.metrics.dailyWage.toFixed(2));
                 const daysPresent = r.metrics.daysPresent;
                 const freeLeaves = r.metrics.freeLeaves ?? 4;
-                const paidDays = r.metrics.paidDays ?? (daysPresent > 0 ? daysPresent + freeLeaves : 0);
+                const paidDays = r.metrics.paidDays ?? (isMonthCompleted ? (daysPresent > 0 ? daysPresent + freeLeaves : 0) : daysPresent);
                 const absentDays = Math.max(0, daysElapsed - daysPresent);
                 const unpaidAbsences = r.metrics.unexcusedAbsences !== undefined
                   ? r.metrics.unexcusedAbsences
@@ -534,13 +539,6 @@ export default function PayrollCalculationPage() {
                       <div>
                         <span style={{ display: "block", fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>Days Worked</span>
                         <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#10b981" }}>{daysPresent} / {totalDays}</span>
-                      </div>
-                      <div>
-                        <span style={{ display: "block", fontSize: "0.58rem", color: "#38bdf8", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>Paid Days</span>
-                        <span style={{ fontSize: "0.9rem", fontWeight: 800, color: "#38bdf8" }}>{paidDays} days</span>
-                        <div style={{ fontSize: "0.55rem", color: "#34d399", marginTop: "0.15rem", fontWeight: 700 }}>
-                           ({daysPresent} wrk + {freeLeaves} paid)
-                        </div>
                       </div>
                       <div>
                         <span style={{ display: "block", fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>Absent Days</span>

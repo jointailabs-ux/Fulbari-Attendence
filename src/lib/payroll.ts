@@ -11,6 +11,7 @@ export interface PayrollDetails {
   earnedTillNow: number; // R_day * paidDays
   totalDaysInMonth: number; // D_total
   daysElapsed: number; // Days passed in current cycle
+  isMonthCompleted: boolean; // True if full calendar month cycle has concluded
   daysPresent: number; // D_present
   freeLeaves: number; // Free paid leave allowance (e.g. 4)
   fullLeaves: number; // L_full
@@ -97,9 +98,14 @@ export function calculateSalaryMetrics(
 ) {
   const R_day = baseSalary / totalDays;
   const FREE_LEAVES = 4;
+  const isMonthCompleted = daysElapsed >= totalDays;
   
-  // Paid days = present shifts + 4 free paid leaves allowance (if staff worked any shifts)
-  const paidDays = presentCount > 0 ? presentCount + FREE_LEAVES : 0;
+  // During an ongoing month (mid-month), earnings are strictly for shifts worked to date (no future leave encashment in advance)
+  // At month-end (completed cycle), staff receive the full 4 paid leaves allowance / unused leave encashment
+  const paidDays = isMonthCompleted
+    ? (presentCount > 0 ? presentCount + FREE_LEAVES : 0)
+    : presentCount;
+    
   const earnedGross = parseFloat((R_day * paidDays).toFixed(2));
   
   const leavesTaken = Math.max(0, daysElapsed - presentCount);
@@ -119,6 +125,7 @@ export function calculateSalaryMetrics(
     earnedTillNow: earnedGross,
     paidDays,
     freeLeaves: FREE_LEAVES,
+    isMonthCompleted,
     unexcusedAbsences: deductibleLeaves,
     penaltyAbsence: deductibleLeaves * R_day,
     leavesTaken,
@@ -328,6 +335,7 @@ export async function calculateStaffPayroll(
     earnedTillNow: metrics.earnedTillNow,
     totalDaysInMonth: D_total,
     daysElapsed,
+    isMonthCompleted: metrics.isMonthCompleted,
     daysPresent: D_present,
     freeLeaves: metrics.freeLeaves,
     fullLeaves: metrics.leavesTaken,
