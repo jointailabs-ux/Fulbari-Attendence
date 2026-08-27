@@ -124,36 +124,29 @@ export function calculateSalaryMetrics(
   const FREE_LEAVES = 4;
   const isMonthCompleted = daysElapsed >= totalDays;
   
+  // 1. Core money earned: Daily Wage * Days Worked
+  const workedGross = parseFloat((presentCount * R_day).toFixed(2));
+  
+  // 2. Absence analysis
   const rawAbsences = Math.max(0, (isMonthCompleted ? totalDays : daysElapsed) - presentCount);
-  const extraWeekendPenaltyDays = Math.max(0, parseFloat((weightedLeavesTaken - rawAbsences).toFixed(2)));
+  
+  // Extra weekend/occasion 1.5x penalty days (weighted leaves minus raw calendar absences)
+  // E.g. 22.5 weighted - 20 raw = 2.5 extra penalty days from weekend/occasion absences.
+  // 4 Free leaves cover normal absences or absorb penalty if within 4 leaves.
+  let extraWeekendPenaltyDays = 0;
+  if (weightedLeavesTaken > FREE_LEAVES && rawAbsences > 0) {
+    const rawExtra = parseFloat((weightedLeavesTaken - rawAbsences).toFixed(2));
+    extraWeekendPenaltyDays = Math.max(0, Math.min(rawExtra, parseFloat((weightedLeavesTaken - FREE_LEAVES).toFixed(2))));
+  }
   const weekendPenaltyAmount = parseFloat((extraWeekendPenaltyDays * R_day).toFixed(2));
   
-  // Deductible leaves beyond the 4 free leave allowance for the cycle
+  // Unexcused absences beyond 4 free leaves
   const unexcusedAbsences = Math.max(0, parseFloat((weightedLeavesTaken - FREE_LEAVES).toFixed(2)));
   const penaltyAbsence = parseFloat((unexcusedAbsences * R_day).toFixed(2));
   
-  const workedGross = parseFloat((presentCount * R_day).toFixed(2));
-  const freeLeavesUsed = Math.min(FREE_LEAVES, rawAbsences);
-  const freeLeaveAmount = parseFloat((freeLeavesUsed * R_day).toFixed(2));
-  
-  // Paid Days & Gross Earned Calculation:
-  let paidDays = 0;
-  let earnedGross = 0;
-
-  if (presentCount === 0) {
-    paidDays = 0;
-    earnedGross = 0;
-  } else if (isMonthCompleted) {
-    // Month is finished: Paid days = Total days minus unexcused absences (capped at totalDays)
-    paidDays = Math.max(0, parseFloat((totalDays - unexcusedAbsences).toFixed(2)));
-    earnedGross = parseFloat((paidDays * R_day).toFixed(2));
-  } else {
-    // Ongoing month (mid-cycle):
-    // Staff earns for days worked + free leaves allowance (up to 4) - extra weekend penalty (1.5x)
-    const effectiveDays = Math.max(0, parseFloat((presentCount + freeLeavesUsed - extraWeekendPenaltyDays).toFixed(2)));
-    paidDays = Math.min(effectiveDays, daysElapsed);
-    earnedGross = parseFloat((paidDays * R_day).toFixed(2));
-  }
+  // Gross Earned = Money earned from days worked MINUS extra weekend penalty (if any)
+  const earnedGross = presentCount > 0 ? Math.max(0, parseFloat((workedGross - weekendPenaltyAmount).toFixed(2))) : 0;
+  const paidDays = presentCount > 0 ? Math.max(0, parseFloat((presentCount - extraWeekendPenaltyDays).toFixed(2))) : 0;
   
   const S_earned_simple = earnedGross;
   const A_deducted_simple = Math.min(pendingAdvancesAmt, S_earned_simple);
@@ -167,8 +160,8 @@ export function calculateSalaryMetrics(
   return {
     dailyWage: R_day,
     workedGross,
-    freeLeavesUsed,
-    freeLeaveAmount,
+    freeLeavesUsed: Math.min(FREE_LEAVES, rawAbsences),
+    freeLeaveAmount: 0,
     extraWeekendPenaltyDays,
     weekendPenaltyAmount,
     rawAbsences,
