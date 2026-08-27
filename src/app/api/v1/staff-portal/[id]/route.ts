@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '../../../../../lib/prisma';
+import { calculateStaffPayroll } from '../../../../../lib/payroll';
 
 // GET /api/v1/staff-portal/[id] — returns full self-service data for the employee
 export async function GET(
@@ -35,23 +36,17 @@ export async function GET(
       return NextResponse.json({ error: 'Staff not found' }, { status: 404 });
     }
 
-    // Calculate current month summary
+    // Determine current month in IST
     const now = new Date();
     const istTime = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
     const currentMonth = istTime.toISOString().slice(0, 7);
-    const startDate = new Date(`${currentMonth}-01`);
-    const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0, 23, 59, 59);
 
-    const thisMonthAttendances = staff.attendances.filter(a => {
-      const d = new Date(a.shiftDate);
-      return d >= startDate && d <= endDate;
-    });
+    // Calculate exact payroll using the shared engine
+    const payroll = await calculateStaffPayroll(staff.id, currentMonth);
 
-    const presentDays = thisMonthAttendances.filter(a => a.state === 'SHIFT_ENDED').length;
-    const totalDays = endDate.getDate();
-    const pendingAdvance = staff.advances
-      .filter(a => a.status === 'PENDING')
-      .reduce((sum, a) => sum + a.amount, 0);
+    const simpleEarned = payroll.simple.earnedSalary;
+    const simpleAdvanceDeducted = Math.min(payroll.pendingAdvances, simpleEarned);
+    const simpleNet = Math.max(0, parseFloat((simpleEarned - simpleAdvanceDeducted).toFixed(2)));
 
     // Today's attendance
     const todayStr = istTime.toISOString().slice(0, 10);
@@ -59,38 +54,81 @@ export async function GET(
       new Date(a.shiftDate).toISOString().slice(0, 10) === todayStr
     );
 
-    const freeLeaves = 4;
-    const isMonthCompleted = istTime.getUTCDate() >= totalDays;
-    const paidDays = isMonthCompleted ? (presentDays > 0 ? presentDays + freeLeaves : 0) : presentDays;
-    const dailyWage = totalDays > 0 ? parseFloat((staff.monthlySalary / totalDays).toFixed(2)) : 0;
-    const earnedTillNow = parseFloat((dailyWage * paidDays).toFixed(2));
-    const advanceToRecover = Math.min(pendingAdvance, earnedTillNow);
-    const netPayable = Math.max(0, earnedTillNow - advanceToRecover);
-    
     const activeAdvances = staff.advances.filter(a => a.status === 'PENDING').map(a => ({
-      date: a.date,
-      amount: a.amount
+      date: a.date.toISOString(),
+      amount: a.amount,
+      reason: "Cash Advance"
     }));
 
     // Return safe data without hashedPin
     const { hashedPin, ...safeStaff } = staff;
 
+    const metrics = {
+      totalDaysInMonth: payroll.totalDaysInMonth,
+      daysElapsed: payroll.daysElapsed,
+      isMonthCompleted: payroll.isMonthCompleted,
+      dailyWage: payroll.dailyWage,
+      earnedTillNow: payroll.earnedTillNow,
+      daysPresent: payroll.daysPresent,
+      workedGross: payroll.workedGross,
+      paidDays: payroll.paidDays,
+      freeLeaves: payroll.freeLeaves,
+      freeLeavesUsed: payroll.freeLeavesUsed,
+      freeLeaveAmount: payroll.freeLeaveAmount,
+      extraWeekendPenaltyDays: payroll.extraWeekendPenaltyDays,
+      weekendPenaltyAmount: payroll.weekendPenaltyAmount,
+      rawAbsences: payroll.rawAbsences,
+      fullLeaves: payroll.fullLeaves,
+      halfLeaves: payroll.halfLeaves,
+      weightedLeavesTaken: payroll.weightedLeavesTaken,
+      normalAbsences: payroll.normalAbsences,
+      unexcusedAbsences: payroll.unexcusedAbsences,
+      penaltyLate: payroll.penaltyLate,
+      penaltyEarly: payroll.penaltyEarly,
+      penaltyAbsence: payroll.penaltyAbsence
+    };
+
     return NextResponse.json({
       ...safeStaff,
+      payrollRecord: {
+        name: payroll.name,
+        month: payroll.monthYear,
+        monthlySalary: payroll.monthlySalary,
+        dailyWage: payroll.dailyWage,
+        simpleRaw: simpleEarned.toFixed(2),
+        simpleFinal: simpleNet.toFixed(2),
+        simpleAdvanceDeducted: simpleAdvanceDeducted.toFixed(2),
+        totalAdvance: payroll.pendingAdvances.toFixed(2),
+        metrics,
+        weekendAbsences: payroll.weekendAbsences,
+        occasionAbsences: payroll.occasionAbsences,
+        absentBreakdown: payroll.absentBreakdown
+      },
       currentMonth: {
         month: currentMonth,
-        presentDays,
-        paidDays,
-        freeLeaves,
-        totalDays,
-        dailyWage,
-        earnedTillNow,
-        attendancePercent: totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0,
-        pendingAdvance,
-        advanceToRecover,
-        netPayable,
+        presentDays: payroll.daysPresent,
+        paidDays: payroll.paidDays,
+        freeLeaves: payroll.freeLeaves,
+        totalDays: payroll.totalDaysInMonth,
+        dailyWage: payroll.dailyWage,
+        workedGross: payroll.workedGross,
+        earnedGross: simpleEarned,
+        earnedTillNow: simpleEarned,
+        attendancePercent: payroll.totalDaysInMonth > 0 ? Math.round((payroll.daysPresent / payroll.totalDaysInMonth) * 100) : 0,
+        pendingAdvance: payroll.pendingAdvances,
+        advanceToRecover: simpleAdvanceDeducted,
+        netPayable: simpleNet,
         activeAdvances,
-        todayStatus: todayRecord?.state || 'NOT_STARTED'
+        todayStatus: todayRecord?.state || 'NOT_STARTED',
+        weekendAbsences: payroll.weekendAbsences,
+        occasionAbsences: payroll.occasionAbsences,
+        extraWeekendPenaltyDays: payroll.extraWeekendPenaltyDays,
+        weekendPenaltyAmount: payroll.weekendPenaltyAmount,
+        rawAbsences: payroll.rawAbsences,
+        normalAbsences: payroll.normalAbsences,
+        unexcusedAbsences: payroll.unexcusedAbsences,
+        metrics,
+        absentBreakdown: payroll.absentBreakdown
       }
     });
   } catch (error) {
