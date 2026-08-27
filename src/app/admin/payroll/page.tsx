@@ -25,11 +25,14 @@ function Avatar({ name, index }: { name: string; index: number }) {
 // ─── Audit Trail Modal ────────────────────────────────────────────────────────
 function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onClose: () => void }) {
   const totalDays = r.metrics.totalDaysInMonth;
+  const daysElapsed = r.metrics.daysElapsed ?? totalDays;
   const dailyWage = parseFloat(r.metrics.dailyWage.toFixed(2));
   const daysPresent = r.metrics.daysPresent;
-  const absentDays = totalDays - daysPresent;
+  const absentDays = Math.max(0, daysElapsed - daysPresent);
   const freeLeaves = 4;
-  const unpaidAbsences = Math.max(0, absentDays - freeLeaves);
+  const unpaidAbsences = r.metrics.unexcusedAbsences !== undefined
+    ? r.metrics.unexcusedAbsences
+    : Math.max(0, absentDays - freeLeaves);
   const earnedGross = parseFloat((dailyWage * daysPresent).toFixed(2));
   const advanceDebt = parseFloat(r.totalAdvance);
   const advanceDeducted = parseFloat(r.simpleAdvanceDeducted);
@@ -43,8 +46,10 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
       note: "Fixed monthly package", color: "#10b981", sign: null,
     },
     {
-      icon: "📅", label: "Total Days in Month", value: `${totalDays} days`,
-      note: "Calendar days for this cycle", color: "#06b6d4", sign: null,
+      icon: "📅", label: daysElapsed < totalDays ? "Days Elapsed (Cycle)" : "Total Days in Month",
+      value: daysElapsed < totalDays ? `${daysElapsed} / ${totalDays} days` : `${totalDays} days`,
+      note: daysElapsed < totalDays ? `Current progress as of day ${daysElapsed} of ${totalDays}` : "Calendar days for this cycle",
+      color: "#06b6d4", sign: null,
     },
     {
       icon: "⚡", label: "Daily Wage Rate", value: `₹${dailyWage}`,
@@ -56,11 +61,12 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
     },
     {
       icon: "🏖️", label: "Absent Days", value: `${absentDays} days`,
-      note: `${totalDays} total − ${daysPresent} worked`, color: "#94a3b8", sign: null,
+      note: daysElapsed < totalDays ? `${daysElapsed} elapsed − ${daysPresent} worked` : `${totalDays} total − ${daysPresent} worked`,
+      color: "#94a3b8", sign: null,
     },
     {
       icon: "📅", label: "Weekend Absences", value: `${r.weekendAbsences?.saturdays || 0} Sat, ${r.weekendAbsences?.sundays || 0} Sun`,
-      note: "Included in total absent days", color: "#fb923c", sign: null,
+      note: "Included in total absent days so far", color: "#fb923c", sign: null,
     },
     {
       icon: "🎁", label: "Free Leave Allowance", value: `${freeLeaves} days`,
@@ -470,11 +476,14 @@ export default function PayrollCalculationPage() {
               {pendingDrafts.map((r: any, idx: number) => {
                 const [c1, c2] = GRAD_PALETTES[idx % GRAD_PALETTES.length];
                 const totalDays = r.metrics.totalDaysInMonth;
+                const daysElapsed = r.metrics.daysElapsed ?? totalDays;
                 const dailyWage = parseFloat(r.metrics.dailyWage.toFixed(2));
                 const daysPresent = r.metrics.daysPresent;
-                const absentDays = totalDays - daysPresent;
+                const absentDays = Math.max(0, daysElapsed - daysPresent);
                 const freeLeaves = 4;
-                const unpaidAbsences = Math.max(0, absentDays - freeLeaves);
+                const unpaidAbsences = r.metrics.unexcusedAbsences !== undefined
+                  ? r.metrics.unexcusedAbsences
+                  : Math.max(0, absentDays - freeLeaves);
                 const earnedGross = parseFloat((dailyWage * daysPresent).toFixed(2));
                 const advanceDebt = parseFloat(r.totalAdvance);
                 const advanceDeducted = parseFloat(r.simpleAdvanceDeducted);

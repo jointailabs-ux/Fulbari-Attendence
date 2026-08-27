@@ -10,6 +10,7 @@ export interface PayrollDetails {
   dailyWage: number; // R_day
   earnedTillNow: number; // R_day * D_present
   totalDaysInMonth: number; // D_total
+  daysElapsed: number; // Days passed in current cycle
   daysPresent: number; // D_present
   fullLeaves: number; // L_full
   halfLeaves: number; // L_half
@@ -296,7 +297,7 @@ export async function calculateStaffPayroll(
   );
   let absentSaturdays = 0;
   let absentSundays = 0;
-  for (let day = 1; day <= D_total; day++) {
+  for (let day = 1; day <= daysElapsed; day++) {
     const d = new Date(Date.UTC(year, month - 1, day));
     const dow = d.getUTCDay(); // 0=Sun, 6=Sat
     const dateStr = d.toISOString().split('T')[0];
@@ -314,6 +315,7 @@ export async function calculateStaffPayroll(
     dailyWage: parseFloat(metrics.dailyWage.toFixed(2)),
     earnedTillNow: metrics.earnedTillNow,
     totalDaysInMonth: D_total,
+    daysElapsed,
     daysPresent: D_present,
     fullLeaves: metrics.leavesTaken,
     halfLeaves: L_half,
