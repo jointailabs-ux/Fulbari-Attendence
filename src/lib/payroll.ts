@@ -118,7 +118,8 @@ export function calculateSalaryMetrics(
   pendingAdvancesAmt: number,
   latePenaltiesTotal: number,
   earlyPenaltiesTotal: number,
-  daysElapsed: number = totalDays
+  daysElapsed: number = totalDays,
+  specialAbsentDays: number = 0
 ) {
   const R_day = totalDays > 0 ? baseSalary / totalDays : 0;
   const FREE_LEAVES = 4;
@@ -130,21 +131,15 @@ export function calculateSalaryMetrics(
   // 2. Absence analysis
   const rawAbsences = Math.max(0, (isMonthCompleted ? totalDays : daysElapsed) - presentCount);
   
-  // Extra weekend/occasion 1.5x penalty days (weighted leaves minus raw calendar absences)
-  // E.g. 22.5 weighted - 20 raw = 2.5 extra penalty days from weekend/occasion absences.
-  // 4 Free leaves cover normal absences or absorb penalty if within 4 leaves.
-  let extraWeekendPenaltyDays = 0;
-  if (weightedLeavesTaken > FREE_LEAVES && rawAbsences > 0) {
-    const rawExtra = parseFloat((weightedLeavesTaken - rawAbsences).toFixed(2));
-    extraWeekendPenaltyDays = Math.max(0, Math.min(rawExtra, parseFloat((weightedLeavesTaken - FREE_LEAVES).toFixed(2))));
-  }
+  // Weekend & Occasion Penalty: 1.5 days salary cut for each weekend/occasion absent day
+  const extraWeekendPenaltyDays = parseFloat((specialAbsentDays * 1.5).toFixed(2));
   const weekendPenaltyAmount = parseFloat((extraWeekendPenaltyDays * R_day).toFixed(2));
   
   // Unexcused absences beyond 4 free leaves
   const unexcusedAbsences = Math.max(0, parseFloat((weightedLeavesTaken - FREE_LEAVES).toFixed(2)));
   const penaltyAbsence = parseFloat((unexcusedAbsences * R_day).toFixed(2));
   
-  // Gross Earned = Money earned from days worked MINUS extra weekend penalty (if any)
+  // Gross Earned = Money earned from days worked MINUS weekend/occasion penalty
   const earnedGross = presentCount > 0 ? Math.max(0, parseFloat((workedGross - weekendPenaltyAmount).toFixed(2))) : 0;
   const paidDays = presentCount > 0 ? Math.max(0, parseFloat((presentCount - extraWeekendPenaltyDays).toFixed(2))) : 0;
   
@@ -428,7 +423,8 @@ export async function calculateStaffPayroll(
     A_pending,
     penaltyLate,
     penaltyEarly,
-    daysElapsed
+    daysElapsed,
+    absentSaturdays + absentSundays + occasionAbsencesList.length
   );
 
   return {

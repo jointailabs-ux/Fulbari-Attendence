@@ -32,10 +32,15 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
   const freeLeaves = r.metrics.freeLeaves ?? 4;
   
   const rawAbsentDays = r.metrics.rawAbsences ?? (r.metrics.fullLeaves ?? Math.max(0, daysElapsed - daysPresent));
-  const weightedLeaves = r.metrics.weightedLeavesTaken ?? rawAbsentDays;
-  const extraWeekendPenaltyDays = r.metrics.extraWeekendPenaltyDays ?? Math.max(0, parseFloat((weightedLeaves - rawAbsentDays).toFixed(2)));
+  const satCount = r.weekendAbsences?.saturdays || 0;
+  const sunCount = r.weekendAbsences?.sundays || 0;
+  const occCount = r.occasionAbsences?.count || 0;
+  const specialAbsentCount = satCount + sunCount + occCount;
+
+  const extraWeekendPenaltyDays = r.metrics.extraWeekendPenaltyDays ?? parseFloat((specialAbsentCount * 1.5).toFixed(2));
   const weekendPenaltyAmount = parseFloat((r.metrics.weekendPenaltyAmount ?? (extraWeekendPenaltyDays * dailyWage)).toFixed(2));
 
+  const weightedLeaves = r.metrics.weightedLeavesTaken ?? rawAbsentDays;
   const normalAbsences = r.metrics.normalAbsences ?? Math.max(0, rawAbsentDays - (r.weekendAbsences?.total || 0) - (r.occasionAbsences?.count || 0));
   const unpaidAbsences = r.metrics.unexcusedAbsences !== undefined
     ? r.metrics.unexcusedAbsences
@@ -47,10 +52,6 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
   const remainingAdvance = parseFloat(Math.max(0, advanceDebt - advanceDeducted).toFixed(2));
   const pf = pfEnabled ? parseFloat(r.simplePf) : 0;
   const netPayable = parseFloat(r.simpleFinal);
-
-  const satCount = r.weekendAbsences?.saturdays || 0;
-  const sunCount = r.weekendAbsences?.sundays || 0;
-  const occCount = r.occasionAbsences?.count || 0;
 
   return (
     <div
@@ -152,13 +153,13 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
               {/* Weekend 1.5x penalty if any */}
               {extraWeekendPenaltyDays > 0 ? (
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.7rem", padding: "0.3rem 0.5rem", background: "rgba(244,63,94,0.08)", borderRadius: "6px", color: "#fb7185" }}>
-                  <span>⚖️ Weekend 1.5x Penalty ({satCount} Sat, {sunCount} Sun = {extraWeekendPenaltyDays}d extra)</span>
+                  <span>⚖️ Weekend & Occasion Penalty ({specialAbsentCount} days absent × 1.5 = {extraWeekendPenaltyDays}d salary cut)</span>
                   <span style={{ fontWeight: 800, fontFamily: "monospace" }}>− ₹{weekendPenaltyAmount.toLocaleString("en-IN")}</span>
                 </div>
               ) : (
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.7rem", padding: "0.3rem 0.5rem", background: "rgba(255,255,255,0.03)", borderRadius: "6px", color: "var(--text-muted)" }}>
-                  <span>⚖️ Weekend 1.5x Penalty</span>
-                  <span>None (Zero extra weekend penalty)</span>
+                  <span>⚖️ Weekend & Occasion 1.5x Penalty</span>
+                  <span>None (Zero weekend absences)</span>
                 </div>
               )}
             </div>
@@ -532,10 +533,15 @@ export default function PayrollCalculationPage() {
                 const freeLeaves = r.metrics.freeLeaves ?? 4;
                 
                 const rawAbsentDays = r.metrics.rawAbsences ?? (r.metrics.fullLeaves ?? Math.max(0, daysElapsed - daysPresent));
-                const weightedLeaves = r.metrics.weightedLeavesTaken ?? rawAbsentDays;
-                const extraWeekendPenaltyDays = r.metrics.extraWeekendPenaltyDays ?? Math.max(0, parseFloat((weightedLeaves - rawAbsentDays).toFixed(2)));
+                const satCount = r.weekendAbsences?.saturdays || 0;
+                const sunCount = r.weekendAbsences?.sundays || 0;
+                const occCount = r.occasionAbsences?.count || 0;
+                const specialAbsentCount = satCount + sunCount + occCount;
+
+                const extraWeekendPenaltyDays = r.metrics.extraWeekendPenaltyDays ?? parseFloat((specialAbsentCount * 1.5).toFixed(2));
                 const weekendPenaltyAmount = parseFloat((r.metrics.weekendPenaltyAmount ?? (extraWeekendPenaltyDays * dailyWage)).toFixed(2));
 
+                const weightedLeaves = r.metrics.weightedLeavesTaken ?? rawAbsentDays;
                 const normalAbsences = r.metrics.normalAbsences ?? Math.max(0, rawAbsentDays - (r.weekendAbsences?.total || 0) - (r.occasionAbsences?.count || 0));
                 const unpaidAbsences = r.metrics.unexcusedAbsences !== undefined
                   ? r.metrics.unexcusedAbsences
@@ -546,10 +552,6 @@ export default function PayrollCalculationPage() {
                 const advanceDeducted = parseFloat(r.simpleAdvanceDeducted);
                 const remainingAdvance = parseFloat(Math.max(0, advanceDebt - advanceDeducted).toFixed(2));
                 const netToPay = parseFloat(r.simpleFinal);
-
-                const satCount = r.weekendAbsences?.saturdays || 0;
-                const sunCount = r.weekendAbsences?.sundays || 0;
-                const occCount = r.occasionAbsences?.count || 0;
 
                 return (
                   <div key={r.staffId}
