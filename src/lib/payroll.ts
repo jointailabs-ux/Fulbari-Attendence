@@ -1,4 +1,4 @@
-﻿// src/lib/payroll.ts
+// src/lib/payroll.ts
 
 import prisma from './prisma';
 
@@ -155,11 +155,11 @@ export function calculateSalaryMetrics(
   // Shift pay: only for days actually worked
   const workedGross = parseFloat((presentCount * R_day).toFixed(2));
 
-  // Free leave monetary credit (informational)
+  // Free leave monetary credit (paid leave pay for covered absences)
   const freeLeaveAmount = parseFloat((freeLeavesUsed * R_day).toFixed(2));
 
-  // Earned gross = shift pay - excess penalty (CAN BE NEGATIVE)
-  const earnedGross = parseFloat((workedGross - penaltyAbsence).toFixed(2));
+  // Earned gross = Shift Pay + Paid Leave Credit − Excess Penalty (CAN BE NEGATIVE)
+  const earnedGross = parseFloat((workedGross + freeLeaveAmount - penaltyAbsence).toFixed(2));
 
   // Extra weekend weight info (informational)
   const extraWeekendPenaltyDays = parseFloat(Math.max(0, weightedLeavesTaken - rawAbsences).toFixed(2));
