@@ -127,6 +127,10 @@ export async function GET(
         rawAbsences: payroll.rawAbsences,
         normalAbsences: payroll.normalAbsences,
         unexcusedAbsences: payroll.unexcusedAbsences,
+        penaltyAbsence: payroll.penaltyAbsence,
+        weightedLeavesTaken: payroll.weightedLeavesTaken,
+        freeLeaveAmount: payroll.freeLeaveAmount,
+        daysElapsed: payroll.daysElapsed,
         metrics,
         absentBreakdown: payroll.absentBreakdown
       }
