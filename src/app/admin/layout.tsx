@@ -88,16 +88,16 @@ const Icons = {
 };
 
 const navLinks = [
-  { name: "Dashboard", short: "HUB", href: "/admin", icon: Icons.Dashboard },
-  { name: "Staff", short: "STAFF", href: "/admin/staff", icon: Icons.Staff },
-  { name: "Attendance", short: "ATTEND", href: "/admin/attendance", icon: Icons.Attendance },
-  { name: "Occasions", short: "OCCASIONS", href: "/admin/occasions", icon: Icons.Occasions },
-  { name: "Slots", short: "SLOTS", href: "/admin/qr", icon: Icons.Slots },
-  { name: "Advance", short: "ADVANCE", href: "/admin/advance", icon: Icons.Finance },
-  { name: "Leaves", short: "LEAVES", href: "/admin/leaves", icon: Icons.Leaves },
-  { name: "Payroll", short: "PAYROLL", href: "/admin/payroll", icon: Icons.Payroll },
-  { name: "Settings", short: "SETTINGS", href: "/admin/settings", icon: Icons.Settings },
-  { name: "Kiosk", short: "KIOSK", href: "/kiosk?from=admin", icon: Icons.Kiosk },
+  { name: "Dashboard", short: "HUB", href: "/admin", icon: Icons.Dashboard, color: "#a78bfa", bg: "rgba(139,92,246,0.16)", activeGradient: "linear-gradient(135deg, #8b5cf6, #6366f1)", shadow: "rgba(139,92,246,0.5)" },
+  { name: "Staff", short: "STAFF", href: "/admin/staff", icon: Icons.Staff, color: "#22d3ee", bg: "rgba(6,182,212,0.16)", activeGradient: "linear-gradient(135deg, #06b6d4, #0284c7)", shadow: "rgba(6,182,212,0.5)" },
+  { name: "Attendance", short: "ATTEND", href: "/admin/attendance", icon: Icons.Attendance, color: "#34d399", bg: "rgba(16,185,129,0.16)", activeGradient: "linear-gradient(135deg, #10b981, #059669)", shadow: "rgba(16,185,129,0.5)" },
+  { name: "Payroll", short: "PAYROLL", href: "/admin/payroll", icon: Icons.Payroll, color: "#fbbf24", bg: "rgba(245,158,11,0.18)", activeGradient: "linear-gradient(135deg, #f59e0b, #ea580c)", shadow: "rgba(245,158,11,0.55)" },
+  { name: "Occasions", short: "OCCASIONS", href: "/admin/occasions", icon: Icons.Occasions, color: "#f472b6", bg: "rgba(236,72,153,0.16)", activeGradient: "linear-gradient(135deg, #ec4899, #e11d48)", shadow: "rgba(236,72,153,0.5)" },
+  { name: "Slots", short: "SLOTS", href: "/admin/qr", icon: Icons.Slots, color: "#c084fc", bg: "rgba(168,85,247,0.16)", activeGradient: "linear-gradient(135deg, #a855f7, #7c3aed)", shadow: "rgba(168,85,247,0.5)" },
+  { name: "Advance", short: "ADVANCE", href: "/admin/advance", icon: Icons.Finance, color: "#4ade80", bg: "rgba(34,197,94,0.16)", activeGradient: "linear-gradient(135deg, #22c55e, #16a34a)", shadow: "rgba(34,197,94,0.5)" },
+  { name: "Leaves", short: "LEAVES", href: "/admin/leaves", icon: Icons.Leaves, color: "#60a5fa", bg: "rgba(59,130,246,0.16)", activeGradient: "linear-gradient(135deg, #3b82f6, #1d4ed8)", shadow: "rgba(59,130,246,0.5)" },
+  { name: "Settings", short: "SETTINGS", href: "/admin/settings", icon: Icons.Settings, color: "#94a3b8", bg: "rgba(148,163,184,0.16)", activeGradient: "linear-gradient(135deg, #64748b, #334155)", shadow: "rgba(100,116,139,0.5)" },
+  { name: "Kiosk", short: "KIOSK", href: "/kiosk?from=admin", icon: Icons.Kiosk, color: "#818cf8", bg: "rgba(99,102,241,0.16)", activeGradient: "linear-gradient(135deg, #6366f1, #10b981)", shadow: "rgba(99,102,241,0.5)" },
 ];
 
 
@@ -274,15 +274,46 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </aside>
 
-      {/* ── Mobile Floating Bottom Nav Bar (Floating Pill) ── */}
+      {/* ── Mobile Floating Bottom Nav Bar (Colorful Glassmorphic Pill) ── */}
       <div className="bottom-nav-modern">
         {bottomBarLinks.map((link) => {
           const isActive = isLinkActive(link.href);
           return (
-            <Link key={link.href} href={link.href} className={`mobile-nav-item ${isActive ? "active" : ""}`}>
-              <span className="mobile-nav-icon"><link.icon /></span>
-              <span className="mobile-nav-label" style={{ fontSize: "0.55rem" }}>{link.short}</span>
-              {isActive && <div className="active-dot" />}
+            <Link 
+              key={link.href} 
+              href={link.href} 
+              className={`mobile-nav-item ${isActive ? "active" : ""}`}
+            >
+              <div 
+                className="mobile-nav-icon-box"
+                style={{
+                  background: isActive ? link.activeGradient : link.bg,
+                  border: `1px solid ${isActive ? "rgba(255,255,255,0.4)" : `${link.color}33`}`,
+                  color: isActive ? "#ffffff" : link.color,
+                  boxShadow: isActive ? `0 4px 16px ${link.shadow}` : "none",
+                }}
+              >
+                <link.icon />
+              </div>
+              <span 
+                className="mobile-nav-label" 
+                style={{ 
+                  color: isActive ? "#ffffff" : link.color,
+                  fontWeight: isActive ? 900 : 700,
+                  opacity: isActive ? 1 : 0.8
+                }}
+              >
+                {link.short}
+              </span>
+              {isActive && (
+                <div 
+                  className="active-dot" 
+                  style={{ 
+                    background: link.color, 
+                    boxShadow: `0 0 8px ${link.color}` 
+                  }} 
+                />
+              )}
             </Link>
           );
         })}
@@ -291,8 +322,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           onClick={() => setIsMobileMenuOpen(true)} 
           className={`mobile-nav-item ${isMobileMenuOpen ? "active" : ""}`}
         >
-          <span className="mobile-nav-icon"><Icons.Menu /></span>
-          <span className="mobile-nav-label" style={{ fontSize: "0.55rem" }}>MENU</span>
+          <div 
+            className="mobile-nav-icon-box"
+            style={{
+              background: isMobileMenuOpen ? "linear-gradient(135deg, #f43f5e, #be123c)" : "rgba(244,63,94,0.16)",
+              border: `1px solid ${isMobileMenuOpen ? "rgba(255,255,255,0.4)" : "rgba(244,63,94,0.3)"}`,
+              color: isMobileMenuOpen ? "#ffffff" : "#fb7185",
+              boxShadow: isMobileMenuOpen ? "0 4px 16px rgba(244,63,94,0.5)" : "none",
+            }}
+          >
+            <Icons.Menu />
+          </div>
+          <span 
+            className="mobile-nav-label" 
+            style={{ 
+              color: isMobileMenuOpen ? "#ffffff" : "#fb7185",
+              fontWeight: isMobileMenuOpen ? 900 : 700,
+              opacity: isMobileMenuOpen ? 1 : 0.8
+            }}
+          >
+            MENU
+          </span>
+          {isMobileMenuOpen && (
+            <div 
+              className="active-dot" 
+              style={{ background: "#fb7185", boxShadow: "0 0 8px #fb7185" }} 
+            />
+          )}
         </button>
       </div>
 
@@ -302,7 +358,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           onClick={() => setIsMobileMenuOpen(false)}
           style={{
             position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
-            background: "rgba(0, 0, 0, 0.75)", backdropFilter: "blur(12px)",
+            background: "rgba(0, 0, 0, 0.8)", backdropFilter: "blur(16px)",
             zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center",
             padding: "1rem",
             animation: "fadeIn 0.25s ease-out"
@@ -312,31 +368,36 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div 
             onClick={(e) => e.stopPropagation()}
             style={{
-              width: "100%", maxWidth: "390px",
-              background: "rgba(15, 15, 22, 0.95)",
-              border: "1px solid rgba(255, 255, 255, 0.08)",
-              borderRadius: "24px", padding: "1.75rem 1.25rem",
-              boxShadow: "0 25px 60px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.08)",
-              display: "flex", flexDirection: "column", gap: "1.5rem"
+              width: "100%", maxWidth: "400px",
+              background: "rgba(12, 12, 22, 0.96)",
+              border: "1px solid rgba(255, 255, 255, 0.12)",
+              borderRadius: "28px", padding: "1.75rem 1.4rem",
+              boxShadow: "0 30px 70px rgba(0, 0, 0, 0.9), 0 0 35px rgba(139, 92, 246, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+              display: "flex", flexDirection: "column", gap: "1.35rem"
             }}
           >
             {/* Header */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <h2 style={{ fontSize: "1.5rem", fontWeight: 900, color: "#fff", margin: 0, letterSpacing: "-0.01em" }}>
-                  MAIN MENU
-                </h2>
-                <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", margin: "0.1rem 0 0 0", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                  Control Center
-                </p>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                <div style={{ width: "38px", height: "38px", borderRadius: "12px", background: "linear-gradient(135deg, #8b5cf6, #06b6d4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.1rem" }}>
+                  ⚡
+                </div>
+                <div>
+                  <h2 style={{ fontSize: "1.35rem", fontWeight: 900, color: "#fff", margin: 0, letterSpacing: "-0.01em" }}>
+                    ADMIN MENU
+                  </h2>
+                  <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", margin: 0, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                    Quick Navigation
+                  </p>
+                </div>
               </div>
               
               {/* Close Button */}
               <button 
                 onClick={() => setIsMobileMenuOpen(false)}
                 style={{
-                  width: "36px", height: "36px", borderRadius: "50%",
-                  background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                  width: "34px", height: "34px", borderRadius: "50%",
+                  background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
                   color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
                   cursor: "pointer", transition: "all 0.2s"
                 }}
@@ -345,10 +406,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </button>
             </div>
 
-            {/* Grid Menu Content (3x4 Layout) */}
+            {/* Grid Menu Content */}
             <div style={{
               display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
-              gap: "1.25rem 0.5rem"
+              gap: "1rem 0.5rem"
             }}>
               {navLinks.map((link) => {
                 const isActive = isLinkActive(link.href);
@@ -359,26 +420,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     onClick={() => setIsMobileMenuOpen(false)}
                     style={{
                       display: "flex", flexDirection: "column", alignItems: "center",
-                      gap: "0.5rem", textDecoration: "none", color: "inherit"
+                      gap: "0.45rem", textDecoration: "none", color: "inherit"
                     }}
                   >
                     <div style={{
-                      width: "68px", height: "68px", borderRadius: "22px",
+                      width: "64px", height: "64px", borderRadius: "20px",
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      background: isActive 
-                        ? "linear-gradient(135deg, #e11d48, #be123c)"
-                        : "rgba(255,255,255,0.02)",
-                      border: `1px solid ${isActive ? "rgba(225,29,72,0.4)" : "rgba(255,255,255,0.06)"}`,
-                      color: isActive ? "#fff" : "rgba(255,255,255,0.7)",
-                      boxShadow: isActive ? "0 8px 20px rgba(225,29,72,0.3)" : "none",
-                      transition: "all 0.15s ease"
+                      background: isActive ? link.activeGradient : link.bg,
+                      border: `1px solid ${isActive ? "rgba(255,255,255,0.4)" : `${link.color}40`}`,
+                      color: isActive ? "#fff" : link.color,
+                      boxShadow: isActive ? `0 8px 24px ${link.shadow}` : `0 4px 12px rgba(0,0,0,0.3)`,
+                      transition: "all 0.2s ease"
                     }}>
                       <link.icon />
                     </div>
                     <span style={{
-                      fontSize: "0.6rem", fontWeight: 800,
+                      fontSize: "0.62rem", fontWeight: 800,
                       textTransform: "uppercase", letterSpacing: "0.05em",
-                      color: isActive ? "#fff" : "var(--text-muted)"
+                      color: isActive ? "#fff" : link.color
                     }}>
                       {link.short}
                     </span>
@@ -395,16 +454,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               }}
               style={{
                 width: "100%", display: "flex", alignItems: "center", justifyContent: "center",
-                gap: "0.6rem", padding: "0.9rem", borderRadius: "16px",
-                border: "1px solid rgba(255,255,255,0.06)",
-                background: "rgba(255,255,255,0.06)", color: "#fb7185",
+                gap: "0.6rem", padding: "0.85rem", borderRadius: "16px",
+                border: "1px solid rgba(244,63,94,0.25)",
+                background: "rgba(244,63,94,0.08)", color: "#fb7185",
                 cursor: "pointer", fontWeight: 800, fontSize: "0.8rem",
                 textTransform: "uppercase", letterSpacing: "0.08em",
                 transition: "all 0.2s"
               }}
             >
               <Icons.Logout />
-              Terminate Session
+              Sign Out
             </button>
           </div>
         </div>
