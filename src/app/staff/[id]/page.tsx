@@ -52,6 +52,8 @@ interface StaffData {
     rawAbsences?: number;
     normalAbsences?: number;
     unexcusedAbsences?: number;
+    penaltyAbsence?: number;
+    weightedLeavesTaken?: number;
     metrics?: any;
     absentBreakdown?: any[];
   };
@@ -283,8 +285,10 @@ export default function StaffProfilePage() {
   const normalAbsences = staff.currentMonth.normalAbsences ?? Math.max(0, rawAbsentDays - (staff.currentMonth.weekendAbsences?.total || 0) - occCount);
   const freeLeaves = staff.currentMonth.freeLeaves ?? 4;
   const unpaidAbsences = staff.currentMonth.unexcusedAbsences ?? Math.max(0, rawAbsentDays - freeLeaves);
+  const absencePenaltyAmount = parseFloat((staff.currentMonth.penaltyAbsence ?? (unpaidAbsences * dailyWage)).toFixed(2));
+  const weightedLeaves = staff.currentMonth.weightedLeavesTaken ?? (normalAbsences * 1.0 + (satCount + sunCount + occCount) * 1.5);
 
-  const earnedGross = staff.currentMonth.earnedGross ?? Math.max(0, parseFloat((workedGross - weekendPenaltyAmount).toFixed(2)));
+  const earnedGross = staff.currentMonth.earnedGross ?? staff.currentMonth.earnedTillNow ?? Math.max(0, parseFloat((workedGross - weekendPenaltyAmount).toFixed(2)));
   const advanceDebt = staff.currentMonth.pendingAdvance || 0;
   const advanceDeducted = staff.currentMonth.advanceToRecover ?? Math.min(advanceDebt, earnedGross);
   const remainingAdvance = Math.max(0, advanceDebt - advanceDeducted);
@@ -431,10 +435,10 @@ export default function StaffProfilePage() {
                 {rawAbsentDays}d ({satCount} Sat, {sunCount} Sun{occCount > 0 ? `, ${occCount} Occ` : ""})
               </span>
             </div>
-            <div style={{ padding: "0.4rem 0.6rem", background: extraWeekendPenaltyDays > 0 ? "rgba(244,63,94,0.05)" : "rgba(255,255,255,0.02)", borderRadius: "8px", border: `1px solid ${extraWeekendPenaltyDays > 0 ? "rgba(244,63,94,0.15)" : "rgba(255,255,255,0.03)"}` }}>
-              <span style={{ display: "block", fontSize: "0.58rem", color: extraWeekendPenaltyDays > 0 ? "#fb7185" : "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Weekend Penalty (1.5x)</span>
-              <span style={{ fontSize: "0.85rem", fontWeight: 800, color: extraWeekendPenaltyDays > 0 ? "#fb7185" : "var(--text-muted)" }}>
-                {extraWeekendPenaltyDays > 0 ? `−${extraWeekendPenaltyDays}d (−₹${weekendPenaltyAmount.toLocaleString("en-IN")})` : "0 penalty"}
+            <div style={{ padding: "0.4rem 0.6rem", background: unpaidAbsences > 0 ? "rgba(244,63,94,0.05)" : "rgba(255,255,255,0.02)", borderRadius: "8px", border: `1px solid ${unpaidAbsences > 0 ? "rgba(244,63,94,0.15)" : "rgba(255,255,255,0.03)"}` }}>
+              <span style={{ display: "block", fontSize: "0.58rem", color: unpaidAbsences > 0 ? "#fb7185" : "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Excess Leave Cut</span>
+              <span style={{ fontSize: "0.85rem", fontWeight: 800, color: unpaidAbsences > 0 ? "#fb7185" : "var(--text-muted)" }}>
+                {unpaidAbsences > 0 ? `−${unpaidAbsences}d (−₹${absencePenaltyAmount.toLocaleString("en-IN")})` : "0 cut"}
               </span>
             </div>
             <div style={{ padding: "0.4rem 0.6rem", background: "rgba(56,189,248,0.06)", borderRadius: "8px", border: "1px solid rgba(56,189,248,0.2)" }}>
@@ -559,7 +563,7 @@ export default function StaffProfilePage() {
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", margin: "0.4rem 0" }}>
                   {/* Absences summary */}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.72rem", padding: "0.35rem 0.55rem", background: "rgba(255,255,255,0.03)", borderRadius: "6px", color: "var(--text-muted)" }}>
-                    <span>🏖️ Total Absences Taken ({rawAbsentDays} calendar days)</span>
+                    <span>🏖️ Total Absences Taken ({rawAbsentDays} calendar days → {weightedLeaves}d weighted)</span>
                     <span style={{ fontWeight: 700, color: "#fff" }}>{normalAbsences} Normal, {satCount} Sat, {sunCount} Sun{occCount > 0 ? `, ${occCount} Occ` : ""}</span>
                   </div>
 
@@ -569,22 +573,22 @@ export default function StaffProfilePage() {
                     <span style={{ fontWeight: 800 }}>4 Free Leaves / Month ({unpaidAbsences} days over limit)</span>
                   </div>
 
-                  {/* Weekend 1.5x penalty if any */}
-                  {extraWeekendPenaltyDays > 0 ? (
+                  {/* Excess absence penalty cut */}
+                  {unpaidAbsences > 0 ? (
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.72rem", padding: "0.35rem 0.55rem", background: "rgba(244,63,94,0.08)", borderRadius: "6px", color: "#fb7185" }}>
-                      <span>⚖️ Weekend & Occasion Penalty ({specialAbsentCount} days absent × 1.5 = {extraWeekendPenaltyDays}d salary cut)</span>
-                      <span style={{ fontWeight: 800, fontFamily: "monospace" }}>− ₹{weekendPenaltyAmount.toLocaleString("en-IN")}</span>
+                      <span>⚖️ Excess Absence Cut ({weightedLeaves}d weighted − 4.0 free = {unpaidAbsences}d cut)</span>
+                      <span style={{ fontWeight: 800, fontFamily: "monospace" }}>− ₹{absencePenaltyAmount.toLocaleString("en-IN")}</span>
                     </div>
                   ) : (
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.72rem", padding: "0.35rem 0.55rem", background: "rgba(255,255,255,0.03)", borderRadius: "6px", color: "var(--text-muted)" }}>
-                      <span>⚖️ Weekend & Occasion 1.5x Penalty</span>
-                      <span>None (Zero weekend absences)</span>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.72rem", padding: "0.35rem 0.55rem", background: "rgba(52,211,153,0.08)", borderRadius: "6px", color: "#34d399" }}>
+                      <span>⚖️ Excess Absence Cut</span>
+                      <span>None (Absences covered by 4 free leaves)</span>
                     </div>
                   )}
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "0.4rem", borderTop: "1px dashed rgba(255,255,255,0.08)", fontSize: "0.78rem" }}>
-                  <span style={{ fontWeight: 700, color: "rgba(255,255,255,0.8)" }}>👉 Gross Salary Earned (Work minus Penalties):</span>
+                  <span style={{ fontWeight: 700, color: "rgba(255,255,255,0.8)" }}>👉 Gross Salary Earned:</span>
                   <span style={{ fontWeight: 900, color: "#34d399", fontSize: "1rem", fontFamily: "monospace" }}>₹{earnedGross.toLocaleString("en-IN")}</span>
                 </div>
               </div>
