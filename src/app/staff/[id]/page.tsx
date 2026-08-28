@@ -54,6 +54,7 @@ interface StaffData {
     unexcusedAbsences?: number;
     penaltyAbsence?: number;
     weightedLeavesTaken?: number;
+    freeLeaveAmount?: number;
     metrics?: any;
     absentBreakdown?: any[];
   };
