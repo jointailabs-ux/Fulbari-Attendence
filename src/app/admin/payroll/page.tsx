@@ -29,16 +29,14 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
   const dailyWage = parseFloat(r.metrics.dailyWage.toFixed(2));
   const daysPresent = r.metrics.daysPresent;
   const workedGross = parseFloat((r.metrics.workedGross ?? (daysPresent * dailyWage)).toFixed(2));
-  const freeLeaves = r.metrics.freeLeaves ?? 4;
+  const freeLeaves = r.metrics.freeLeaves ?? 0;
+  const weeklyBreakdown: Array<{ weekLabel: string; daysWorked: number; daysInMonth: number; earned: boolean }> =
+    r.weeklyFreeLeaveBreakdown ?? [];
   
   const rawAbsentDays = r.metrics.rawAbsences ?? (r.metrics.fullLeaves ?? Math.max(0, daysElapsed - daysPresent));
   const satCount = r.weekendAbsences?.saturdays || 0;
   const sunCount = r.weekendAbsences?.sundays || 0;
   const occCount = r.occasionAbsences?.count || 0;
-  const specialAbsentCount = satCount + sunCount + occCount;
-
-  const extraWeekendPenaltyDays = r.metrics.extraWeekendPenaltyDays ?? parseFloat((specialAbsentCount * 1.5).toFixed(2));
-  const weekendPenaltyAmount = parseFloat((r.metrics.weekendPenaltyAmount ?? (extraWeekendPenaltyDays * dailyWage)).toFixed(2));
 
   const weightedLeaves = parseFloat((r.metrics.weightedLeavesTaken ?? rawAbsentDays).toFixed(2));
   const normalAbsences = r.metrics.normalAbsences ?? Math.max(0, rawAbsentDays - (r.weekendAbsences?.total || 0) - (r.occasionAbsences?.count || 0));
@@ -47,10 +45,8 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
     : Math.max(0, weightedLeaves - freeLeaves)).toFixed(2));
   const absencePenaltyAmount = parseFloat((r.metrics.penaltyAbsence ?? (unpaidAbsences * dailyWage)).toFixed(2));
   
-  // Free leave credit = days employer pays even though employee was absent (min of freeLeaves allowance vs weighted absences)
   const freeLeavesUsedCount = parseFloat(Math.min(freeLeaves, weightedLeaves).toFixed(2));
-  const earnedGross = parseFloat(r.simpleRaw ?? (r.metrics.earnedTillNow ?? (daysElapsed * dailyWage - absencePenaltyAmount)).toFixed(2));
-  const baselinePay = parseFloat((daysElapsed * dailyWage).toFixed(2));
+  const earnedGross = parseFloat(r.simpleRaw ?? (r.metrics.earnedTillNow ?? (workedGross - absencePenaltyAmount)).toFixed(2));
   const advanceDebt = parseFloat(r.totalAdvance);
   const advanceDeducted = parseFloat(r.simpleAdvanceDeducted);
   const remainingAdvance = parseFloat(Math.max(0, advanceDebt - advanceDeducted).toFixed(2));
@@ -63,7 +59,7 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        style={{ background: "rgba(10,10,20,0.98)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "24px", width: "100%", maxWidth: "520px", maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 40px 100px rgba(0,0,0,0.85)", animation: "popIn 0.28s cubic-bezier(0.34,1.56,0.64,1)", overflow: "hidden" }}
+        style={{ background: "rgba(10,10,20,0.98)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "24px", width: "100%", maxWidth: "540px", maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 40px 100px rgba(0,0,0,0.85)", animation: "popIn 0.28s cubic-bezier(0.34,1.56,0.64,1)", overflow: "hidden" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -80,18 +76,26 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
           </div>
 
           {/* Quick Summary Pill Bar */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.5rem", marginTop: "0.9rem", padding: "0.6rem 0.8rem", background: "rgba(0,0,0,0.3)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.04)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.4rem", marginTop: "0.9rem", padding: "0.6rem 0.8rem", background: "rgba(0,0,0,0.3)", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.04)" }}>
             <div style={{ textAlign: "center" }}>
-              <span style={{ fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", display: "block" }}>Days Worked</span>
-              <span style={{ fontSize: "0.88rem", fontWeight: 900, color: "#10b981" }}>{daysPresent} days</span>
+              <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", display: "block" }}>Days Worked</span>
+              <span style={{ fontSize: "0.85rem", fontWeight: 900, color: "#10b981" }}>{daysPresent} d</span>
             </div>
-            <div style={{ textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.08)", borderRight: "1px solid rgba(255,255,255,0.08)" }}>
-              <span style={{ fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", display: "block" }}>Gross Earned</span>
-              <span style={{ fontSize: "0.88rem", fontWeight: 900, color: "#38bdf8" }}>₹{earnedGross.toLocaleString("en-IN")}</span>
+            <div style={{ textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.08)" }}>
+              <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", display: "block" }}>Leave Bal</span>
+              <span style={{ fontSize: "0.85rem", fontWeight: 900, color: "#a78bfa" }}>{freeLeaves} / 4</span>
             </div>
-            <div style={{ textAlign: "center" }}>
-              <span style={{ fontSize: "0.58rem", color: "#fb923c", fontWeight: 800, textTransform: "uppercase", display: "block" }}>Owner to Pay</span>
-              <span style={{ fontSize: "0.88rem", fontWeight: 900, color: "#34d399" }}>₹{netPayable.toLocaleString("en-IN")}</span>
+            <div style={{ textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.08)" }}>
+              <span style={{ fontSize: "0.55rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", display: "block" }}>Gross</span>
+              <span style={{ fontSize: "0.85rem", fontWeight: 900, color: earnedGross >= 0 ? "#38bdf8" : "#fb7185" }}>
+                {earnedGross < 0 ? "-" : ""}₹{Math.abs(earnedGross).toLocaleString("en-IN")}
+              </span>
+            </div>
+            <div style={{ textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.08)" }}>
+              <span style={{ fontSize: "0.55rem", color: "#fb923c", fontWeight: 800, textTransform: "uppercase", display: "block" }}>To Pay</span>
+              <span style={{ fontSize: "0.85rem", fontWeight: 900, color: netPayable >= 0 ? "#34d399" : "#fb7185" }}>
+                {netPayable < 0 ? "-" : ""}₹{Math.abs(netPayable).toLocaleString("en-IN")}
+              </span>
             </div>
           </div>
         </div>
@@ -114,35 +118,70 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
             </p>
           </div>
 
-          {/* STAGE 2: Baseline Pay (what they'd earn if perfectly present for elapsed period) */}
-          <div style={{ background: "rgba(139,92,246,0.04)", border: "1px solid rgba(139,92,246,0.2)", borderRadius: "14px", padding: "0.85rem 1rem" }}>
+          {/* STAGE 2: Shift Pay (Days Worked) */}
+          <div style={{ background: "rgba(16,185,129,0.04)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: "14px", padding: "0.85rem 1rem" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.4rem" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <span style={{ width: "22px", height: "22px", borderRadius: "50%", background: "rgba(139,92,246,0.2)", border: "1px solid rgba(139,92,246,0.4)", color: "#c084fc", fontSize: "0.7rem", fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>2</span>
-                <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#fff" }}>Baseline Pay (Elapsed Period)</span>
+                <span style={{ width: "22px", height: "22px", borderRadius: "50%", background: "rgba(16,185,129,0.2)", border: "1px solid rgba(16,185,129,0.4)", color: "#10b981", fontSize: "0.7rem", fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>2</span>
+                <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#fff" }}>Shift Pay (Days Worked)</span>
               </div>
-              <span style={{ fontSize: "1rem", fontWeight: 900, color: "#c084fc", fontFamily: "monospace" }}>+ ₹{baselinePay.toLocaleString("en-IN")}</span>
+              <span style={{ fontSize: "1rem", fontWeight: 900, color: "#10b981", fontFamily: "monospace" }}>+ ₹{workedGross.toLocaleString("en-IN")}</span>
             </div>
-            <div style={{ padding: "0.45rem 0.7rem", background: "rgba(0,0,0,0.25)", borderRadius: "8px", border: "1px solid rgba(139,92,246,0.15)", fontSize: "0.75rem", fontWeight: 700, color: "#c084fc", fontFamily: "monospace", display: "flex", justifyContent: "space-between" }}>
-              <span>{daysElapsed} elapsed days × ₹{dailyWage}</span>
-              <span>= ₹{baselinePay.toLocaleString("en-IN")}</span>
+            <div style={{ padding: "0.45rem 0.7rem", background: "rgba(0,0,0,0.25)", borderRadius: "8px", border: "1px solid rgba(16,185,129,0.15)", fontSize: "0.75rem", fontWeight: 700, color: "#34d399", fontFamily: "monospace", display: "flex", justifyContent: "space-between" }}>
+              <span>{daysPresent} days worked × ₹{dailyWage}</span>
+              <span>= ₹{workedGross.toLocaleString("en-IN")}</span>
             </div>
             <p style={{ fontSize: "0.68rem", color: "var(--text-muted)", margin: "0.35rem 0 0", lineHeight: 1.4 }}>
-              The maximum possible pay for {daysElapsed} days elapsed this period. Actual shifts: <strong style={{ color: "#10b981" }}>{daysPresent} days = ₹{workedGross.toLocaleString("en-IN")}</strong>; remainder from leave coverage.
+              Employee earns daily wage strictly for the days they actually clocked in ({daysPresent} shifts).
             </p>
           </div>
 
+          {/* STAGE 3: Weekly Free Leave Balance Rule */}
+          <div style={{ background: "rgba(168,85,247,0.04)", border: "1px solid rgba(168,85,247,0.2)", borderRadius: "14px", padding: "0.85rem 1rem" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.4rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span style={{ width: "22px", height: "22px", borderRadius: "50%", background: "rgba(168,85,247,0.2)", border: "1px solid rgba(168,85,247,0.4)", color: "#c084fc", fontSize: "0.7rem", fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>3</span>
+                <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#fff" }}>Weekly Free Leave Balance</span>
+              </div>
+              <span style={{ fontSize: "0.85rem", fontWeight: 900, color: "#c084fc", fontFamily: "monospace" }}>🎁 {freeLeaves} / 4 Earned</span>
+            </div>
+            <p style={{ fontSize: "0.68rem", color: "var(--text-muted)", margin: "0 0 0.5rem 0", lineHeight: 1.4 }}>
+              Rule: Staff must work <strong style={{ color: "#fff" }}>at least 6 days in a week</strong> to earn 1 free paid leave for that week (max 4 per month).
+            </p>
+            
+            {/* Week-by-Week Breakdown */}
+            {weeklyBreakdown.length > 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+                {weeklyBreakdown.map((w, wIdx) => (
+                  <div key={wIdx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.35rem 0.6rem", background: w.earned ? "rgba(16,185,129,0.08)" : "rgba(255,255,255,0.02)", border: `1px solid ${w.earned ? "rgba(16,185,129,0.2)" : "rgba(255,255,255,0.04)"}`, borderRadius: "6px", fontSize: "0.7rem" }}>
+                    <span style={{ color: w.earned ? "#34d399" : "var(--text-muted)" }}>
+                      {w.weekLabel}: worked <strong>{w.daysWorked} / {w.daysInMonth} days</strong>
+                    </span>
+                    <span style={{ fontWeight: 800, color: w.earned ? "#10b981" : "#94a3b8" }}>
+                      {w.earned ? "✅ +1 Leave Earned" : "❌ 0 Leave (worked < 6d)"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
+                Total free leaves earned this cycle: <strong style={{ color: "#c084fc" }}>{freeLeaves} days</strong>
+              </div>
+            )}
+          </div>
+
+          {/* STAGE 4: Absences & Excess Deduction */}
           <div style={{ background: "rgba(6,182,212,0.03)", border: "1px solid rgba(6,182,212,0.15)", borderRadius: "14px", padding: "0.85rem 1rem" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <span style={{ width: "22px", height: "22px", borderRadius: "50%", background: "rgba(6,182,212,0.2)", border: "1px solid rgba(6,182,212,0.4)", color: "#06b6d4", fontSize: "0.7rem", fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>3</span>
-                <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#fff" }}>Absence Deduction & Gross</span>
+                <span style={{ width: "22px", height: "22px", borderRadius: "50%", background: "rgba(6,182,212,0.2)", border: "1px solid rgba(6,182,212,0.4)", color: "#06b6d4", fontSize: "0.7rem", fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>4</span>
+                <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#fff" }}>Absences & Excess Leave Cut</span>
               </div>
             </div>
 
             {/* Absence breakdown */}
             <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", padding: "0.3rem 0.55rem", background: "rgba(255,255,255,0.03)", borderRadius: "6px", marginBottom: "0.4rem", lineHeight: 1.5 }}>
-              📋 <strong style={{ color: "#fff" }}>{rawAbsentDays} absent days</strong> this period:
+              📋 <strong style={{ color: "#fff" }}>{rawAbsentDays} absent days</strong>:
               {normalAbsences > 0 && <span> {normalAbsences} normal (×1.0)</span>}
               {satCount > 0 && <span>, {satCount} Sat (×1.5)</span>}
               {sunCount > 0 && <span>, {sunCount} Sun (×1.5)</span>}
@@ -154,24 +193,24 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
               {unpaidAbsences > 0 ? (
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.7rem", padding: "0.35rem 0.55rem", background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.15)", borderRadius: "6px" }}>
                   <div>
-                    <span style={{ color: "#fb7185", fontWeight: 800 }}>✂️ Excess Absence Penalty</span>
+                    <span style={{ color: "#fb7185", fontWeight: 800 }}>✂️ Excess Leave Cut</span>
                     <span style={{ color: "var(--text-muted)", marginLeft: "0.4rem" }}>({weightedLeaves}w − {freeLeavesUsedCount}w free = {unpaidAbsences}w × ₹{dailyWage})</span>
                   </div>
                   <span style={{ fontWeight: 900, color: "#fb7185", fontFamily: "monospace" }}>− ₹{absencePenaltyAmount.toLocaleString("en-IN")}</span>
                 </div>
               ) : (
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.7rem", padding: "0.35rem 0.55rem", background: "rgba(52,211,153,0.05)", border: "1px solid rgba(52,211,153,0.1)", borderRadius: "6px", color: "#34d399" }}>
-                  <span>✂️ Excess Absence Penalty</span>
-                  <span style={{ fontWeight: 700 }}>₹0 — all absences within {freeLeaves} free leaves</span>
+                  <span>✂️ Excess Leave Cut</span>
+                  <span style={{ fontWeight: 700 }}>₹0 — all absences covered by {freeLeaves} earned free leaves</span>
                 </div>
               )}
             </div>
 
-            {/* Gross formula: always correct */}
+            {/* Gross formula summary: Shift Pay - Excess Cut */}
             <div style={{ marginTop: "0.55rem", padding: "0.5rem 0.7rem", background: "rgba(0,0,0,0.3)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.06)", fontSize: "0.68rem", color: "var(--text-muted)", fontFamily: "monospace", lineHeight: 1.6 }}>
-              <div>Gross = Baseline Pay − Excess Absence Penalty</div>
+              <div>Gross = Shift Pay − Excess Leave Cut</div>
               <div style={{ color: "#fff", fontWeight: 700 }}>
-                ₹{baselinePay.toLocaleString("en-IN")} − ₹{absencePenaltyAmount.toLocaleString("en-IN")} = <span style={{ color: earnedGross >= 0 ? "#34d399" : "#fb7185", fontSize: "0.78rem" }}>{earnedGross < 0 ? "-" : ""}₹{Math.abs(earnedGross).toLocaleString("en-IN")}</span>
+                ₹{workedGross.toLocaleString("en-IN")} − ₹{absencePenaltyAmount.toLocaleString("en-IN")} = <span style={{ color: earnedGross >= 0 ? "#34d399" : "#fb7185", fontSize: "0.78rem" }}>{earnedGross < 0 ? "-" : ""}₹{Math.abs(earnedGross).toLocaleString("en-IN")}</span>
               </div>
             </div>
 
@@ -181,11 +220,11 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
             </div>
           </div>
 
-          {/* STAGE 4: Deductions & Net Payout */}
+          {/* STAGE 5: Deductions & Net Payout */}
           <div style={{ background: "rgba(251,146,60,0.04)", border: "1px solid rgba(251,146,60,0.2)", borderRadius: "14px", padding: "0.85rem 1rem" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.4rem" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <span style={{ width: "22px", height: "22px", borderRadius: "50%", background: "rgba(251,146,60,0.2)", border: "1px solid rgba(251,146,60,0.4)", color: "#fb923c", fontSize: "0.7rem", fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>4</span>
+                <span style={{ width: "22px", height: "22px", borderRadius: "50%", background: "rgba(251,146,60,0.2)", border: "1px solid rgba(251,146,60,0.4)", color: "#fb923c", fontSize: "0.7rem", fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>5</span>
                 <span style={{ fontSize: "0.8rem", fontWeight: 800, color: "#fff" }}>Deductions & What Owner Pays</span>
               </div>
             </div>
@@ -193,7 +232,9 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
             <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", margin: "0.4rem 0" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.72rem", color: "var(--text-muted)" }}>
                 <span>Gross Earned Salary</span>
-                <span style={{ fontWeight: 800, color: "#fff", fontFamily: "monospace" }}>₹{earnedGross.toLocaleString("en-IN")}</span>
+                <span style={{ fontWeight: 800, color: earnedGross >= 0 ? "#fff" : "#fb7185", fontFamily: "monospace" }}>
+                  {earnedGross < 0 ? "-" : ""}₹{Math.abs(earnedGross).toLocaleString("en-IN")}
+                </span>
               </div>
 
               {advanceDebt > 0 && (
@@ -211,20 +252,15 @@ function AuditModal({ r, pfEnabled, onClose }: { r: any; pfEnabled: boolean; onC
               )}
             </div>
 
-            {/* Advance status notice */}
-            {advanceDebt > 0 && remainingAdvance > 0 && (
-              <p style={{ fontSize: "0.66rem", color: "#fb923c", margin: "0.3rem 0 0", background: "rgba(251,146,60,0.08)", padding: "0.3rem 0.5rem", borderRadius: "6px" }}>
-                ⚠️ Remaining advance debt of ₹{remainingAdvance.toLocaleString("en-IN")} will carry forward to next month.
-              </p>
-            )}
-
-            {/* Final Highlight Box */}
-            <div style={{ marginTop: "0.6rem", padding: "0.75rem 0.9rem", background: "linear-gradient(135deg, rgba(16,185,129,0.15), rgba(6,182,212,0.15))", border: "1px solid rgba(16,185,129,0.4)", borderRadius: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            {/* Owner to pay row */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.6rem", paddingTop: "0.5rem", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
               <div>
-                <span style={{ display: "block", fontSize: "0.62rem", color: "#10b981", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em" }}>Final Amount to Pay Staff</span>
-                <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>Gross earned minus all deductions</span>
+                <span style={{ fontSize: "0.68rem", color: "#fb923c", fontWeight: 800, textTransform: "uppercase" }}>Owner Has to Pay:</span>
+                <span style={{ fontSize: "0.62rem", color: "var(--text-muted)", display: "block" }}>Gross (₹{earnedGross.toLocaleString("en-IN")}) − Deductions</span>
               </div>
-              <span style={{ fontSize: "1.35rem", fontWeight: 900, color: "#10b981", fontFamily: "monospace" }}>₹{netPayable.toLocaleString("en-IN")}</span>
+              <span style={{ fontSize: "1.25rem", fontWeight: 900, color: netPayable >= 0 ? "#34d399" : "#fb7185", fontFamily: "monospace" }}>
+                {netPayable < 0 ? "-" : ""}₹{Math.abs(netPayable).toLocaleString("en-IN")}
+              </span>
             </div>
           </div>
 
@@ -541,16 +577,12 @@ export default function PayrollCalculationPage() {
                 const dailyWage = parseFloat(r.metrics.dailyWage.toFixed(2));
                 const daysPresent = r.metrics.daysPresent;
                 const workedGross = parseFloat((r.metrics.workedGross ?? (daysPresent * dailyWage)).toFixed(2));
-                const freeLeaves = r.metrics.freeLeaves ?? 4;
+                const freeLeaves = r.metrics.freeLeaves ?? 0;
                 
                 const rawAbsentDays = r.metrics.rawAbsences ?? (r.metrics.fullLeaves ?? Math.max(0, daysElapsed - daysPresent));
                 const satCount = r.weekendAbsences?.saturdays || 0;
                 const sunCount = r.weekendAbsences?.sundays || 0;
                 const occCount = r.occasionAbsences?.count || 0;
-                const specialAbsentCount = satCount + sunCount + occCount;
-
-                const extraWeekendPenaltyDays = r.metrics.extraWeekendPenaltyDays ?? parseFloat((specialAbsentCount * 1.5).toFixed(2));
-                const weekendPenaltyAmount = parseFloat((r.metrics.weekendPenaltyAmount ?? (extraWeekendPenaltyDays * dailyWage)).toFixed(2));
 
                 const weightedLeaves = parseFloat((r.metrics.weightedLeavesTaken ?? rawAbsentDays).toFixed(2));
                 const normalAbsences = r.metrics.normalAbsences ?? Math.max(0, rawAbsentDays - (r.weekendAbsences?.total || 0) - (r.occasionAbsences?.count || 0));
@@ -559,9 +591,8 @@ export default function PayrollCalculationPage() {
                   : Math.max(0, weightedLeaves - freeLeaves)).toFixed(2));
                 const absencePenaltyAmount = parseFloat((r.metrics.penaltyAbsence ?? (unpaidAbsences * dailyWage)).toFixed(2));
                 const freeLeavesUsedCount = parseFloat(Math.min(freeLeaves, weightedLeaves).toFixed(2));
-                const baselinePay = parseFloat((daysElapsed * dailyWage).toFixed(2));
                 
-                const earnedGross = parseFloat(r.simpleRaw ?? (r.metrics.earnedTillNow ?? (baselinePay - absencePenaltyAmount)).toFixed(2));
+                const earnedGross = parseFloat(r.simpleRaw ?? (r.metrics.earnedTillNow ?? (workedGross - absencePenaltyAmount)).toFixed(2));
                 const advanceDebt = parseFloat(r.totalAdvance);
                 const advanceDeducted = parseFloat(r.simpleAdvanceDeducted);
                 const remainingAdvance = parseFloat(Math.max(0, advanceDebt - advanceDeducted).toFixed(2));
@@ -586,7 +617,11 @@ export default function PayrollCalculationPage() {
                           </p>
                         </div>
                       </div>
-                      <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+                      <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", alignItems: "center" }}>
+                        {/* Weekly Leave Balance Badge */}
+                        <span style={{ fontSize: "0.68rem", color: "#c084fc", background: "rgba(168,85,247,0.12)", border: "1px solid rgba(168,85,247,0.28)", padding: "0.25rem 0.6rem", borderRadius: "8px", fontWeight: 800 }}>
+                          🎁 Leave Bal: {freeLeaves}/4
+                        </span>
                         {r.warnings.highAdvance && <span style={{ fontSize: "0.65rem", color: "#fb7185", background: "rgba(244,63,94,0.12)", border: "1px solid rgba(244,63,94,0.25)", padding: "0.2rem 0.55rem", borderRadius: "6px", fontWeight: 800 }}>⚠️ HIGH ADVANCE</span>}
                         {r.warnings.lowWork && <span style={{ fontSize: "0.65rem", color: "#fb923c", background: "rgba(251,146,60,0.12)", border: "1px solid rgba(251,146,60,0.25)", padding: "0.2rem 0.55rem", borderRadius: "6px", fontWeight: 800 }}>⚠️ NO SHIFTS</span>}
                       </div>
@@ -595,7 +630,7 @@ export default function PayrollCalculationPage() {
                     {/* Step-by-Step Salary Calculation Formula Box */}
                     <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: "14px", border: "1px solid rgba(255,255,255,0.05)", padding: "0.9rem 1.1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                       
-                      {/* Salary Ledger: Baseline − Penalty (always algebraically correct) */}
+                      {/* Salary Ledger: Shift Pay − Excess Penalty = Gross */}
                       <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
 
                         {/* Absence context */}
@@ -606,19 +641,19 @@ export default function PayrollCalculationPage() {
                             {satCount > 0 && <span>, {satCount} Sat×1.5</span>}
                             {sunCount > 0 && <span>, {sunCount} Sun×1.5</span>}
                             {occCount > 0 && <span>, {occCount} Occ×1.5</span>}
-                            <strong style={{ color: "#a78bfa" }}> = {weightedLeaves}w | {freeLeavesUsedCount}w free, {unpaidAbsences}w excess</strong>
+                            <strong style={{ color: "#a78bfa" }}> = {weightedLeaves}w | {freeLeavesUsedCount}w free ({freeLeaves} earned), {unpaidAbsences}w excess</strong>
                           </div>
                         )}
 
-                        {/* Row 1: Baseline */}
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.4rem 0.7rem", background: "rgba(139,92,246,0.07)", border: "1px solid rgba(139,92,246,0.2)", borderRadius: "8px", fontSize: "0.72rem" }}>
-                          <span style={{ color: "var(--text-muted)" }}>📊 <strong style={{ color: "#c084fc" }}>Baseline Pay</strong> — {daysElapsed}d elapsed × ₹{dailyWage}</span>
-                          <span style={{ fontWeight: 900, color: "#c084fc", fontFamily: "monospace" }}>+ ₹{baselinePay.toLocaleString("en-IN")}</span>
+                        {/* Row 1: Shift Pay */}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.4rem 0.7rem", background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: "8px", fontSize: "0.72rem" }}>
+                          <span style={{ color: "var(--text-muted)" }}>⚡ <strong style={{ color: "#10b981" }}>Shift Pay</strong> — {daysPresent} days worked × ₹{dailyWage}</span>
+                          <span style={{ fontWeight: 900, color: "#10b981", fontFamily: "monospace" }}>+ ₹{workedGross.toLocaleString("en-IN")}</span>
                         </div>
 
                         {/* Row 2: Excess Penalty */}
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.4rem 0.7rem", background: unpaidAbsences > 0 ? "rgba(244,63,94,0.07)" : "rgba(255,255,255,0.02)", border: `1px solid ${unpaidAbsences > 0 ? "rgba(244,63,94,0.2)" : "rgba(255,255,255,0.04)"}`, borderRadius: "8px", fontSize: "0.72rem" }}>
-                          <span style={{ color: "var(--text-muted)" }}>✂️ <strong style={{ color: unpaidAbsences > 0 ? "#fb7185" : "var(--text-muted)" }}>Excess Penalty</strong> — {unpaidAbsences}w × ₹{dailyWage}</span>
+                          <span style={{ color: "var(--text-muted)" }}>✂️ <strong style={{ color: unpaidAbsences > 0 ? "#fb7185" : "var(--text-muted)" }}>Excess Leave Cut</strong> — {unpaidAbsences}w × ₹{dailyWage}</span>
                           <span style={{ fontWeight: 900, color: unpaidAbsences > 0 ? "#fb7185" : "var(--text-muted)", fontFamily: "monospace" }}>
                             {unpaidAbsences > 0 ? `− ₹${absencePenaltyAmount.toLocaleString("en-IN")}` : "₹0"}
                           </span>
@@ -628,16 +663,11 @@ export default function PayrollCalculationPage() {
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.5rem 0.7rem", background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.2)", borderRadius: "8px" }}>
                           <div>
                             <span style={{ fontSize: "0.62rem", color: "#38bdf8", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em" }}>= Gross Salary Earned</span>
-                            <span style={{ fontSize: "0.58rem", color: "var(--text-muted)", marginLeft: "0.4rem" }}>₹{baselinePay.toLocaleString("en-IN")} − ₹{absencePenaltyAmount.toLocaleString("en-IN")}</span>
+                            <span style={{ fontSize: "0.58rem", color: "var(--text-muted)", marginLeft: "0.4rem" }}>₹{workedGross.toLocaleString("en-IN")} − ₹{absencePenaltyAmount.toLocaleString("en-IN")}</span>
                           </div>
                           <span style={{ fontSize: "1.05rem", fontWeight: 900, color: earnedGross >= 0 ? "#38bdf8" : "#fb7185", fontFamily: "monospace" }}>
                             {earnedGross < 0 ? "-" : ""}₹{Math.abs(earnedGross).toLocaleString("en-IN")}
                           </span>
-                        </div>
-
-                        {/* Shift pay info */}
-                        <div style={{ fontSize: "0.64rem", color: "var(--text-muted)", padding: "0.2rem 0.5rem" }}>
-                          ⚡ Actual shifts: <strong style={{ color: "#10b981" }}>{daysPresent} days = ₹{workedGross.toLocaleString("en-IN")}</strong> (rest is leave coverage within baseline)
                         </div>
                       </div>
 
@@ -652,8 +682,8 @@ export default function PayrollCalculationPage() {
                           <span style={{ fontWeight: 800, color: "#10b981" }}>{daysPresent} / {totalDays}</span>
                         </div>
                         <div style={{ padding: "0.35rem 0.55rem", background: "rgba(255,255,255,0.02)", borderRadius: "7px", border: "1px solid rgba(255,255,255,0.03)" }}>
-                          <span style={{ display: "block", fontSize: "0.55rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Absences</span>
-                          <span style={{ fontWeight: 800, color: rawAbsentDays > freeLeaves ? "#fb923c" : "#fff" }}>{rawAbsentDays}d ({weightedLeaves}w)</span>
+                          <span style={{ display: "block", fontSize: "0.55rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Leave Bal</span>
+                          <span style={{ fontWeight: 800, color: "#c084fc" }}>{freeLeaves} / 4 earned</span>
                         </div>
                       </div>
                     </div>

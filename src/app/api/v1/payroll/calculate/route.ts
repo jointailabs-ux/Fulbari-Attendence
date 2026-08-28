@@ -91,7 +91,8 @@ export async function GET(req: Request) {
             },
             weekendAbsences: payroll.weekendAbsences,
             occasionAbsences: payroll.occasionAbsences,
-            absentBreakdown: payroll.absentBreakdown
+            absentBreakdown: payroll.absentBreakdown,
+            weeklyFreeLeaveBreakdown: payroll.weeklyFreeLeaveBreakdown
           };
         } catch (e: any) {
           console.error(`Error calculating payroll for staff ${profile.id}:`, e);

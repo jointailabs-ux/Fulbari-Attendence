@@ -131,6 +131,7 @@ export async function GET(
         weightedLeavesTaken: payroll.weightedLeavesTaken,
         freeLeaveAmount: payroll.freeLeaveAmount,
         daysElapsed: payroll.daysElapsed,
+        weeklyFreeLeaveBreakdown: payroll.weeklyFreeLeaveBreakdown,
         metrics,
         absentBreakdown: payroll.absentBreakdown
       }
