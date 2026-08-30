@@ -469,22 +469,36 @@ export default function StaffProfilePage() {
             </div>
 
             {/* Last Day Projection Info Box (when shift not started yet) */}
-            {!showUnusedLeavePay && staff.currentMonth.todayShiftStatus?.isLastDay && (
-              <div style={{ fontSize: "0.66rem", padding: "0.45rem 0.65rem", background: "rgba(168,85,247,0.06)", border: "1px dashed rgba(168,85,247,0.3)", borderRadius: "8px", color: "var(--text-muted)", lineHeight: 1.5 }}>
-                <div style={{ color: "#c084fc", fontWeight: 700, marginBottom: "0.15rem" }}>
-                  ⏳ Today is the last day (Shift: {staff.currentMonth.todayShiftStatus.shiftHours}) · {unusedFreeLeaves} earned leaves available
+            {!showUnusedLeavePay && staff.currentMonth.todayShiftStatus?.isLastDay && (() => {
+              const workShiftPay = parseFloat(((daysPresent + 1) * dailyWage).toFixed(2));
+              const workUnusedPay = potentialUnusedLeaveAmount;
+              const workGross = parseFloat((workShiftPay + freeLeaveAmount + workUnusedPay - absencePenaltyAmount).toFixed(2));
+
+              const leaveShiftPay = workedGross;
+              const totalPaidLeavesCount = freeLeavesUsedCount + (unusedFreeLeaves > 0 ? 1 : 0);
+              const leavePaidLeaveAmt = parseFloat((freeLeaveAmount + (unusedFreeLeaves > 0 ? dailyWage : 0)).toFixed(2));
+              const remUnusedLeaves = Math.max(0, unusedFreeLeaves - 1);
+              const leaveUnusedPay = parseFloat((remUnusedLeaves * dailyWage).toFixed(2));
+              const leaveExcessCut = unusedFreeLeaves > 0 ? absencePenaltyAmount : parseFloat((absencePenaltyAmount + dailyWage).toFixed(2));
+              const leaveGross = parseFloat((leaveShiftPay + leavePaidLeaveAmt + leaveUnusedPay - leaveExcessCut).toFixed(2));
+
+              return (
+                <div style={{ fontSize: "0.66rem", padding: "0.5rem 0.7rem", background: "rgba(168,85,247,0.07)", border: "1px dashed rgba(168,85,247,0.35)", borderRadius: "10px", color: "var(--text-muted)", lineHeight: 1.55 }}>
+                  <div style={{ color: "#c084fc", fontWeight: 800, marginBottom: "0.2rem", fontSize: "0.7rem" }}>
+                    ⏳ Today is the last day (Shift: {staff.currentMonth.todayShiftStatus.shiftHours}) · {unusedFreeLeaves} earned leaves available
+                  </div>
+                  <div style={{ marginBottom: "0.15rem" }}>
+                    • If you work today: <strong>₹{workShiftPay.toLocaleString("en-IN")}</strong> shift pay ({daysPresent + 1}d) {freeLeaveAmount > 0 ? `+ <strong>₹${freeLeaveAmount.toLocaleString("en-IN")}</strong> paid leave (${freeLeavesUsedCount}d) ` : ""}+ <strong>₹{workUnusedPay.toLocaleString("en-IN")}</strong> unused leave pay ({unusedFreeLeaves}d) = <strong style={{ color: "#38bdf8" }}>₹{workGross.toLocaleString("en-IN")} Gross</strong>
+                  </div>
+                  <div>
+                    • If you take leave today: <strong>₹{leaveShiftPay.toLocaleString("en-IN")}</strong> shift pay ({daysPresent}d) + <strong>₹{leavePaidLeaveAmt.toLocaleString("en-IN")}</strong> paid leave ({totalPaidLeavesCount}d) {remUnusedLeaves > 0 ? `+ <strong>₹${leaveUnusedPay.toLocaleString("en-IN")}</strong> unused leave pay (${remUnusedLeaves}d) ` : ""}= <strong style={{ color: "#38bdf8" }}>₹{leaveGross.toLocaleString("en-IN")} Gross</strong>
+                  </div>
+                  <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.62rem", marginTop: "0.25rem" }}>
+                    ℹ️ Unused leave pay activates once today's shift starts.
+                  </div>
                 </div>
-                <div>
-                  • If you work today: <strong>₹{((daysPresent + 1) * dailyWage).toLocaleString("en-IN")}</strong> shift pay + <strong>₹{potentialUnusedLeaveAmount.toLocaleString("en-IN")}</strong> unused leave pay = <strong style={{ color: "#38bdf8" }}>₹{((daysPresent + 1) * dailyWage + potentialUnusedLeaveAmount).toLocaleString("en-IN")} Gross</strong>
-                </div>
-                <div>
-                  • If you take leave today: <strong>₹{workedGross.toLocaleString("en-IN")}</strong> shift pay + <strong>₹{dailyWage.toLocaleString("en-IN")}</strong> paid leave + <strong>₹{((unusedFreeLeaves - 1) * dailyWage).toLocaleString("en-IN")}</strong> unused leave pay = <strong style={{ color: "#38bdf8" }}>₹{(workedGross + dailyWage + (unusedFreeLeaves - 1) * dailyWage).toLocaleString("en-IN")} Gross</strong>
-                </div>
-                <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.62rem", marginTop: "0.2rem" }}>
-                  ℹ️ Unused leave pay activates once today's shift starts.
-                </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Result Row */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.5rem 0.7rem", background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.2)", borderRadius: "8px" }}>
