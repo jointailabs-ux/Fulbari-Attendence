@@ -59,6 +59,12 @@ export async function GET(req: Request) {
             simpleAdvanceDeducted: simpleAdvanceDeducted.toFixed(2),
             strictAdvanceDeducted: strictAdvanceDeducted.toFixed(2),
             totalAdvance: payroll.pendingAdvances.toFixed(2),
+            advanceDetails: payroll.advanceDetails,
+            todayShiftStatus: payroll.todayShiftStatus,
+            unusedFreeLeaves: payroll.unusedFreeLeaves,
+            unusedLeaveAmount: payroll.unusedLeaveAmount,
+            potentialUnusedLeaveAmount: payroll.potentialUnusedLeaveAmount,
+            showUnusedLeavePay: payroll.showUnusedLeavePay,
             warnings: {
               highAdvance: payroll.pendingAdvances > (payroll.monthlySalary * 0.5),
               lowWork: payroll.daysPresent === 0
@@ -77,6 +83,10 @@ export async function GET(req: Request) {
               freeLeaves: payroll.freeLeaves,
               freeLeavesUsed: payroll.freeLeavesUsed,
               freeLeaveAmount: payroll.freeLeaveAmount,
+              unusedFreeLeaves: payroll.unusedFreeLeaves,
+              unusedLeaveAmount: payroll.unusedLeaveAmount,
+              potentialUnusedLeaveAmount: payroll.potentialUnusedLeaveAmount,
+              showUnusedLeavePay: payroll.showUnusedLeavePay,
               extraWeekendPenaltyDays: payroll.extraWeekendPenaltyDays,
               weekendPenaltyAmount: payroll.weekendPenaltyAmount,
               rawAbsences: payroll.rawAbsences,

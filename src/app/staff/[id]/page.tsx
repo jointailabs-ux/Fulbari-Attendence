@@ -34,6 +34,13 @@ interface StaffData {
     presentDays: number;
     paidDays: number;
     freeLeaves: number;
+    freeLeavesUsed?: number;
+    unusedFreeLeaves?: number;
+    unusedLeaveAmount?: number;
+    potentialUnusedLeaveAmount?: number;
+    showUnusedLeavePay?: boolean;
+    todayShiftStatus?: any;
+    advanceDetails?: Array<{ id: string; amount: number; date: string; formattedDate: string }>;
     totalDays: number;
     dailyWage: number;
     workedGross?: number;
@@ -294,9 +301,13 @@ export default function StaffProfilePage() {
   const weightedLeaves = parseFloat((staff.currentMonth.weightedLeavesTaken ?? (normalAbsences * 1.0 + (satCount + sunCount + occCount) * 1.5)).toFixed(2));
   const freeLeavesUsedCount = parseFloat(Math.min(freeLeaves, weightedLeaves).toFixed(2));
   const freeLeaveAmount = parseFloat((staff.currentMonth.freeLeaveAmount ?? staff.currentMonth.metrics?.freeLeaveAmount ?? (freeLeavesUsedCount * dailyWage)).toFixed(2));
+  const unusedFreeLeaves = staff.currentMonth.unusedFreeLeaves ?? staff.currentMonth.metrics?.unusedFreeLeaves ?? Math.max(0, freeLeaves - freeLeavesUsedCount);
+  const unusedLeaveAmount = staff.currentMonth.unusedLeaveAmount ?? staff.currentMonth.metrics?.unusedLeaveAmount ?? 0;
+  const potentialUnusedLeaveAmount = staff.currentMonth.potentialUnusedLeaveAmount ?? staff.currentMonth.metrics?.potentialUnusedLeaveAmount ?? parseFloat((unusedFreeLeaves * dailyWage).toFixed(2));
+  const showUnusedLeavePay = staff.currentMonth.showUnusedLeavePay ?? staff.currentMonth.metrics?.showUnusedLeavePay ?? false;
   
-  // Gross = Shift Pay + Paid Leave Pay − Excess Cut (can be negative)
-  const earnedGross = staff.currentMonth.earnedGross ?? staff.currentMonth.earnedTillNow ?? parseFloat((workedGross + freeLeaveAmount - absencePenaltyAmount).toFixed(2));
+  // Gross = Shift Pay + Paid Leave Pay + Unused Leave Pay − Excess Cut (can be negative)
+  const earnedGross = staff.currentMonth.earnedGross ?? staff.currentMonth.earnedTillNow ?? parseFloat((workedGross + freeLeaveAmount + unusedLeaveAmount - absencePenaltyAmount).toFixed(2));
   const advanceDebt = staff.currentMonth.pendingAdvance || 0;
   const advanceDeducted = staff.currentMonth.advanceToRecover ?? Math.min(advanceDebt, Math.max(0, earnedGross));
   const remainingAdvance = Math.max(0, advanceDebt - advanceDeducted);
@@ -435,7 +446,15 @@ export default function StaffProfilePage() {
               </div>
             )}
 
-            {/* Row 3: Excess Absence Cut */}
+            {/* Row 3: Unused Earned Leave Pay */}
+            {unusedLeaveAmount > 0 ? (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.4rem 0.7rem", background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.25)", borderRadius: "8px", fontSize: "0.72rem" }}>
+                <span style={{ color: "var(--text-muted)" }}>🌟 <strong style={{ color: "#c084fc" }}>Unused Earned Leave Pay</strong> — {unusedFreeLeaves}d unused earned leave × ₹{dailyWage}</span>
+                <span style={{ fontWeight: 900, color: "#c084fc", fontFamily: "monospace" }}>+ ₹{unusedLeaveAmount.toLocaleString("en-IN")}</span>
+              </div>
+            ) : null}
+
+            {/* Row 4: Excess Absence Cut */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.4rem 0.7rem", background: unpaidAbsences > 0 ? "rgba(244,63,94,0.07)" : "rgba(255,255,255,0.02)", border: `1px solid ${unpaidAbsences > 0 ? "rgba(244,63,94,0.2)" : "rgba(255,255,255,0.04)"}`, borderRadius: "8px", fontSize: "0.72rem" }}>
               <div>
                 <span style={{ color: unpaidAbsences > 0 ? "#fb7185" : "var(--text-muted)", fontWeight: 800 }}>✂️ Excess Leave Cut</span>
@@ -449,12 +468,30 @@ export default function StaffProfilePage() {
               </span>
             </div>
 
+            {/* Last Day Projection Info Box (when shift not started yet) */}
+            {!showUnusedLeavePay && staff.currentMonth.todayShiftStatus?.isLastDay && (
+              <div style={{ fontSize: "0.66rem", padding: "0.45rem 0.65rem", background: "rgba(168,85,247,0.06)", border: "1px dashed rgba(168,85,247,0.3)", borderRadius: "8px", color: "var(--text-muted)", lineHeight: 1.5 }}>
+                <div style={{ color: "#c084fc", fontWeight: 700, marginBottom: "0.15rem" }}>
+                  ⏳ Today is the last day (Shift: {staff.currentMonth.todayShiftStatus.shiftHours}) · {unusedFreeLeaves} earned leaves available
+                </div>
+                <div>
+                  • If you work today: <strong>₹{((daysPresent + 1) * dailyWage).toLocaleString("en-IN")}</strong> shift pay + <strong>₹{potentialUnusedLeaveAmount.toLocaleString("en-IN")}</strong> unused leave pay = <strong style={{ color: "#38bdf8" }}>₹{((daysPresent + 1) * dailyWage + potentialUnusedLeaveAmount).toLocaleString("en-IN")} Gross</strong>
+                </div>
+                <div>
+                  • If you take leave today: <strong>₹{workedGross.toLocaleString("en-IN")}</strong> shift pay + <strong>₹{dailyWage.toLocaleString("en-IN")}</strong> paid leave + <strong>₹{((unusedFreeLeaves - 1) * dailyWage).toLocaleString("en-IN")}</strong> unused leave pay = <strong style={{ color: "#38bdf8" }}>₹{(workedGross + dailyWage + (unusedFreeLeaves - 1) * dailyWage).toLocaleString("en-IN")} Gross</strong>
+                </div>
+                <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.62rem", marginTop: "0.2rem" }}>
+                  ℹ️ Unused leave pay activates once today's shift starts.
+                </div>
+              </div>
+            )}
+
             {/* Result Row */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.5rem 0.7rem", background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.2)", borderRadius: "8px" }}>
               <div>
                 <span style={{ fontSize: "0.62rem", color: "#38bdf8", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em" }}>= Gross Salary Earned</span>
                 <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", marginLeft: "0.5rem" }}>
-                  ₹{workedGross.toLocaleString("en-IN")} {freeLeaveAmount > 0 ? `+ ₹${freeLeaveAmount.toLocaleString("en-IN")}` : ""} − ₹{absencePenaltyAmount.toLocaleString("en-IN")}
+                  ₹{workedGross.toLocaleString("en-IN")} {freeLeaveAmount > 0 ? `+ ₹${freeLeaveAmount.toLocaleString("en-IN")}` : ""} {unusedLeaveAmount > 0 ? `+ ₹${unusedLeaveAmount.toLocaleString("en-IN")}` : ""} − ₹{absencePenaltyAmount.toLocaleString("en-IN")}
                 </span>
               </div>
               <span style={{ fontSize: "1.05rem", fontWeight: 900, color: earnedGross >= 0 ? "#38bdf8" : "#fb7185", fontFamily: "monospace" }}>
@@ -486,6 +523,15 @@ export default function StaffProfilePage() {
                 <div>
                   <span style={{ display: "block", fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Advance Debt</span>
                   <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#fb923c" }}>₹{advanceDebt.toLocaleString("en-IN")}</span>
+                  {staff.currentMonth.advanceDetails && staff.currentMonth.advanceDetails.length > 0 && (
+                    <div style={{ marginTop: "0.2rem", display: "flex", flexDirection: "column", gap: "0.1rem" }}>
+                      {staff.currentMonth.advanceDetails.map((adv: any, i: number) => (
+                        <span key={adv.id || i} style={{ fontSize: "0.62rem", color: "#fdba74", fontWeight: 700 }}>
+                          📅 Taken: {adv.formattedDate} {(staff.currentMonth.advanceDetails?.length || 0) > 1 ? `(₹${adv.amount.toLocaleString("en-IN")})` : ""}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <span style={{ display: "block", fontSize: "0.58rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>Deducted Now</span>
@@ -648,7 +694,23 @@ export default function StaffProfilePage() {
                       </div>
                     )}
 
-                    {/* Row B: Excess Leave Cut row */}
+                    {/* Row B: Unused Earned Leave Pay */}
+                    {unusedLeaveAmount > 0 ? (
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.72rem", padding: "0.35rem 0.55rem", background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.25)", borderRadius: "6px" }}>
+                        <div>
+                          <span style={{ color: "#c084fc", fontWeight: 800 }}>🌟 Unused Earned Leave Pay</span>
+                          <span style={{ color: "var(--text-muted)", marginLeft: "0.4rem" }}>({unusedFreeLeaves}d unused earned leave × ₹{dailyWage})</span>
+                        </div>
+                        <span style={{ fontWeight: 900, color: "#c084fc", fontFamily: "monospace" }}>+ ₹{unusedLeaveAmount.toLocaleString("en-IN")}</span>
+                      </div>
+                    ) : !showUnusedLeavePay && staff.currentMonth.todayShiftStatus?.isLastDay ? (
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.68rem", padding: "0.35rem 0.55rem", background: "rgba(168,85,247,0.04)", border: "1px dashed rgba(168,85,247,0.2)", borderRadius: "6px", color: "#c084fc" }}>
+                        <span>🌟 Unused Leave Pay ({unusedFreeLeaves}d available = ₹{potentialUnusedLeaveAmount.toLocaleString("en-IN")})</span>
+                        <span style={{ fontWeight: 700 }}>Activates once today's shift starts</span>
+                      </div>
+                    ) : null}
+
+                    {/* Row C: Excess Leave Cut row */}
                     {unpaidAbsences > 0 ? (
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.72rem", padding: "0.35rem 0.55rem", background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.15)", borderRadius: "6px" }}>
                         <div>
@@ -665,11 +727,11 @@ export default function StaffProfilePage() {
                     )}
                   </div>
 
-                  {/* Gross formula summary: Shift Pay + Paid Leave Pay - Excess Cut */}
+                  {/* Gross formula summary: Shift Pay + Paid Leave Pay + Unused Leave Pay - Excess Cut */}
                   <div style={{ marginTop: "0.4rem", padding: "0.45rem 0.65rem", background: "rgba(0,0,0,0.3)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.06)", fontSize: "0.67rem", color: "var(--text-muted)", fontFamily: "monospace", lineHeight: 1.6 }}>
-                    <div>Gross = Shift Pay + Paid Leave Pay − Excess Leave Cut</div>
+                    <div>Gross = Shift Pay {freeLeaveAmount > 0 ? "+ Paid Leave Pay " : ""}{unusedLeaveAmount > 0 ? "+ Unused Leave Pay " : ""}− Excess Leave Cut</div>
                     <div style={{ color: "#fff", fontWeight: 700 }}>
-                      ₹{workedGross.toLocaleString("en-IN")} {freeLeaveAmount > 0 ? `+ ₹${freeLeaveAmount.toLocaleString("en-IN")}` : ""} − ₹{absencePenaltyAmount.toLocaleString("en-IN")} = <span style={{ color: earnedGross >= 0 ? "#34d399" : "#fb7185" }}>{earnedGross < 0 ? "-" : ""}₹{Math.abs(earnedGross).toLocaleString("en-IN")}</span>
+                      ₹{workedGross.toLocaleString("en-IN")} {freeLeaveAmount > 0 ? `+ ₹${freeLeaveAmount.toLocaleString("en-IN")}` : ""} {unusedLeaveAmount > 0 ? `+ ₹${unusedLeaveAmount.toLocaleString("en-IN")}` : ""} − ₹{absencePenaltyAmount.toLocaleString("en-IN")} = <span style={{ color: earnedGross >= 0 ? "#34d399" : "#fb7185" }}>{earnedGross < 0 ? "-" : ""}₹{Math.abs(earnedGross).toLocaleString("en-IN")}</span>
                     </div>
                   </div>
                 </div>
@@ -698,9 +760,18 @@ export default function StaffProfilePage() {
                   </div>
 
                   {advanceDebt > 0 && (
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.74rem", color: "#fb7185" }}>
-                      <span>💳 Advance Repayment (Total Debt: ₹{advanceDebt.toLocaleString("en-IN")})</span>
-                      <span style={{ fontWeight: 800, fontFamily: "monospace" }}>− ₹{advanceDeducted.toLocaleString("en-IN")}</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem", fontSize: "0.74rem", color: "#fb7185" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span>💳 Advance Repayment (Total Debt: ₹{advanceDebt.toLocaleString("en-IN")})</span>
+                        <span style={{ fontWeight: 800, fontFamily: "monospace" }}>− ₹{advanceDeducted.toLocaleString("en-IN")}</span>
+                      </div>
+                      {staff.currentMonth.advanceDetails && staff.currentMonth.advanceDetails.length > 0 && (
+                        <div style={{ paddingLeft: "1.2rem", display: "flex", flexDirection: "column", gap: "0.1rem", fontSize: "0.65rem", color: "#fdba74" }}>
+                          {staff.currentMonth.advanceDetails.map((adv: any, i: number) => (
+                            <span key={adv.id || i}>• Taken on <strong>{adv.formattedDate}</strong>: ₹{adv.amount.toLocaleString("en-IN")}</span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

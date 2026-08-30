@@ -11,8 +11,24 @@ export interface AbsentDayDetail {
   occasionName?: string;
 }
 
+export interface AdvanceDetail {
+  id: string;
+  amount: number;
+  date: string; // "YYYY-MM-DD"
+  formattedDate: string; // e.g. "15 Aug 2026"
+}
+
+export interface TodayShiftStatus {
+  isToday: boolean;
+  isLastDay: boolean;
+  shiftStarted: boolean;
+  shiftEnded: boolean;
+  shiftHours: string; // e.g. "12:00 PM – 12:00 AM"
+  canTakeLeave: boolean;
+}
+
 export interface WeeklyFreeLeaveEntry {
-  weekLabel: string;   // e.g. "Week 1 (Aug 1â€“7)"
+  weekLabel: string;   // e.g. "Week 1 (Aug 1–7)"
   daysWorked: number;  // how many days the employee worked that week
   daysInMonth: number; // how many days of that week fall in the current month/elapsed period
   earned: boolean;     // true if daysWorked >= 6
@@ -33,6 +49,10 @@ export interface PayrollDetails {
   freeLeaves: number;  // earned via weekly rule
   freeLeavesUsed: number;
   freeLeaveAmount: number;
+  unusedFreeLeaves: number;
+  unusedLeaveAmount: number;
+  potentialUnusedLeaveAmount: number;
+  showUnusedLeavePay: boolean;
   extraWeekendPenaltyDays: number;
   weekendPenaltyAmount: number;
   rawAbsences: number;
@@ -45,6 +65,8 @@ export interface PayrollDetails {
   penaltyEarly: number;
   penaltyAbsence: number;
   pendingAdvances: number;
+  advanceDetails: AdvanceDetail[];
+  todayShiftStatus: TodayShiftStatus;
   normalAbsences: number;
   weekendAbsences: { saturdays: number; sundays: number; total: number };
   occasionAbsences: { count: number; dates: Array<{ date: string; name: string }> };
@@ -136,7 +158,8 @@ export function calculateSalaryMetrics(
   earlyPenaltiesTotal: number,
   daysElapsed: number = totalDays,
   specialAbsentDays: number = 0,
-  freeLeaves: number = 4
+  freeLeaves: number = 4,
+  showUnusedLeavePay: boolean = false
 ) {
   const R_day = totalDays > 0 ? baseSalary / totalDays : 0;
   const isMonthCompleted = daysElapsed >= totalDays;
@@ -158,8 +181,13 @@ export function calculateSalaryMetrics(
   // Free leave monetary credit (paid leave pay for covered absences)
   const freeLeaveAmount = parseFloat((freeLeavesUsed * R_day).toFixed(2));
 
-  // Earned gross = Shift Pay + Paid Leave Credit − Excess Penalty (CAN BE NEGATIVE)
-  const earnedGross = parseFloat((workedGross + freeLeaveAmount - penaltyAbsence).toFixed(2));
+  // Unused earned leaves calculation (encashment / paid leave pay)
+  const unusedFreeLeaves = parseFloat(Math.max(0, freeLeaves - freeLeavesUsed).toFixed(2));
+  const potentialUnusedLeaveAmount = parseFloat((unusedFreeLeaves * R_day).toFixed(2));
+  const unusedLeaveAmount = showUnusedLeavePay ? potentialUnusedLeaveAmount : 0;
+
+  // Earned gross = Shift Pay + Paid Leave Credit + Unused Leave Pay − Excess Penalty (CAN BE NEGATIVE)
+  const earnedGross = parseFloat((workedGross + freeLeaveAmount + unusedLeaveAmount - penaltyAbsence).toFixed(2));
 
   // Extra weekend weight info (informational)
   const extraWeekendPenaltyDays = parseFloat(Math.max(0, weightedLeavesTaken - rawAbsences).toFixed(2));
@@ -180,6 +208,10 @@ export function calculateSalaryMetrics(
     workedGross,
     freeLeavesUsed,
     freeLeaveAmount,
+    unusedFreeLeaves,
+    unusedLeaveAmount,
+    potentialUnusedLeaveAmount,
+    showUnusedLeavePay,
     extraWeekendPenaltyDays,
     weekendPenaltyAmount,
     rawAbsences,
@@ -248,12 +280,35 @@ export async function calculateStaffPayroll(
   const A_pending = staff.advances.reduce((acc, curr) => acc + curr.amount, 0);
   const D_present = Math.min(staff.attendances.length, D_total);
 
-  const shiftStartTime = staff.slot?.outlet?.shiftStartTime || '09:00';
-  const shiftEndTime = staff.slot?.outlet?.shiftEndTime || '17:00';
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const advanceDetails: AdvanceDetail[] = staff.advances.map(adv => {
+    const advDate = adv.date || adv.createdAt;
+    const d = new Date(advDate);
+    const day = d.getUTCDate();
+    const mon = monthNames[d.getUTCMonth()];
+    const yr = d.getUTCFullYear();
+    return {
+      id: adv.id,
+      amount: adv.amount,
+      date: d.toISOString().split('T')[0],
+      formattedDate: `${day} ${mon} ${yr}`
+    };
+  });
+
+  const shiftStartTime = staff.slot?.outlet?.shiftStartTime || '12:00';
+  const shiftEndTime = staff.slot?.outlet?.shiftEndTime || '00:00';
   const [expStartH, expStartM] = shiftStartTime.split(':').map(Number);
-  const expectedStartMin = expStartH * 60 + expStartM;
+  const expectedStartMin = (expStartH || 0) * 60 + (expStartM || 0);
   const [expEndH, expEndM] = shiftEndTime.split(':').map(Number);
-  const expectedEndMin = expEndH * 60 + expEndM;
+  const expectedEndMin = (expEndH || 0) * 60 + (expEndM || 0);
+
+  const startH12 = (expStartH || 0) % 12 || 12;
+  const startMStr = ((expStartM || 0) > 0 ? `:${(expStartM || 0).toString().padStart(2, '0')}` : '');
+  const startAmPm = (expStartH || 0) >= 12 ? 'PM' : 'AM';
+  const endH12 = (expEndH || 0) % 12 || 12;
+  const endMStr = ((expEndM || 0) > 0 ? `:${(expEndM || 0).toString().padStart(2, '0')}` : '');
+  const endAmPm = (expEndH || 0) >= 12 ? 'PM' : 'AM';
+  const shiftHours = `${startH12}${startMStr} ${startAmPm} – ${endH12}${endMStr} ${endAmPm}`;
 
   let penaltyLate = 0;
   let penaltyEarly = 0;
@@ -301,23 +356,70 @@ export async function calculateStaffPayroll(
   const istTime = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
   const curYear = istTime.getUTCFullYear();
   const curMonth = istTime.getUTCMonth() + 1;
+  const curDate = istTime.getUTCDate();
+  const currentIstMin = istTime.getUTCHours() * 60 + istTime.getUTCMinutes();
 
-  let daysElapsed = D_total;
-  if (year === curYear && month === curMonth) {
-    daysElapsed = Math.min(D_total, istTime.getUTCDate());
-  } else if (year > curYear || (year === curYear && month > curMonth)) {
-    daysElapsed = 0;
-  }
+  const isCurrentMonth = (year === curYear && month === curMonth);
+  const isPastMonth = (year < curYear || (year === curYear && month < curMonth));
+  const isLastDay = isCurrentMonth && (curDate === D_total);
 
   const attendedDates = new Set(
     staff.attendances.map(a => a.shiftDate.toISOString().split('T')[0])
   );
+  const todayStr = istTime.toISOString().split('T')[0];
+  const hasAttendedToday = attendedDates.has(todayStr);
 
-  // â”€â”€â”€ Weekly Free Leave Rule â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  let isTodayShiftStarted = false;
+  let isTodayShiftEnded = false;
+
+  if (isCurrentMonth) {
+    isTodayShiftStarted = currentIstMin >= expectedStartMin || hasAttendedToday;
+    if (expectedEndMin <= expectedStartMin) {
+      // Midnight or overnight shift (e.g. 12:00 PM to 12:00 AM midnight)
+      // Remains active throughout the calendar day
+      isTodayShiftEnded = false;
+    } else {
+      isTodayShiftEnded = currentIstMin >= expectedEndMin;
+    }
+  }
+
+  // Today shift status
+  const todayShiftStatus: TodayShiftStatus = {
+    isToday: isCurrentMonth,
+    isLastDay,
+    shiftStarted: isTodayShiftStarted,
+    shiftEnded: isTodayShiftEnded,
+    shiftHours,
+    canTakeLeave: isLastDay && !hasAttendedToday
+  };
+
+  // Rule: show unused leave pay amount when last day of shift starts, only show on last day (or past month)
+  let showUnusedLeavePay = false;
+  if (isPastMonth) {
+    showUnusedLeavePay = true;
+  } else if (isLastDay) {
+    showUnusedLeavePay = isTodayShiftStarted;
+  }
+
+  // Determine completed days for absence calculation:
+  // If today's shift has ended or staff clocked in, include today in daysElapsed.
+  // If today's shift has NOT ended yet and staff hasn't clocked in, elapsed completed days is curDate - 1.
+  let daysElapsed = D_total;
+  if (isCurrentMonth) {
+    if (isTodayShiftEnded || hasAttendedToday) {
+      daysElapsed = Math.min(D_total, curDate);
+    } else {
+      daysElapsed = Math.min(D_total, Math.max(0, curDate - 1));
+    }
+  } else if (year > curYear || (year === curYear && month > curMonth)) {
+    daysElapsed = 0;
+  }
+
+  // ─── Weekly Free Leave Rule ───────────────────────────────────────────────
   const { freeLeaves: earnedFreeLeaves, weeklyBreakdown: weeklyFreeLeaveBreakdown } =
     calculateWeeklyFreeLeaves(year, month, daysElapsed, attendedDates);
 
-  // â”€â”€â”€ Day-by-Day Absence & 1.5x Weight Analysis â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Day-by-Day Absence & 1.5x Weight Analysis ───────────────────────────
   let rawAbsentDays = 0;
   let weightedLeavesTaken = 0;
   let absentSaturdays = 0;
@@ -364,7 +466,8 @@ export async function calculateStaffPayroll(
     penaltyLate, penaltyEarly,
     daysElapsed,
     absentSaturdays + absentSundays + occasionAbsencesList.length,
-    earnedFreeLeaves
+    earnedFreeLeaves,
+    showUnusedLeavePay
   );
 
   return {
@@ -382,6 +485,10 @@ export async function calculateStaffPayroll(
     freeLeaves: metrics.freeLeaves,
     freeLeavesUsed: metrics.freeLeavesUsed,
     freeLeaveAmount: metrics.freeLeaveAmount,
+    unusedFreeLeaves: metrics.unusedFreeLeaves,
+    unusedLeaveAmount: metrics.unusedLeaveAmount,
+    potentialUnusedLeaveAmount: metrics.potentialUnusedLeaveAmount,
+    showUnusedLeavePay: metrics.showUnusedLeavePay,
     extraWeekendPenaltyDays: metrics.extraWeekendPenaltyDays,
     weekendPenaltyAmount: metrics.weekendPenaltyAmount,
     rawAbsences: metrics.rawAbsences,
@@ -394,6 +501,8 @@ export async function calculateStaffPayroll(
     penaltyEarly: parseFloat(penaltyEarly.toFixed(2)),
     penaltyAbsence: metrics.penaltyAbsence,
     pendingAdvances: A_pending,
+    advanceDetails,
+    todayShiftStatus,
     normalAbsences,
     weekendAbsences: { saturdays: absentSaturdays, sundays: absentSundays, total: absentSaturdays + absentSundays },
     occasionAbsences: { count: occasionAbsencesList.length, dates: occasionAbsencesList },
