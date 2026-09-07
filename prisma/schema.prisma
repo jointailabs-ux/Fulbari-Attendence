@@ -119,6 +119,7 @@ model Advance {
   amount              Float
   date                DateTime @default(now())
   status              String   @default("PENDING") // PENDING, DEDUCTED
+  targetMonthYear     String?  // e.g., "2026-08" to restrict deduction to this month's payroll
   isActive            Boolean  @default(true)
   createdAt           DateTime @default(now())
 

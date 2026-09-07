@@ -25,6 +25,7 @@ export default function AdvancesTab({ staffId }: { staffId: string }) {
   }, [staffId]);
 
   const [issueAmount, setIssueAmount] = useState("");
+  const [targetMonthYear, setTargetMonthYear] = useState("");
   const [issuing, setIssuing] = useState(false);
 
   const handleIssueAdvance = async () => {
@@ -34,10 +35,11 @@ export default function AdvancesTab({ staffId }: { staffId: string }) {
       const res = await fetch("/api/v1/advance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ staffId, amount: issueAmount }),
+        body: JSON.stringify({ staffId, amount: issueAmount, targetMonthYear: targetMonthYear || null }),
       });
       if (res.ok) {
         setIssueAmount("");
+        setTargetMonthYear("");
         fetchAdvances(); // refresh
       }
     } catch (e) {
@@ -69,6 +71,14 @@ export default function AdvancesTab({ staffId }: { staffId: string }) {
                style={{ width: '120px', paddingLeft: '2rem', borderRadius: '12px' }}
              />
           </div>
+          <input 
+            type="month"
+            className="input-modern"
+            value={targetMonthYear}
+            onChange={(e) => setTargetMonthYear(e.target.value)}
+            style={{ borderRadius: '12px' }}
+            title="Optional: Select which month's payslip this should be deducted from"
+          />
           <button 
             className="btn-modern btn-primary" 
             onClick={handleIssueAdvance} 
@@ -90,6 +100,7 @@ export default function AdvancesTab({ staffId }: { staffId: string }) {
               <tr>
                 <th>Disbursement Date</th>
                 <th>Principal Amount</th>
+                <th>Target Month</th>
                 <th>Settlement Status</th>
               </tr>
             </thead>
@@ -98,6 +109,9 @@ export default function AdvancesTab({ staffId }: { staffId: string }) {
                 <tr key={adv.id}>
                   <td>{new Date(adv.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</td>
                   <td style={{ fontWeight: '700' }}>₹{adv.amount}</td>
+                  <td style={{ color: adv.targetMonthYear ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                    {adv.targetMonthYear || 'Any'}
+                  </td>
                   <td>
                     <span style={{ 
                       padding: '0.3rem 0.8rem', 
@@ -117,7 +131,7 @@ export default function AdvancesTab({ staffId }: { staffId: string }) {
               ))}
               {advances.length === 0 && (
                 <tr>
-                  <td colSpan={3} style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <td colSpan={4} style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                     <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🍃</div>
                     No financial liabilities found for this profile.
                   </td>

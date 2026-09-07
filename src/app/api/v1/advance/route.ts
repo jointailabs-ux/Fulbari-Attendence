@@ -5,12 +5,13 @@ import prisma from '../../../../lib/prisma';
 
 export async function POST(req: Request) {
   try {
-    const { staffId, amount } = await req.json();
+    const { staffId, amount, targetMonthYear } = await req.json();
 
     const advance = await prisma.advance.create({
       data: {
         staffId,
         amount: parseFloat(amount),
+        targetMonthYear: targetMonthYear || null,
         date: new Date()
       }
     });

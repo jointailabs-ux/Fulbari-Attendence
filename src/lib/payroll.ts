@@ -269,7 +269,16 @@ export async function calculateStaffPayroll(
       slot: { include: { outlet: true } },
       attendances: { where: { shiftDate: { gte: startDate, lte: endDate } } },
       leaves: { where: { date: { gte: startDate, lte: endDate } } },
-      advances: { where: { status: 'PENDING', isActive: true } }
+      advances: { 
+        where: { 
+          status: 'PENDING', 
+          isActive: true,
+          OR: [
+            { targetMonthYear: null },
+            { targetMonthYear: monthYear }
+          ]
+        } 
+      }
     }
   });
 
