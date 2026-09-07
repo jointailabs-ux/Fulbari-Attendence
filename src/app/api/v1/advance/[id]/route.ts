@@ -10,11 +10,12 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await req.json();
-    const { amount, isActive } = body;
+    const { amount, isActive, targetMonthYear } = body;
 
     const data: any = {};
     if (amount !== undefined) data.amount = parseFloat(amount);
     if (isActive !== undefined) data.isActive = isActive;
+    if (targetMonthYear !== undefined) data.targetMonthYear = targetMonthYear || null;
 
     const updated = await prisma.advance.update({
       where: { id },

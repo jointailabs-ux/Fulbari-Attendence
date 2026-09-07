@@ -25,12 +25,27 @@ export async function POST(req: Request) {
         }
       });
 
-      // 2. Mark pending advances as deducted
+      // 2. Mark pending advances for this month as deducted
+      const [yearNum, monthNum] = monthYear.split('-').map(Number);
+      const relStartDate = new Date(Date.UTC(yearNum, monthNum - 1, 1));
+      const relEndDate = new Date(Date.UTC(yearNum, monthNum, 0, 23, 59, 59, 999));
+
       await tx.advance.updateMany({
         where: {
           staffId,
           status: 'PENDING',
-          isActive: true
+          isActive: true,
+          OR: [
+            { targetMonthYear: monthYear },
+            { 
+              targetMonthYear: null, 
+              date: { gte: relStartDate, lte: relEndDate } 
+            },
+            { 
+              targetMonthYear: '', 
+              date: { gte: relStartDate, lte: relEndDate } 
+            }
+          ]
         },
         data: {
           status: 'DEDUCTED'

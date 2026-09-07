@@ -819,6 +819,7 @@ export default function PayrollCalculationPage() {
                                 {r.advanceDetails.map((adv: any, i: number) => (
                                   <span key={adv.id || i} style={{ fontSize: "0.62rem", color: "#fdba74", fontWeight: 700 }}>
                                     📅 Taken: {adv.formattedDate} {r.advanceDetails.length > 1 ? `(₹${adv.amount.toLocaleString("en-IN")})` : ""}
+                                    {adv.targetMonthYear && <span style={{ color: "#c084fc", marginLeft: "0.35rem" }}>• Cuts: {adv.targetMonthYear}</span>}
                                   </span>
                                 ))}
                               </div>

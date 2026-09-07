@@ -16,6 +16,7 @@ export interface AdvanceDetail {
   amount: number;
   date: string; // "YYYY-MM-DD"
   formattedDate: string; // e.g. "15 Aug 2026"
+  targetMonthYear?: string | null;
 }
 
 export interface TodayShiftStatus {
@@ -274,8 +275,15 @@ export async function calculateStaffPayroll(
           status: 'PENDING', 
           isActive: true,
           OR: [
-            { targetMonthYear: null },
-            { targetMonthYear: monthYear }
+            { targetMonthYear: monthYear },
+            { 
+              targetMonthYear: null, 
+              date: { gte: startDate, lte: endDate } 
+            },
+            { 
+              targetMonthYear: '', 
+              date: { gte: startDate, lte: endDate } 
+            }
           ]
         } 
       }
@@ -300,7 +308,8 @@ export async function calculateStaffPayroll(
       id: adv.id,
       amount: adv.amount,
       date: d.toISOString().split('T')[0],
-      formattedDate: `${day} ${mon} ${yr}`
+      formattedDate: `${day} ${mon} ${yr}`,
+      targetMonthYear: adv.targetMonthYear || null
     };
   });
 

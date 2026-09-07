@@ -33,8 +33,21 @@ export default function FinancialsManagement() {
   const [staffList, setStaffList] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ staffId: "", amount: "" });
+  const [formData, setFormData] = useState({ staffId: "", amount: "", targetMonthYear: "" });
   const [editingAdv, setEditingAdv] = useState<any>(null);
+
+  // Month calculation helpers for quick owner selection
+  const now = new Date();
+  const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevMonthStr = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, "0")}`;
+
+  const formatYM = (ym?: string | null) => {
+    if (!ym) return null;
+    const [y, m] = ym.split("-");
+    if (!y || !m) return ym;
+    return new Date(parseInt(y), parseInt(m) - 1, 1).toLocaleDateString("en-IN", { month: "short", year: "numeric" });
+  };
   
   // Filters
   const [filterStaffId, setFilterStaffId] = useState("");
@@ -68,10 +81,14 @@ export default function FinancialsManagement() {
       await fetch("/api/v1/advance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          staffId: formData.staffId,
+          amount: formData.amount,
+          targetMonthYear: formData.targetMonthYear || null
+        })
       });
       setIsModalOpen(false);
-      setFormData({ staffId: "", amount: "" });
+      setFormData({ staffId: "", amount: "", targetMonthYear: "" });
       fetchData();
     } catch (e) {
       console.error(e);
@@ -84,7 +101,10 @@ export default function FinancialsManagement() {
       await fetch(`/api/v1/advance/${editingAdv.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editingAdv)
+        body: JSON.stringify({
+          amount: editingAdv.amount,
+          targetMonthYear: editingAdv.targetMonthYear || null
+        })
       });
       setIsEditModalOpen(false);
       setEditingAdv(null);
@@ -219,18 +239,26 @@ export default function FinancialsManagement() {
                     <span style={{ fontSize: "1.3rem", fontWeight: 950, color: "var(--brand-secondary)" }}>-₹{adv.amount}</span>
                   </div>
 
+                  {/* Deduction Target Month Display */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.4rem 0.65rem", background: "rgba(255,255,255,0.02)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.05)", fontSize: "0.72rem" }}>
+                    <span style={{ color: "var(--text-muted)", fontWeight: 700 }}>CUTS FROM PAYSLIP:</span>
+                    <span style={{ fontWeight: 800, color: adv.targetMonthYear ? "#a78bfa" : "#38bdf8", background: adv.targetMonthYear ? "rgba(167,139,250,0.12)" : "rgba(56,189,248,0.12)", padding: "0.2rem 0.5rem", borderRadius: "6px" }}>
+                      {adv.targetMonthYear ? formatYM(adv.targetMonthYear) : `Auto (${new Date(adv.date).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })})`}
+                    </span>
+                  </div>
+
                   <div style={{ display: "flex", gap: "0.5rem" }}>
                     <button
                       onClick={() => { setEditingAdv(adv); setIsEditModalOpen(true); }}
                       style={{
-                        flex: 1, padding: "0.45rem", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.08)",
-                        background: "rgba(255,255,255,0.03)", color: "var(--text-muted)", cursor: "pointer",
+                        flex: 1, padding: "0.45rem", borderRadius: "8px", border: "1px solid rgba(139,92,246,0.3)",
+                        background: "rgba(139,92,246,0.1)", color: "#c084fc", cursor: "pointer",
                         fontSize: "0.75rem", fontWeight: 700, transition: "all 0.2s"
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "#fff"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.color = "var(--text-muted)"; }}
+                      onMouseEnter={e => { e.currentTarget.style.background = "rgba(139,92,246,0.2)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "rgba(139,92,246,0.1)"; }}
                     >
-                      Adjust Amount
+                      ✏️ Adjust / Change Month
                     </button>
                     <button
                       onClick={() => toggleActive(adv)}
@@ -292,6 +320,9 @@ export default function FinancialsManagement() {
                     <p style={{ fontWeight: 800, fontSize: "0.95rem" }}>{adv.staff?.name}</p>
                     <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
                       Disbursed on {new Date(adv.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      <span style={{ marginLeft: "0.5rem", color: adv.targetMonthYear ? "#c084fc" : "#38bdf8", fontWeight: 700 }}>
+                        • Cuts from: {adv.targetMonthYear ? formatYM(adv.targetMonthYear) : `Auto (${new Date(adv.date).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })})`}
+                      </span>
                     </p>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
@@ -325,7 +356,7 @@ export default function FinancialsManagement() {
       {/* ── Add Advance Modal ── */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-          <div className="glass modal-content animate-slide-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', padding: "2rem" }}>
+          <div className="glass modal-content animate-slide-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '440px', padding: "2rem" }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.75rem' }}>
                <h2 className="text-gradient" style={{ fontSize: '1.5rem' }}>Log Advance</h2>
                <button onClick={() => setIsModalOpen(false)} className="modal-close">&times;</button>
@@ -347,6 +378,55 @@ export default function FinancialsManagement() {
                   <input name="amount" required type="number" step="0.01" className="input-modern" style={{ paddingLeft: '2rem' }} placeholder="0.00" value={formData.amount} onChange={(e) => setFormData({...formData, amount: e.target.value})} />
                 </div>
               </div>
+
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.4rem" }}>
+                  <FormLabel>Deduct From Payslip Month</FormLabel>
+                  <span style={{ fontSize: "0.68rem", color: "#a78bfa", fontWeight: 700 }}>Owner Choice</span>
+                </div>
+
+                <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.6rem" }}>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, targetMonthYear: prevMonthStr })}
+                    style={{
+                      flex: 1, padding: "0.45rem 0.5rem", borderRadius: "10px", fontSize: "0.74rem", fontWeight: 800,
+                      background: formData.targetMonthYear === prevMonthStr ? "rgba(139,92,246,0.25)" : "rgba(255,255,255,0.04)",
+                      border: `1px solid ${formData.targetMonthYear === prevMonthStr ? "#a78bfa" : "rgba(255,255,255,0.08)"}`,
+                      color: formData.targetMonthYear === prevMonthStr ? "#fff" : "var(--text-muted)", cursor: "pointer",
+                      display: "flex", flexDirection: "column", alignItems: "center", gap: "0.15rem", transition: "all 0.15s"
+                    }}
+                  >
+                    <span>⬅️ Prev Month</span>
+                    <span style={{ color: "#c084fc", fontSize: "0.68rem" }}>{formatYM(prevMonthStr)}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, targetMonthYear: currentMonthStr })}
+                    style={{
+                      flex: 1, padding: "0.45rem 0.5rem", borderRadius: "10px", fontSize: "0.74rem", fontWeight: 800,
+                      background: formData.targetMonthYear === currentMonthStr ? "rgba(16,185,129,0.25)" : "rgba(255,255,255,0.04)",
+                      border: `1px solid ${formData.targetMonthYear === currentMonthStr ? "#34d399" : "rgba(255,255,255,0.08)"}`,
+                      color: formData.targetMonthYear === currentMonthStr ? "#fff" : "var(--text-muted)", cursor: "pointer",
+                      display: "flex", flexDirection: "column", alignItems: "center", gap: "0.15rem", transition: "all 0.15s"
+                    }}
+                  >
+                    <span>📅 Current Month</span>
+                    <span style={{ color: "#34d399", fontSize: "0.68rem" }}>{formatYM(currentMonthStr)}</span>
+                  </button>
+                </div>
+
+                <input 
+                  type="month" 
+                  className="input-modern"
+                  value={formData.targetMonthYear} 
+                  onChange={(e) => setFormData({ ...formData, targetMonthYear: e.target.value })} 
+                />
+                <p style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginTop: "0.4rem", lineHeight: 1.4 }}>
+                  💡 If salary is disbursed on the 10th and advance is taken on the 2nd, select <strong>Prev Month</strong> so this advance only cuts from that month!
+                </p>
+              </div>
+
               <button type="submit" className="btn-modern btn-primary" style={{ width: '100%', marginTop: '0.5rem' }}>
                 Authorize Disbursement
               </button>
@@ -358,7 +438,7 @@ export default function FinancialsManagement() {
       {/* ── Edit Advance Modal ── */}
       {isEditModalOpen && (
         <div className="modal-overlay" onClick={() => { setIsEditModalOpen(false); setEditingAdv(null); }}>
-          <div className="glass modal-content animate-slide-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', padding: "2rem" }}>
+          <div className="glass modal-content animate-slide-up" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '440px', padding: "2rem" }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.75rem' }}>
                <h2 className="text-gradient" style={{ fontSize: '1.5rem' }}>Adjust Record</h2>
                <button onClick={() => { setIsEditModalOpen(false); setEditingAdv(null); }} className="modal-close">&times;</button>
@@ -384,6 +464,55 @@ export default function FinancialsManagement() {
                   />
                 </div>
               </div>
+
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.4rem" }}>
+                  <FormLabel>Deduct From Payslip Month</FormLabel>
+                  <span style={{ fontSize: "0.68rem", color: "#a78bfa", fontWeight: 700 }}>Change Target Month</span>
+                </div>
+
+                <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.6rem" }}>
+                  <button
+                    type="button"
+                    onClick={() => setEditingAdv({ ...editingAdv, targetMonthYear: prevMonthStr })}
+                    style={{
+                      flex: 1, padding: "0.45rem 0.5rem", borderRadius: "10px", fontSize: "0.74rem", fontWeight: 800,
+                      background: editingAdv?.targetMonthYear === prevMonthStr ? "rgba(139,92,246,0.25)" : "rgba(255,255,255,0.04)",
+                      border: `1px solid ${editingAdv?.targetMonthYear === prevMonthStr ? "#a78bfa" : "rgba(255,255,255,0.08)"}`,
+                      color: editingAdv?.targetMonthYear === prevMonthStr ? "#fff" : "var(--text-muted)", cursor: "pointer",
+                      display: "flex", flexDirection: "column", alignItems: "center", gap: "0.15rem", transition: "all 0.15s"
+                    }}
+                  >
+                    <span>⬅️ Prev Month</span>
+                    <span style={{ color: "#c084fc", fontSize: "0.68rem" }}>{formatYM(prevMonthStr)}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingAdv({ ...editingAdv, targetMonthYear: currentMonthStr })}
+                    style={{
+                      flex: 1, padding: "0.45rem 0.5rem", borderRadius: "10px", fontSize: "0.74rem", fontWeight: 800,
+                      background: editingAdv?.targetMonthYear === currentMonthStr ? "rgba(16,185,129,0.25)" : "rgba(255,255,255,0.04)",
+                      border: `1px solid ${editingAdv?.targetMonthYear === currentMonthStr ? "#34d399" : "rgba(255,255,255,0.08)"}`,
+                      color: editingAdv?.targetMonthYear === currentMonthStr ? "#fff" : "var(--text-muted)", cursor: "pointer",
+                      display: "flex", flexDirection: "column", alignItems: "center", gap: "0.15rem", transition: "all 0.15s"
+                    }}
+                  >
+                    <span>📅 Current Month</span>
+                    <span style={{ color: "#34d399", fontSize: "0.68rem" }}>{formatYM(currentMonthStr)}</span>
+                  </button>
+                </div>
+
+                <input 
+                  type="month" 
+                  className="input-modern"
+                  value={editingAdv?.targetMonthYear || ""} 
+                  onChange={(e) => setEditingAdv({ ...editingAdv, targetMonthYear: e.target.value })} 
+                />
+                <p style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginTop: "0.4rem", lineHeight: 1.4 }}>
+                  Change which payslip will deduct this advance. It will strictly be deducted in that month only.
+                </p>
+              </div>
+
               <button type="submit" className="btn-modern btn-primary" style={{ width: '100%', marginTop: '0.5rem' }}>
                 Update Ledger Record
               </button>
